@@ -21,9 +21,23 @@ N <- 100 # Number of different simulations
 #     stringsAsFactors = default.stringsAsFactors()
 # )
 
+tree <- rphylo(n, 0.1, 0)
+
+## Groupes
+get_group <- function(tip) {
+    if (tip %in% getDescendants(tree, 105)) {
+        return(2)
+    }
+    if (tip %in% getDescendants(tree, 110)) {
+        return(3)
+    }
+    return(1)
+}
+
+phylo_group <- as.factor(sapply(1:n, get_group))
+
 # Code for one simulation
-simulate_positive_negative <- function(sim_id, n = 100, stoch_process = "BM") {
-    tree <- rphylo(n, 0.1, 0)
+simulate_positive_negative <- function(sim_id, n = 100, stoch_process = "BM", tree = tree, phylo_group = phylo_group) {
 
     sigma2err <- 1
 
@@ -34,25 +48,19 @@ simulate_positive_negative <- function(sim_id, n = 100, stoch_process = "BM") {
     trait <- trait + rnorm(n, mean = 0, sqrt(sigma2err))
 
     # Simulation positive
-
-    ## Groupes
-    get_group <- function(tip) {
-        if (tip %in% getDescendants(tree, 105)) {
-            return(2)
-        }
-        if (tip %in% getDescendants(tree, 110)) {
-            return(3)
-        }
-        return(1)
-    }
-
-    group <- as.factor(sapply(1:n, get_group))
+    # TODO : Refaire avec un Ornhstein-Uhlenbeck
+        ## TODO refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
+        ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
+        ## faire scenario H_1: mu differents -> supp ANOVA phylo se plante car pas de dep entre indiv
+        ## TODO: rajouter 3 petites branches au bout de l'arbre pour illustrer la variabilité intra-espece.
+        ## regarder si ça dégrade la performance
+    # TODO : Regarder correspondance OU avec MB(+erreur de mesures)
 
     ## Réponse
     mu1 <- 2
     mu2 <- -5
     mu3 <- 2
-    y <- mu1 * (group == 1) + mu2 * (group == 2) + mu3 * (group == 3)
+    y <- mu1 * (phylo_group == 1) + mu2 * (phylo_group == 2) + mu3 * (phylo_group == 3)
     y <- y + trait
 
     # par(mar = c(5, 0, 0, 0) + 0.1)
@@ -60,9 +68,9 @@ simulate_positive_negative <- function(sim_id, n = 100, stoch_process = "BM") {
     # tiplabels(bg = group, pch = 21)
     # phydataplot(y, tree, scaling = 0.1, offset = 4)
 
-    pos_fit_ANOVA <- lm(y ~ group)
+    pos_fit_ANOVA <- lm(y ~ phylo_group)
 
-    pos_fitphy_ANOVA <- phylolm(y ~ group, phy = tree)
+    pos_fitphy_ANOVA <- phylolm(y ~ phylo_group, phy = tree)
 
     # Simulation négative
 
@@ -105,3 +113,6 @@ simulate_positive_negative <- function(sim_id, n = 100, stoch_process = "BM") {
 simulation_results <- do.call(rbind, lapply(seq(N), function(sim_id) {
     simulate_positive_negative(sim_id)
 }))
+
+# TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
+# TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest
