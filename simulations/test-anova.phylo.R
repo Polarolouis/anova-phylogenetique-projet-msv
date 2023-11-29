@@ -21,6 +21,7 @@ N <- 100 # Number of different simulations
 #     stringsAsFactors = default.stringsAsFactors()
 # )
 
+# Arbre
 tree <- rphylo(n, 0.1, 0)
 
 ## Groupes
@@ -34,85 +35,99 @@ get_group <- function(tip) {
     return(1)
 }
 
-phylo_group <- as.factor(sapply(1:n, get_group))
+# Computing groups
+phylo_groups <- as.factor(sapply(1:n, get_group))
+non_phylo_groups <- as.factor(sample(c(1, 2, 3), n, replace = TRUE))
+
+overall_p <- function(my_model) {
+    f <- summary(my_model)$fstatistic
+    p <- pf(f[1], f[2], f[3], lower.tail = F)
+    attributes(p) <- NULL
+    return(p)
+}
+
+compute_y <- function(mu_vect, groups) {
+    rowSums(sapply(seq_along(mu_vect), function(i) mu_vect[i] * (groups == i)))
+}
+
+# TODO : Regarder correspondance OU avec MB(+erreur de mesures)
+# TODO : Refaire avec un Ornhstein-Uhlenbeck
 
 # Code for one simulation
-simulate_positive_negative <- function(sim_id, n = 100, stoch_process = "BM", tree = tree, phylo_group = phylo_group) {
+simulate_ <- function(sim_id,
+    groups,
+    n = 100,
+    stoch_process = "BM",
+    tree = tree,
+    mu_vect = c(2, -5, 2),
+    risk_threshold = 0.05,
+    sub_branches = 0,
+    sigma2_measure_err = 1,
+    sigma2_intra_species = 1) {
 
-    sigma2err <- 1
+
+
+    # What hypo are we testing ?
+    is_H0 <- length(unique(mu_vect)) == 1
+
+    # Are we adding sub-branches ?
+    if (sub_branches != 0) {
+        ## TODO: rajouter 3 petites branches au bout de l'arbre pour illustrer la variabilité intra-espece.
+        ## regarder si ça dégrade la performance
+        # TODO: Add sub-branching
+        stop("The sub branches needs to be implemented.")
+    }
+
 
     # Continuous phylo trait
     trait <- rTrait(1, tree, stoch_process)
 
-    # Adding noise to the trait
-    trait <- trait + rnorm(n, mean = 0, sqrt(sigma2err))
+    # Adding measure noise to the trait
+    trait <- trait + rnorm(n, mean = 0, sqrt(sigma2_measure_err))
 
-    # Simulation positive
-    # TODO : Refaire avec un Ornhstein-Uhlenbeck
-        ## TODO refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
-        ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
-        ## faire scenario H_1: mu differents -> supp ANOVA phylo se plante car pas de dep entre indiv
-        ## TODO: rajouter 3 petites branches au bout de l'arbre pour illustrer la variabilité intra-espece.
-        ## regarder si ça dégrade la performance
-    # TODO : Regarder correspondance OU avec MB(+erreur de mesures)
-
+    # Simulation
     ## Réponse
-    mu1 <- 2
-    mu2 <- -5
-    mu3 <- 2
-    y <- mu1 * (phylo_group == 1) + mu2 * (phylo_group == 2) + mu3 * (phylo_group == 3)
+    y <- compute_y(mu_vect = mu_vect, groups)
     y <- y + trait
 
-    # par(mar = c(5, 0, 0, 0) + 0.1)
-    # plot(tree, show.tip.label = FALSE, x.lim = 50)
-    # tiplabels(bg = group, pch = 21)
-    # phydataplot(y, tree, scaling = 0.1, offset = 4)
+    ## ANOVAs
+    fit_ANOVA <- lm(y ~ groups)
+    fitphy_ANOVA <- phylolm(y ~ groups, phy = tree, model = stoch_process)
 
-    pos_fit_ANOVA <- lm(y ~ phylo_group)
+    ## TODO refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
+    ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
+    ## faire scenario H_1: mu differents -> supp ANOVA phylo se plante car pas de dep entre indiv
 
-    pos_fitphy_ANOVA <- phylolm(y ~ phylo_group, phy = tree)
+    methods <- as.factor(c("ANOVA", "ANOVA-Phylo"))
+    
+    if(is_H0){
+        correct_hypothesis <- rep("H0", 2)
+        
+        has_selected_correctly <- c(
+            overall_p(summary(fit_ANOVA)) > risk_threshold,
+            overall_p(summary(fitphy_ANOVA)) > risk_threshold
+        )
+    } else {
+        correct_hypothesis <- rep("H1", 2)
 
-    # Simulation négative
+        # If the p_value is below the risk_threshold the H0 is rejected
+        has_selected_correctly <- c(
+            overall_p(summary(fit_ANOVA)) <= risk_threshold,
+            overall_p(summary(fitphy_ANOVA)) <= risk_threshold
+        )
+    }
 
-    groups_non_phylo <- as.factor(sample(c(1, 2, 3), n, replace = TRUE))
-    y_non_phy <- mu1 * (groups_non_phylo == 1) + mu2 * (groups_non_phylo == 2) + mu3 * (groups_non_phylo == 3)
-    y_non_phy <- y_non_phy + trait
+    results <- data.frame(
+        sim_id = rep(sim_id, 2),
+        methods = methods,
+        correct_hypothesis = correct_hypothesis,
+        has_selected_correctly = has_selected_correctly
+    )
 
-    # par(mar = c(5, 0, 0, 0) + 0.1)
-    # plot(tree, show.tip.label = FALSE, x.lim = 50)
-    # tiplabels(bg = groups_non_phylo, pch = 21)
-    # phydataplot(y_non_phy, tree, scaling = 0.1, offset = 4)
-
-    neg_fit_ANOVA <- lm(y_non_phy ~ groups_non_phylo)
-    neg_fitphy_ANOVA <- phylolm(y_non_phy ~ groups_non_phylo, phy = tree)
-
-    # Summary
-    ## Positive
-    pos_fit_summary <- summary(pos_fit_ANOVA)
-    pos_fitphy_summary <- summary(pos_fitphy_ANOVA)
-
-    ## Negative
-    neg_fit_summary <- summary(neg_fit_ANOVA)
-    neg_fitphy_summary <- summary(neg_fitphy_ANOVA)
-    return(data.frame(
-        sim_id = sim_id,
-        positive_classic_r_squared = pos_fit_summary$r.squared,
-        positive_phylo_r_squared = pos_fitphy_summary$r.squared,
-        positive_classic_adjusted_r_squared = pos_fit_summary$adj.r.squared,
-        positive_phylo_adjusted_r_squared = pos_fitphy_summary$adj.r.squared,
-        negative_classic_r_squared = neg_fit_summary$r.squared,
-        negative_phylo_r_squared = neg_fitphy_summary$r.squared,
-        negative_classic_adjusted_r_squared = neg_fit_summary$adj.r.squared,
-        negative_phylo_adjusted_r_squared = neg_fitphy_summary$adj.r.squared,
-        row.names = NULL, check.rows = FALSE, check.names = TRUE,
-        stringsAsFactors = default.stringsAsFactors()
-    ))
+    return(results)
 }
 
 
-simulation_results <- do.call(rbind, lapply(seq(N), function(sim_id) {
-    simulate_positive_negative(sim_id)
-}))
 
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest
