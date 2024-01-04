@@ -36,7 +36,7 @@ calcul_puissance <- function(data, test_method) {
 }
 
 sigma2_measure_err = 1
-sigma2_intra_species = 2
+sigma2_intra_species = 0
 
 # Mu tous différents
 mu_vect <- c(1, 5, 10)
@@ -53,8 +53,8 @@ puissance_mu_diff_classic_for_non_phylo_groups <- calcul_puissance(mu_diff_non_p
 # Mu égaux
 mu_vect <- rep(1, K)
 # N répétitions pour les 2 groupes générés
-mu_equals_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = sigma2_measure_err)))
-mu_equals_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = sigma2_measure_err)))
+mu_equals_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = sigma2_measure_err, sigma2_intra_species = sigma2_intra_species)))
+mu_equals_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = sigma2_measure_err, sigma2_intra_species = sigma2_intra_species)))
 
 # Calcul de puissance
 puissance_mu_equals_phylo_for_phylo_groups <- calcul_puissance(mu_equals_phylo_groups_results, "ANOVA-Phylo")
@@ -81,14 +81,16 @@ plot_data <- data.frame(
     mu_type = rep(rep(c("different", "equals"), each = 2), 2)
 )
 
-ggplot(plot_data, aes(x = tested_method, y = puissance, fill = interaction(group_type, mu_type))) +
+ggplot(plot_data, aes(x = tested_method, y = puissance, fill = group_type)) +
     geom_bar(stat = "identity", position = "dodge") +
+    scale_y_continuous(limits = c(0, 1)) + 
     labs(
         title = paste0("Proportions correctes vs Tested Method (BM) | N = ", N, "; sigma_measure = ", sigma2_measure_err, "; sigma2_intra = ", sigma2_intra_species),
         x = "Tested Method",
         y = "Proportions correctes"
     ) +
     geom_hline(yintercept = 0.95) +
+        facet_grid(mu_type ~ .) +
     theme_minimal()
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest

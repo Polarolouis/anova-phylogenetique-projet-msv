@@ -50,7 +50,7 @@ simulate_ANOVAs <- function(
 
 
     # Continuous phylo trait
-    trait <- rTrait(1, tree, stoch_process)
+    trait <- rTrait(1, tree, stoch_process, parameters = list(sigma2 = sigma2_intra_species))
 
     # Adding measure noise to the trait
     trait <- trait + rnorm(n, mean = 0, sqrt(sigma2_measure_err))
