@@ -5,11 +5,13 @@ library(ape)
 library(ggplot2)
 set.seed(1234)
 
-N <- 1000 # Number of different simulations
+N <- 500 # Number of different simulations
 n <- 100
 
 # Arbre
 tree <- rphylo(n, 0.1, 0)
+taille_tree <- diag(vcv(tree))[1]
+tree$edge.length <- tree$edge.length/taille_tree
 
 ## Groupes
 K <- 3
@@ -33,6 +35,9 @@ calcul_puissance <- function(data, test_method) {
     mean(data[which(data$tested_method == test_method), ]$has_selected_correctly)
 }
 
+sigma2_measure_err = 1
+sigma2_intra_species = 2
+
 # Mu tous différents
 mu_vect <- c(1, 5, 10)
 # N répétitions pour les 2 groupes générés
@@ -48,8 +53,8 @@ puissance_mu_diff_classic_for_non_phylo_groups <- calcul_puissance(mu_diff_non_p
 # Mu égaux
 mu_vect <- rep(1, K)
 # N répétitions pour les 2 groupes générés
-mu_equals_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = 0)))
-mu_equals_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = 0)))
+mu_equals_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = sigma2_measure_err)))
+mu_equals_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = sigma2_measure_err)))
 
 # Calcul de puissance
 puissance_mu_equals_phylo_for_phylo_groups <- calcul_puissance(mu_equals_phylo_groups_results, "ANOVA-Phylo")
@@ -79,11 +84,11 @@ plot_data <- data.frame(
 ggplot(plot_data, aes(x = tested_method, y = puissance, fill = interaction(group_type, mu_type))) +
     geom_bar(stat = "identity", position = "dodge") +
     labs(
-        title = "Proportions correctes vs Tested Method (BM)",
+        title = paste0("Proportions correctes vs Tested Method (BM) | N = ", N, "; sigma_measure = ", sigma2_measure_err, "; sigma2_intra = ", sigma2_intra_species),
         x = "Tested Method",
         y = "Proportions correctes"
     ) +
-    geom_hline(yintercept = 0.95)
+    geom_hline(yintercept = 0.95) +
     theme_minimal()
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest

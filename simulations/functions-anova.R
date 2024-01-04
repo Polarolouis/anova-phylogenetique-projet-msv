@@ -62,12 +62,12 @@ simulate_ANOVAs <- function(
 
     ## ANOVAs
     fit_ANOVA <- lm(y ~ groups)
-    if (stoch_process == "OU"){
+    if (stoch_process == "OU") {
         model = "OUfixedRoot"
     } else {
         model = stoch_process
     }
-    fitphy_ANOVA <- phylolm(y ~ groups, phy = tree, model = model)
+    fitphy_ANOVA <- phylolm(y ~ groups, phy = tree, model = model, measurement_error = (sigma2_measure_err != 0))
 
     ## DONE refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
     ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
