@@ -13,7 +13,7 @@ compute_F_statistic <- function(r_squared, df1, df2) {
 
 phylo_p_value <- function(r_squared, df1, df2) {
     F_stat <- compute_F_statistic(r_squared, df1, df2)
-    return(1 - pf(F_stat, K - 1, n - K))
+    return(1 - pf(F_stat, df1 = df1, df2 = df2))
 }
 
 compute_y <- function(mu_vect, groups) {
@@ -30,7 +30,7 @@ simulate_ANOVAs <- function(
     tree,
     n = 100,
     stoch_process = "BM",
-    mu_vect = c(2, -5, 2),
+    mu_vect = c(2, -5, 1),
     risk_threshold = 0.05,
     sub_branches = 0,
     sigma2_measure_err = 1,
@@ -62,18 +62,18 @@ simulate_ANOVAs <- function(
     fit_ANOVA <- lm(y ~ groups)
     fitphy_ANOVA <- phylolm(y ~ groups, phy = tree, model = stoch_process)
 
-    ## TODO refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
+    ## DONE refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
     ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
     ## faire scenario H_1: mu differents -> supp ANOVA phylo se plante car pas de dep entre indiv
 
-    tested_methods <- as.factor(c("ANOVA", "ANOVA-Phylo"))
+    tested_method <- as.factor(c("ANOVA", "ANOVA-Phylo"))
 
     if (is_H0) {
         correct_hypothesis <- rep("H0", 2)
 
         has_selected_correctly <- c(
             overall_p(fit_ANOVA) > risk_threshold,
-            phylo_p_value(fitphy_ANOVA$r.squared, n - K, K - 1) > risk_threshold
+            phylo_p_value(fitphy_ANOVA$r.squared, K - 1, n - K) > risk_threshold
         )
         selected_hypothesis <- sapply(1:2, function(id) {
             if (has_selected_correctly[id]) {
@@ -88,7 +88,7 @@ simulate_ANOVAs <- function(
         # If the p_value is below the risk_threshold the H0 is rejected
         has_selected_correctly <- c(
             overall_p(fit_ANOVA) <= risk_threshold,
-            phylo_p_value(fitphy_ANOVA$r.squared, n - K, K - 1) <= risk_threshold
+            phylo_p_value(fitphy_ANOVA$r.squared, K - 1, n - K) <= risk_threshold
         )
         selected_hypothesis <- sapply(1:2, function(id) {
             if (has_selected_correctly[id]) {
@@ -101,7 +101,7 @@ simulate_ANOVAs <- function(
 
     results <- data.frame(
         sim_id = rep(sim_id, 2),
-        tested_methods = tested_methods,
+        tested_method = tested_method,
         correct_hypothesis = correct_hypothesis,
         selected_hypothesis = selected_hypothesis,
         has_selected_correctly = has_selected_correctly
