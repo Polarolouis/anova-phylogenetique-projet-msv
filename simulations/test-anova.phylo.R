@@ -6,20 +6,6 @@ set.seed(1234)
 
 N <- 100 # Number of different simulations
 n <- 100
-# Preparing output lists
-# simulation_results <- data.frame(
-#     sim_id = numeric(),
-#     positive_classic_r_squared = numeric(),
-#     positive_phylo_r_squared = numeric(),
-#     positive_classic_adjusted_r_squared = numeric(),
-#     positive_phylo_adjusted_r_squared = numeric(),
-#     negative_classic_r_squared = numeric(),
-#     negative_phylo_r_squared = numeric(),
-#     negative_classic_adjusted_r_squared = numeric(),
-#     negative_phylo_adjusted_r_squared = numeric(),
-#     row.names = NULL, check.rows = FALSE, check.names = TRUE,
-#     stringsAsFactors = default.stringsAsFactors()
-# )
 
 # Arbre
 tree <- rphylo(n, 0.1, 0)
@@ -36,125 +22,15 @@ get_group <- function(tip) {
     return(1)
 }
 
+source("./simulations/functions-anova.R")
+
 # Computing groups
 phylo_groups <- as.factor(sapply(1:n, get_group))
 non_phylo_groups <- as.factor(sample(c(1, 2, 3), n, replace = TRUE))
 
-overall_p <- function(my_model) {
-    f <- summary(my_model)$fstatistic
-    p <- pf(f[1], f[2], f[3], lower.tail = F)
-    attributes(p) <- NULL
-    return(p)
-}
-
-compute_F_statistic <- function(r_squared, df1, df2) {
-    # df1 = k, le nombre de prédicteur
-    # df2 = n - (k+1), n le nombre d'observation
-    return(r_squared / (1 - r_squared) * df2 / df1)
-}
-
-phylo_p_value <- function(r_squared, df1, df2) {
-    F_stat <- compute_F_statistic(r_squared, df1, df2)
-    return(1 - pf(F_stat, K - 1, n - K))
-}
-
-compute_y <- function(mu_vect, groups) {
-    rowSums(sapply(seq_along(mu_vect), function(i) mu_vect[i] * (groups == i)))
-}
-
-# TODO : Regarder correspondance OU avec MB(+erreur de mesures)
-# TODO : Refaire avec un Ornhstein-Uhlenbeck
-
-# Code for one simulation
-simulate_ANOVAs <- function(sim_id,
-    groups,
-    tree,
-    n = 100,
-    stoch_process = "BM",
-    mu_vect = c(2, -5, 2),
-    risk_threshold = 0.05,
-    sub_branches = 0,
-    sigma2_measure_err = 1,
-    sigma2_intra_species = 1) {
-
-
-
-    # What hypo are we testing ?
-    is_H0 <- length(unique(mu_vect)) == 1
-
-    # Are we adding sub-branches ?
-    if (sub_branches != 0) {
-        ## TODO: rajouter 3 petites branches au bout de l'arbre pour illustrer la variabilité intra-espece.
-        ## regarder si ça dégrade la performance
-        # TODO: Add sub-branching
-        stop("The sub branches needs to be implemented.")
-    }
-
-
-    # Continuous phylo trait
-    trait <- rTrait(1, tree, stoch_process)
-
-    # Adding measure noise to the trait
-    trait <- trait + rnorm(n, mean = 0, sqrt(sigma2_measure_err))
-
-    # Simulation
-    ## Réponse
-    y <- compute_y(mu_vect = mu_vect, groups)
-    y <- y + trait
-
-    ## ANOVAs
-    fit_ANOVA <- lm(y ~ groups)
-    fitphy_ANOVA <- phylolm(y ~ groups, phy = tree, model = stoch_process)
-
-    ## TODO refaire avec ces modalités et évaluer les erreurs de type 1 et erreurs de type 2
-    ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
-    ## faire scenario H_1: mu differents -> supp ANOVA phylo se plante car pas de dep entre indiv
-
-    tested_methods <- as.factor(c("ANOVA", "ANOVA-Phylo"))
-    
-    if(is_H0){
-        correct_hypothesis <- rep("H0", 2)
-        
-        has_selected_correctly <- c(
-            overall_p(fit_ANOVA) > risk_threshold,
-            phylo_p_value(fitphy_ANOVA$r.squared, n - K, K - 1) > risk_threshold
-        )
-        selected_hypothesis <- sapply(1:2, function(id) {
-            if (has_selected_correctly[id]) {
-                return("H0")
-            } else {
-                return("H1")
-            }
-        })
-    } else {
-        correct_hypothesis <- rep("H1", 2)
-
-        # If the p_value is below the risk_threshold the H0 is rejected
-        has_selected_correctly <- c(
-            overall_p(fit_ANOVA) <= risk_threshold,
-            phylo_p_value(fitphy_ANOVA$r.squared, n - K, K - 1) <= risk_threshold
-        )
-        selected_hypothesis <- sapply(1:2, function(id) {
-            if (has_selected_correctly[id]) {
-                return("H1")
-            }else{
-                return("H0")
-            }
-        })
-    }
-
-    results <- data.frame(
-        sim_id = rep(sim_id, 2),
-        tested_methods = tested_methods,
-        correct_hypothesis = correct_hypothesis,
-        selected_hypothesis = selected_hypothesis,
-        has_selected_correctly = has_selected_correctly
-    )
-
-    return(results)
-}
-
-
+# N répétitions pour les 2 groupes générés
+phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree)))
+non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree)))
 
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest
