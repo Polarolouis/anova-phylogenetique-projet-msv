@@ -41,5 +41,5 @@ ggplot(multiple_BM) +
 # For phylogenic tree
 
 generate_phylo_tree <- function(n_tips, max_time) {
-
+    
 }

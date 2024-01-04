@@ -5,7 +5,7 @@ library(ape)
 set.seed(1234)
 
 N <- 100 # Number of different simulations
-
+n <- 100
 # Preparing output lists
 # simulation_results <- data.frame(
 #     sim_id = numeric(),
@@ -25,6 +25,7 @@ N <- 100 # Number of different simulations
 tree <- rphylo(n, 0.1, 0)
 
 ## Groupes
+K <- 3
 get_group <- function(tip) {
     if (tip %in% getDescendants(tree, 105)) {
         return(2)
@@ -46,6 +47,17 @@ overall_p <- function(my_model) {
     return(p)
 }
 
+compute_F_statistic <- function(r_squared, df1, df2) {
+    # df1 = k, le nombre de prédicteur
+    # df2 = n - (k+1), n le nombre d'observation
+    return(r_squared / (1 - r_squared) * df2 / df1)
+}
+
+phylo_p_value <- function(r_squared, df1, df2) {
+    F_stat <- compute_F_statistic(r_squared, df1, df2)
+    return(1 - pf(F_stat, K - 1, n - K))
+}
+
 compute_y <- function(mu_vect, groups) {
     rowSums(sapply(seq_along(mu_vect), function(i) mu_vect[i] * (groups == i)))
 }
@@ -54,11 +66,11 @@ compute_y <- function(mu_vect, groups) {
 # TODO : Refaire avec un Ornhstein-Uhlenbeck
 
 # Code for one simulation
-simulate_ <- function(sim_id,
+simulate_ANOVAs <- function(sim_id,
     groups,
+    tree,
     n = 100,
     stoch_process = "BM",
-    tree = tree,
     mu_vect = c(2, -5, 2),
     risk_threshold = 0.05,
     sub_branches = 0,
@@ -98,29 +110,44 @@ simulate_ <- function(sim_id,
     ## faire scénario H_0: mu egaux -> ANOVA se plante car dep entre les indivs
     ## faire scenario H_1: mu differents -> supp ANOVA phylo se plante car pas de dep entre indiv
 
-    methods <- as.factor(c("ANOVA", "ANOVA-Phylo"))
+    tested_methods <- as.factor(c("ANOVA", "ANOVA-Phylo"))
     
     if(is_H0){
         correct_hypothesis <- rep("H0", 2)
         
         has_selected_correctly <- c(
-            overall_p(summary(fit_ANOVA)) > risk_threshold,
-            overall_p(summary(fitphy_ANOVA)) > risk_threshold
+            overall_p(fit_ANOVA) > risk_threshold,
+            phylo_p_value(fitphy_ANOVA$r.squared, n - K, K - 1) > risk_threshold
         )
+        selected_hypothesis <- sapply(1:2, function(id) {
+            if (has_selected_correctly[id]) {
+                return("H0")
+            } else {
+                return("H1")
+            }
+        })
     } else {
         correct_hypothesis <- rep("H1", 2)
 
         # If the p_value is below the risk_threshold the H0 is rejected
         has_selected_correctly <- c(
-            overall_p(summary(fit_ANOVA)) <= risk_threshold,
-            overall_p(summary(fitphy_ANOVA)) <= risk_threshold
+            overall_p(fit_ANOVA) <= risk_threshold,
+            phylo_p_value(fitphy_ANOVA$r.squared, n - K, K - 1) <= risk_threshold
         )
+        selected_hypothesis <- sapply(1:2, function(id) {
+            if (has_selected_correctly[id]) {
+                return("H1")
+            }else{
+                return("H0")
+            }
+        })
     }
 
     results <- data.frame(
         sim_id = rep(sim_id, 2),
-        methods = methods,
+        tested_methods = tested_methods,
         correct_hypothesis = correct_hypothesis,
+        selected_hypothesis = selected_hypothesis,
         has_selected_correctly = has_selected_correctly
     )
 
