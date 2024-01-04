@@ -36,8 +36,8 @@ calcul_puissance <- function(data, test_method) {
 # Mu tous différents
 mu_vect <- c(1, 5, 10)
 # N répétitions pour les 2 groupes générés
-mu_diff_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect)))
-mu_diff_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect)))
+mu_diff_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect, stoch_process = "OU")))
+mu_diff_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect, stoch_process = "OU")))
 
 puissance_mu_diff_phylo_for_phylo_groups <- calcul_puissance(mu_diff_phylo_groups_results, "ANOVA-Phylo")
 puissance_mu_diff_classic_for_phylo_groups <- calcul_puissance(mu_diff_phylo_groups_results, "ANOVA")
@@ -79,9 +79,9 @@ plot_data <- data.frame(
 ggplot(plot_data, aes(x = tested_method, y = puissance, fill = interaction(group_type, mu_type))) +
     geom_bar(stat = "identity", position = "dodge") +
     labs(
-        title = "Puissance vs Tested Method",
+        title = "Proportions correctes vs Tested Method (OU)",
         x = "Tested Method",
-        y = "Puissance"
+        y = "Proportions correctes"
     ) +
     theme_minimal()
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite

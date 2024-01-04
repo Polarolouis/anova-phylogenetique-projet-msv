@@ -1,7 +1,7 @@
 library(lmerTest)
 library(phylolm)
 
-source("test_satterthwaite_utils.R")
+source("./sources/test_satterthwaite_utils.R")
 
 set.seed(12891289)
 
