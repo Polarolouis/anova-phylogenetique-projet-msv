@@ -34,7 +34,9 @@ simulate_ANOVAs <- function(
     risk_threshold = 0.05,
     sub_branches = 0,
     sigma2_measure_err = 1,
-    sigma2_intra_species = 1) {
+    sigma2_intra_species = 1,
+    df1 = K - 1,
+    df2 = n - K) {
     # What hypo are we testing ?
     is_H0 <- length(unique(mu_vect)) == 1
 
@@ -63,7 +65,7 @@ simulate_ANOVAs <- function(
     if (stoch_process == "OU"){
         model = "OUfixedRoot"
     } else {
-        model = "BM"
+        model = stoch_process
     }
     fitphy_ANOVA <- phylolm(y ~ groups, phy = tree, model = model)
 
@@ -78,7 +80,7 @@ simulate_ANOVAs <- function(
 
         has_selected_correctly <- c(
             overall_p(fit_ANOVA) > risk_threshold,
-            phylo_p_value(fitphy_ANOVA$r.squared, K - 1, n - K) > risk_threshold
+            phylo_p_value(fitphy_ANOVA$r.squared, df1, df2) > risk_threshold
         )
         selected_hypothesis <- sapply(1:2, function(id) {
             if (has_selected_correctly[id]) {
@@ -93,7 +95,7 @@ simulate_ANOVAs <- function(
         # If the p_value is below the risk_threshold the H0 is rejected
         has_selected_correctly <- c(
             overall_p(fit_ANOVA) <= risk_threshold,
-            phylo_p_value(fitphy_ANOVA$r.squared, K - 1, n - K) <= risk_threshold
+            phylo_p_value(fitphy_ANOVA$r.squared, df1, df2) <= risk_threshold
         )
         selected_hypothesis <- sapply(1:2, function(id) {
             if (has_selected_correctly[id]) {

@@ -5,7 +5,7 @@ library(ape)
 library(ggplot2)
 set.seed(1234)
 
-N <- 100 # Number of different simulations
+N <- 1000 # Number of different simulations
 n <- 100
 
 # Arbre
@@ -48,8 +48,8 @@ puissance_mu_diff_classic_for_non_phylo_groups <- calcul_puissance(mu_diff_non_p
 # Mu égaux
 mu_vect <- rep(1, K)
 # N répétitions pour les 2 groupes générés
-mu_equals_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect)))
-mu_equals_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect)))
+mu_equals_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = 0)))
+mu_equals_non_phylo_groups_results <- do.call("rbind", lapply(1:N, function(id) simulate_ANOVAs(sim_id = id, groups = non_phylo_groups, tree = tree, mu_vect = mu_vect, sigma2_measure_err = 0)))
 
 # Calcul de puissance
 puissance_mu_equals_phylo_for_phylo_groups <- calcul_puissance(mu_equals_phylo_groups_results, "ANOVA-Phylo")
@@ -83,6 +83,7 @@ ggplot(plot_data, aes(x = tested_method, y = puissance, fill = interaction(group
         x = "Tested Method",
         y = "Proportions correctes"
     ) +
+    geom_hline(yintercept = 0.95)
     theme_minimal()
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest

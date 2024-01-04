@@ -83,6 +83,7 @@ ggplot(plot_data, aes(x = tested_method, y = puissance, fill = interaction(group
         x = "Tested Method",
         y = "Proportions correctes"
     ) +
+    geom_hline(yintercept = 0.95) +
     theme_minimal()
 # TODO : Regarder la notice de lmertest pour l'implémentation de Satterthwaite
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest
