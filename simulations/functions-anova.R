@@ -6,8 +6,8 @@ overall_p <- function(my_model) {
 }
 
 compute_F_statistic <- function(r_squared, df1, df2) {
-    # df1 = k, le nombre de prédicteur
-    # df2 = n - (k+1), n le nombre d'observation
+    # df1 = k - 1, le nombre de prédicteur
+    # df2 = n - k, n le nombre d'observation
     return(r_squared / (1 - r_squared) * df2 / df1)
 }
 
