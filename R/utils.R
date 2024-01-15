@@ -66,3 +66,8 @@ compute_F_statistic <- function(r_squared, df1, df2) {
     # df2 = n - k, n le nombre d'observation
     return(r_squared / (1 - r_squared) * df2 / df1)
 }
+
+#' Computes the pvalue from an F statistic
+pvalue_F_test <- function(F_stat, df1, df2) {
+    return(unname(1 - pf(F_stat, df1, df2)))
+}
