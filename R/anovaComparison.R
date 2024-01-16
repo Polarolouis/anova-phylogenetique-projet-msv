@@ -128,8 +128,10 @@ phyloanova_anova_pvalues <- function(
 
         lambda_ratio_stat <- -2(h0_phyloanova$logLik - phyloanova_res$logLik)
 
-        # TODO Fix
-        phyloanova_p_value <- NA
+
+        # Computes the pvalue from the statistic
+        # df1 = K - 1
+        phyloanova_p_value <- pchisq(lambda_ratio_stat, df1)
     }
 
     list(
