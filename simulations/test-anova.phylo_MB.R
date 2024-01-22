@@ -57,7 +57,9 @@ calcul_proportion_bonne_selection <- function(data, test_method) {
     mean(data[which(data$tested_method == test_method), ]$has_selected_correctly)
 }
 
-plot_different_sigmas <- function(sigma2_measure_err, sigma2_intra_species, mu_vect_different = c(1,4)) {
+plot_different_sigmas <- function(sigma2_measure_err,
+                                  sigma2_intra_species, # PB : this is not a very good name, as the phylo variance of the BM is inter-species typically. Maybe just "sigma2_phylo" ?
+                                  mu_vect_different = c(0, 1,-1)) {
     # Mu tous différents
     mu_vect <- mu_vect_different
     # N répétitions pour les 2 groupes générés
@@ -87,7 +89,7 @@ plot_different_sigmas <- function(sigma2_measure_err, sigma2_intra_species, mu_v
     puissance_mu_diff_classic_for_non_phylo_groups <- calcul_proportion_bonne_selection(mu_diff_non_phylo_groups_results, "ANOVA")
 
     # Mu égaux
-    mu_vect <- rep(1, K)
+    mu_vect <- rep(0, K)
     # N répétitions pour les 2 groupes générés
     mu_equals_phylo_groups_results <- do.call(
         "rbind",
@@ -166,15 +168,17 @@ plot_different_sigmas <- function(sigma2_measure_err, sigma2_intra_species, mu_v
 # TODO : En utilisant l'arbre étoile, on obtient un modele mixte classique donc on peut appliquer lmerTest
 ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
 
-# Seulement l'information phylo
-only_phylo_data <- plot_different_sigmas(0, 1, mu_vect_different = c(1,5,10))
-plot_only_phylo <- only_phylo_data$plot
-plot_only_phylo
-# 2 erreurs
-both_errors_identical_data <- plot_different_sigmas(1, 1, mu_vect_different = c(1, 5, 10))
-plot_both_errors_identical <- both_errors_identical_data$plot
-plot_both_errors_identical
+## Standardized parameters
+total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
+heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
-ggsave("img/simulation_power_pure_BM.png", plot = plot_only_phylo) # BM pur
-ggsave("img/simulation_power_pure_both_error.png", plot = plot_both_errors_identical) # Both error same
-# ggsave("img/simulation_power_pure_both_error_more_phylo.png", plot = plot_different_sigmas(1, 2)) # Both error same
+## Try several parameter values
+for (her in heri) {
+  res_sim <- plot_different_sigmas(sigma2_measure_err = (1 - her) * total_variance,
+                                   sigma2_intra_species = her * total_variance,
+                                   mu_vect_different = c(0, snr * total_variance, -snr * total_variance))
+  res_sim_plot <- res_sim$plot
+  res_sim_plot
+  ggsave(paste0("img/simulation_power_BM_her_", her, ".png"), plot = res_sim_plot)
+}
