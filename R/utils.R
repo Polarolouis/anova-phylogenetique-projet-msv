@@ -72,9 +72,59 @@ pvalue_F_test <- function(F_stat, df1, df2) {
     return(unname(1 - pf(F_stat, df1, df2)))
 }
 
+#' @title Get the number of species
+#'
+#' @description
+#' Compute the number of different species on a tree that possibly has replicates
+#' coded as tips with zero length branches.
+#'
+#' From phylolimma
+#'
+#' @param phy a phylogentic tree, with possible replicates coded as tips with zero length branches.
+#' @param tol a numeric value giving the tolerance to consider a branch length significantly greater than zero.
+#'
+#' @return the number of different species in the tree
+#'
+#' @keywords internal
+#'
+getSpeciesNumber <- function(phy, tol = .Machine$double.eps^(1 / 2)) {
+    n <- length(phy$tip.label)
+    R <- ape::cophenetic.phylo(phy) <= tol
+    R <- colSums(R)
+    nspecies <- 0
+    ind <- 1
+    while (ind <= length(R)) {
+        nspecies <- nspecies + 1
+        ind <- ind + R[ind]
+    }
+    return(nspecies)
+}
+
+#' @title Function for species ddf
+#'
+#' From phylolimma (pbastide/phylolimma)
+#'
+#' @param fitlm a phylolm fit
+#' @param phylo the corresponding phylogenetic tree
+#'
+#' @return nspecies - nvariables
+#'
+#' @keywords internal
+#'
+ddf_species <- function(fitlm, phylo) {
+    nspecies <- getSpeciesNumber(phylo)
+    return(list(ddf = nspecies - fitlm$d))
+}
+
 #' This code computes the satterthwaite approximation to obtain degrees of
 #' freedom for a given tree
 ddf_satterthwaite_sum <- function(fit_phylolm, phylo, REML = FALSE) {
+    
+    if (is.null(fit_phylolm$sigma2_error) || fit_phylolm$sigma2_error == 0) {
+        #  In this case we return the classical df
+        return(ddf_species(fit_phylolm, phylo))
+    }
+
     X <- fit_phylolm$X
     y <- as.matrix(fit_phylolm$y)
     rownames(y) <- names(fit_phylolm$y)
