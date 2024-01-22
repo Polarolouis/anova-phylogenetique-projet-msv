@@ -291,55 +291,58 @@ plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
     return(p)
 }
 
-# Vanilla
-vanilla_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
-    sigma2_measure, stoch_process,
-    test_method = "vanilla"
-)
-vanilla_data <- vanilla_results$data
-vanilla_parameters_string <- vanilla_results$parameters_string
-plot_simulation_data(vanilla_data, vanilla_parameters_string)
+# # Vanilla
+# vanilla_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
+#     sigma2_measure, stoch_process,
+#     test_method = "vanilla"
+# )
+# vanilla_data <- vanilla_results$data
+# vanilla_parameters_string <- vanilla_results$parameters_string
+# plot_simulation_data(vanilla_data, vanilla_parameters_string)
 
-vanilla_results_H0 <- simulate_data(N,
-    base_values = c(1, 1), risk_threshold, sigma2_phylo,
-    sigma2_measure, stoch_process,
-    test_method = "vanilla",
-    correct_hypothesis = "H0"
-)
-vanilla_data_H0 <- vanilla_results_H0$data
-vanilla_parameters_string_H0 <- vanilla_results_H0$parameters_string
-plot_simulation_data(vanilla_data_H0, vanilla_parameters_string_H0, threshold = 0.05)
+# vanilla_results_H0 <- simulate_data(N,
+#     base_values = c(1, 1), risk_threshold, sigma2_phylo,
+#     sigma2_measure, stoch_process,
+#     test_method = "vanilla",
+#     correct_hypothesis = "H0"
+# )
+# vanilla_data_H0 <- vanilla_results_H0$data
+# vanilla_parameters_string_H0 <- vanilla_results_H0$parameters_string
+# plot_simulation_data(vanilla_data_H0, vanilla_parameters_string_H0, threshold = 0.05)
 
-# Satterthwaite
+# # Satterthwaite
 
-satterthwaite_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
-    sigma2_measure = 1, stoch_process,
-    test_method = "satterthwaite"
-)
-satterthwaite_data <- satterthwaite_results$data
-satterthwaite_parameters_string <- satterthwaite_results$parameters_string
-plot_simulation_data(satterthwaite_data, satterthwaite_parameters_string)
+# satterthwaite_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
+#     sigma2_measure = 1, stoch_process,
+#     test_method = "satterthwaite"
+# )
+# satterthwaite_data <- satterthwaite_results$data
+# satterthwaite_parameters_string <- satterthwaite_results$parameters_string
+# plot_simulation_data(satterthwaite_data, satterthwaite_parameters_string)
 
-satterthwaite_results_H0 <- simulate_data(N,
-    base_values = c(1, 1), risk_threshold, sigma2_phylo,
-    sigma2_measure = 1, stoch_process,
-    test_method = "satterthwaite", correct_hypothesis = "H0"
-)
-satterthwaite_data_H0 <- satterthwaite_results_H0$data
-satterthwaite_parameters_string_H0 <- satterthwaite_results_H0$parameters_string
-plot_simulation_data(satterthwaite_data_H0, satterthwaite_parameters_string_H0, threshold = 0.05)
+# satterthwaite_results_H0 <- simulate_data(N,
+#     base_values = c(1, 1), risk_threshold, sigma2_phylo,
+#     sigma2_measure = 1, stoch_process,
+#     test_method = "satterthwaite", correct_hypothesis = "H0"
+# )
+# satterthwaite_data_H0 <- satterthwaite_results_H0$data
+# satterthwaite_parameters_string_H0 <- satterthwaite_results_H0$parameters_string
+# plot_simulation_data(satterthwaite_data_H0, satterthwaite_parameters_string_H0, threshold = 0.05)
 
-# Likelihood ratio
+# # Likelihood ratio
 
-lrt_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
-    sigma2_measure, stoch_process,
-    test_method = "lrt"
-)
-lrt_data <- lrt_results$data
-lrt_parameters_string <- lrt_results$parameters_string
-plot_simulation_data(lrt_data, lrt_parameters_string)
+# lrt_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
+#     sigma2_measure, stoch_process,
+#     test_method = "lrt"
+# )
+# lrt_data <- lrt_results$data
+# lrt_parameters_string <- lrt_results$parameters_string
+# plot_simulation_data(lrt_data, lrt_parameters_string)
 
 plot_comparison <- function(data, sim_parameters) {
+    # Retrieving simulation parameters
+    risk_threshold <- sim_parameters$risk_threshold
+
     #  Preparing plot data
     plot_data <- data %>%
         group_by(tested_method, anova_model, group_type, metric_type) %>%
@@ -347,25 +350,42 @@ plot_comparison <- function(data, sim_parameters) {
     #  Reversing the metric to really be typeI error (ie the prop of errors made)
     plot_data[plot_data$metric_type == "typeI", ] <- plot_data[plot_data$metric_type == "typeI", ] %>% mutate(metric = 1 - metric)
 
+    # Adding a threshold
+    plot_data <- plot_data %>% ungroup() %>% mutate(
+        hline_risk_threshold = case_when(
+            plot_data$metric_type == "power" ~ -0.1,
+            plot_data$metric_type == "typeI" ~ risk_threshold
+        )
+    )
+    #  To be out of bounds
+
     p <- ggplot(plot_data, aes(x = anova_model, y = metric, fill = group_type)) +
         geom_bar(stat = "identity", position = "dodge") +
         geom_text(aes(label = metric), vjust = -0.5, position = position_dodge(width = 0.9)) +
         scale_y_continuous(limits = c(0, 1.2)) +
-        # labs(
-        #     title = paste0("Metric vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters_string),
-        #     x = "Tested Method",
-        #     y = "Power"
-        # ) +
+        labs(
+            title = ,
+            x = "Anova",
+            y = "Metric"
+        ) +
         theme_minimal()
     p <- p + facet_grid(tested_method ~ metric_type)
+    p <- p + geom_hline(aes(yintercept = hline_risk_threshold))
 
     return(p)
 }
 
 # Comparing methods
-comparison_data <- compare_methods(N, base_values, risk_threshold, sigma2_phylo,
+comparison_data <- compare_methods(N, base_values = c(1,1.5), risk_threshold, sigma2_phylo,
     sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt"))
-plot_comparison(comparison_data)
+sim_parameters <- list(
+    base_values = base_values, 
+    risk_threshold = risk_threshold,
+    sigma2_phylo = sigma2_phylo, 
+    sigma2_measure = sigma2_measure,
+    stoch_process = stoch_process
+)
+plot_comparison(comparison_data, sim_parameters = sim_parameters)
 
 
 #  TODO Adapt to the current code
