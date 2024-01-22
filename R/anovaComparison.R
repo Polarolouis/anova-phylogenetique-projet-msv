@@ -223,6 +223,54 @@ simulate_data <- function(
     return(list(data = simulated_data, parameters_string = parameters_string))
 }
 
+compare_methods <- function(
+    N, base_values, risk_threshold, sigma2_phylo,
+    sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite"), correct_hypothesis = "H1") {
+    if (any(!(methods_to_test %in% c("vanilla","satterthwaite","lrt")))){
+        stop("Unknown method to test.")
+    }
+    #  Generating data for each method
+    ##  To compute power
+    full_power_data <-
+        do.call("rbind", lapply(methods_to_test, function(method) {
+            data <- simulate_data(
+                N = N,
+                base_values = base_values,
+                risk_threshold = risk_threshold,
+                sigma2_phylo = sigma2_phylo,
+                sigma2_measure = sigma2_measure,
+                test_method = method,
+                stoch_process = stoch_process,
+                correct_hypothesis = "H1"
+            )$data
+            #  Adding a column to identify the approximation method
+            data$tested_method <- method
+            data$metric_type <- "power"
+            data
+        }))
+    ##  To compute type I error
+    full_typeI_data <-
+        do.call("rbind", lapply(methods_to_test, function(method) {
+            data <- simulate_data(
+                N = N,
+                base_values = base_values,
+                risk_threshold = risk_threshold,
+                sigma2_phylo = sigma2_phylo,
+                sigma2_measure = sigma2_measure,
+                test_method = method,
+                stoch_process = stoch_process,
+                correct_hypothesis = "H0"
+            )$data
+            #  Adding a column to identify the approximation method
+            data$tested_method <- method
+            data$metric_type <- "typeI"
+            data
+        }))
+    
+    data <- rbind(full_power_data, full_typeI_data)
+    return(data)    
+}
+
 plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
     plot_data <- data %>%
         group_by(anova_model, group_type) %>%
@@ -291,6 +339,36 @@ lrt_data <- lrt_results$data
 lrt_parameters_string <- lrt_results$parameters_string
 plot_simulation_data(lrt_data, lrt_parameters_string)
 
+plot_comparison <- function(data, sim_parameters) {
+    #  Preparing plot data
+    plot_data <- data %>%
+        group_by(tested_method, anova_model, group_type, metric_type) %>%
+        summarize(metric = mean(correctly_selected))
+    #  Reversing the metric to really be typeI error (ie the prop of errors made)
+    plot_data[plot_data$metric_type == "typeI", ] <- plot_data[plot_data$metric_type == "typeI", ] %>% mutate(metric = 1 - metric)
+
+    p <- ggplot(plot_data, aes(x = anova_model, y = metric, fill = group_type)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        geom_text(aes(label = metric), vjust = -0.5, position = position_dodge(width = 0.9)) +
+        scale_y_continuous(limits = c(0, 1.2)) +
+        # labs(
+        #     title = paste0("Metric vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters_string),
+        #     x = "Tested Method",
+        #     y = "Power"
+        # ) +
+        theme_minimal()
+    p <- p + facet_grid(tested_method ~ metric_type)
+
+    return(p)
+}
+
+# Comparing methods
+comparison_data <- compare_methods(N, base_values, risk_threshold, sigma2_phylo,
+    sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt"))
+plot_comparison(comparison_data)
+
+
+#  TODO Adapt to the current code
 # ## Standardized parameters
 # total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
 # heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
