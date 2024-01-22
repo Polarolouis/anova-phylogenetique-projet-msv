@@ -1,3 +1,4 @@
+
 # Phylocomparison tools
 library(phylolm)
 library(phylotools)
@@ -108,31 +109,26 @@ phyloanova_anova_pvalues <- function(
 
         if (test_method == "satterthwaite") {
             # For satterthwaite ddf computation
-            phyloanova_res$REML <- FALSE
-            df2 <- phylolimma:::ddf_satterthwaite(phyloanova_res, tree)
+            df2 <- ddf_satterthwaite_sum(phyloanova_res, tree)$ddf
         }
 
         phyloanova_p_value <- pvalue_F_test(phyloanova_F_stat, df1 = df1, df2 = df2)
     }
 
-    if (test_method == "likelihood_ratio") {
+    if (test_method == "lrt") {
         # TODO Change method name to be less deceptive
-        # How to obtain the loglikehood under H0 ?
-        # DONE Find the correct way to do this
-        # I assume that under H0 this is like saying everyone is from the same group
+
         h0_phyloanova <- phylolm(traits ~ 1,
             phy = tree,
             model = model,
             measurement_error = measurement_error # To let phylolm know if there's measurement error
         )
-        # But this gives a LAPACK error, the system is not inversible.
-
-        lambda_ratio_stat <- -2*(h0_phyloanova$logLik - phyloanova_res$logLik)
+        lambda_ratio_stat <- -2 * (h0_phyloanova$logLik - phyloanova_res$logLik)
 
 
         # Computes the pvalue from the statistic
         # df1 = K - 1
-        phyloanova_p_value <- 1 - pchisq(lambda_ratio_stat, K-1)
+        phyloanova_p_value <- 1 - pchisq(lambda_ratio_stat, K - 1)
     }
 
     list(
@@ -179,13 +175,13 @@ simulate_matching_and_random <- function(
     if (correct_hypothesis == "H1") {
         correctly_selected <- pvalues < risk_threshold
     }
-    if (correct_hypothesis == "H0"){
+    if (correct_hypothesis == "H0") {
         correctly_selected <- pvalues >= risk_threshold
     }
     return(
         data.frame(
             sim_id = rep(id, 4),
-            test_method = rep(c("phylo-anova", "anova"), 2),
+            anova_model = rep(c("phylo-anova", "anova"), 2),
             group_type = rep(c("matching", "random"), each = 2),
             pvalues = pvalues,
             correctly_selected = correctly_selected
@@ -202,7 +198,9 @@ sigma2_phylo <- 1
 sigma2_measure <- 0
 stoch_process <- "BM"
 test_method <- "satterthwaite" # "vanilla" # "satterthwaite", "likelihood_ratio"
-simulate_data <- function(N, base_values, risk_threshold, sigma2_phylo, sigma2_measure, stoch_process, test_method, correct_hypothesis = "H1") {
+simulate_data <- function(
+    N, base_values, risk_threshold, sigma2_phylo,
+    sigma2_measure, stoch_process, test_method, correct_hypothesis = "H1") {
     simulated_data <- do.call("rbind", lapply(1:N, function(id) {
         simulate_matching_and_random(
             id = id, base_values = base_values,
@@ -214,27 +212,27 @@ simulate_data <- function(N, base_values, risk_threshold, sigma2_phylo, sigma2_m
         )
     }))
 
-    parameters <- paste0(
+    parameters_string <- paste0(
         " sigma2_measure = ", sigma2_measure,
         "; sigma2_phylo = ", sigma2_phylo,
         ";\nbase values = (", paste(c(base_values), collapse = ";"), ")",
         "; test method : ", test_method,
-        "; correct hypothesis :", correct_hypothesis
+        "; correct hypothesis : ", correct_hypothesis
     )
 
-    return(list(data = simulated_data, parameters = parameters))
+    return(list(data = simulated_data, parameters_string = parameters_string))
 }
 
-plot_data <- function(data, parameters, threshold = 0.95) {
+plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
     plot_data <- data %>%
-        group_by(test_method, group_type) %>%
+        group_by(anova_model, group_type) %>%
         summarize(power = mean(correctly_selected))
 
-    p <- ggplot(plot_data, aes(x = test_method, y = power, fill = group_type)) +
+    p <- ggplot(plot_data, aes(x = anova_model, y = power, fill = group_type)) +
         geom_bar(stat = "identity", position = "dodge") +
         scale_y_continuous(limits = c(0, 1)) +
         labs(
-            title = paste0("Power vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters),
+            title = paste0("Power vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters_string),
             x = "Tested Method",
             y = "Power"
         ) +
@@ -251,17 +249,18 @@ vanilla_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
     test_method = "vanilla"
 )
 vanilla_data <- vanilla_results$data
-vanilla_parameters <- vanilla_results$parameters
-plot_data(vanilla_data, vanilla_parameters)
+vanilla_parameters_string <- vanilla_results$parameters_string
+plot_simulation_data(vanilla_data, vanilla_parameters_string)
 
-vanilla_results_H0 <- simulate_data(N, base_values = c(1,1), risk_threshold, sigma2_phylo,
+vanilla_results_H0 <- simulate_data(N,
+    base_values = c(1, 1), risk_threshold, sigma2_phylo,
     sigma2_measure, stoch_process,
     test_method = "vanilla",
     correct_hypothesis = "H0"
 )
 vanilla_data_H0 <- vanilla_results_H0$data
-vanilla_parameters_H0 <- vanilla_results_H0$parameters
-plot_data(vanilla_data_H0, vanilla_parameters_H0, threshold = 0.05)
+vanilla_parameters_string_H0 <- vanilla_results_H0$parameters_string
+plot_simulation_data(vanilla_data_H0, vanilla_parameters_string_H0, threshold = 0.05)
 
 # Satterthwaite
 
@@ -270,28 +269,28 @@ satterthwaite_results <- simulate_data(N, base_values, risk_threshold, sigma2_ph
     test_method = "satterthwaite"
 )
 satterthwaite_data <- satterthwaite_results$data
-satterthwaite_parameters <- satterthwaite_results$parameters
-plot_data(satterthwaite_data, satterthwaite_parameters)
+satterthwaite_parameters_string <- satterthwaite_results$parameters_string
+plot_simulation_data(satterthwaite_data, satterthwaite_parameters_string)
 
-satterthwaite_results_H0 <- simulate_data(N, base_values = c(1,1), risk_threshold, sigma2_phylo,
+satterthwaite_results_H0 <- simulate_data(N,
+    base_values = c(1, 1), risk_threshold, sigma2_phylo,
     sigma2_measure = 1, stoch_process,
     test_method = "satterthwaite", correct_hypothesis = "H0"
 )
 satterthwaite_data_H0 <- satterthwaite_results_H0$data
-satterthwaite_parameters_H0 <- satterthwaite_results_H0$parameters
-plot_data(satterthwaite_data_H0, satterthwaite_parameters_H0, threshold = 0.05)
+satterthwaite_parameters_string_H0 <- satterthwaite_results_H0$parameters_string
+plot_simulation_data(satterthwaite_data_H0, satterthwaite_parameters_string_H0, threshold = 0.05)
 
 # Likelihood ratio
 
-lik_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
+lrt_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
     sigma2_measure, stoch_process,
-    test_method = "likelihood_ratio"
+    test_method = "lrt"
 )
-lik_data <- lik_results$data
-lik_parameters <- lik_results$parameters
-plot_data(lik_data, lik_parameters)
+lrt_data <- lrt_results$data
+lrt_parameters_string <- lrt_results$parameters_string
+plot_simulation_data(lrt_data, lrt_parameters_string)
 
-# TODO Adapt to the current code
 # ## Standardized parameters
 # total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
 # heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
