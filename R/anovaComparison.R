@@ -290,3 +290,19 @@ lik_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
 lik_data <- lik_results$data
 lik_parameters <- lik_results$parameters
 plot_data(lik_data, lik_parameters)
+
+# TODO Adapt to the current code
+# ## Standardized parameters
+# total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
+# heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+# snr <- 1 # signal to noise ratio snr = size_effect / total_variance
+
+# ## Try several parameter values
+# for (her in heri) {
+#   res_sim <- plot_different_sigmas(sigma2_measure_err = (1 - her) * total_variance,
+#                                    sigma2_intra_species = her * total_variance,
+#                                    mu_vect_different = c(0, snr * total_variance, -snr * total_variance))
+#   res_sim_plot <- res_sim$plot
+#   res_sim_plot
+#   ggsave(paste0("img/simulation_power_BM_her_", her, ".png"), plot = res_sim_plot)
+# }
