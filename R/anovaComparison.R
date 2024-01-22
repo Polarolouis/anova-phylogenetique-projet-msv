@@ -1,4 +1,3 @@
-
 # Phylocomparison tools
 library(phylolm)
 library(phylotools)
@@ -226,7 +225,7 @@ simulate_data <- function(
 compare_methods <- function(
     N, base_values, risk_threshold, sigma2_phylo,
     sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite"), correct_hypothesis = "H1") {
-    if (any(!(methods_to_test %in% c("vanilla","satterthwaite","lrt")))){
+    if (any(!(methods_to_test %in% c("vanilla", "satterthwaite", "lrt")))) {
         stop("Unknown method to test.")
     }
     #  Generating data for each method
@@ -266,9 +265,21 @@ compare_methods <- function(
             data$metric_type <- "typeI"
             data
         }))
-    
+
     data <- rbind(full_power_data, full_typeI_data)
-    return(data)    
+    return(
+        list(
+            data = data,
+            sim_parameters = list(
+                N = N,
+                base_values = base_values,
+                risk_threshold = risk_threshold,
+                sigma2_phylo = sigma2_phylo,
+                sigma2_measure = sigma2_measure,
+                stoch_process = stoch_process
+            )
+        )
+    )
 }
 
 plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
@@ -340,8 +351,20 @@ plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
 # plot_simulation_data(lrt_data, lrt_parameters_string)
 
 plot_comparison <- function(data, sim_parameters) {
-    # Retrieving simulation parameters
+    #  Retrieving simulation parameters
     risk_threshold <- sim_parameters$risk_threshold
+    N <- sim_parameters$N
+    sigma2_measure <- sim_parameters$sigma2_measure
+    sigma2_phylo <- sim_parameters$sigma2_phylo
+    base_values <- sim_parameters$base_values
+    stoch_process <- sim_parameters$stoch_process
+
+    plot_title <- paste0(
+        "N = ", N, ";", " sigma2_measure = ", sigma2_measure,
+        "; sigma2_phylo = ", sigma2_phylo,
+        ";\nbase values = (", paste(c(base_values), collapse = ","), ");",
+        "\nStoch process : ", stoch_process
+    )
 
     #  Preparing plot data
     plot_data <- data %>%
@@ -351,21 +374,23 @@ plot_comparison <- function(data, sim_parameters) {
     plot_data[plot_data$metric_type == "typeI", ] <- plot_data[plot_data$metric_type == "typeI", ] %>% mutate(metric = 1 - metric)
 
     # Adding a threshold
-    plot_data <- plot_data %>% ungroup() %>% mutate(
-        hline_risk_threshold = case_when(
-            plot_data$metric_type == "power" ~ -0.1,
-            plot_data$metric_type == "typeI" ~ risk_threshold
+    plot_data <- plot_data %>%
+        ungroup() %>%
+        mutate(
+            hline_risk_threshold = case_when(
+                plot_data$metric_type == "power" ~ -0.1,
+                plot_data$metric_type == "typeI" ~ risk_threshold
+            )
         )
-    )
     #  To be out of bounds
 
     p <- ggplot(plot_data, aes(x = anova_model, y = metric, fill = group_type)) +
         geom_bar(stat = "identity", position = "dodge") +
-        geom_text(aes(label = metric), vjust = -0.5, position = position_dodge(width = 0.9)) +
+        geom_text(aes(label = round(metric, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9)) +
         scale_y_continuous(limits = c(0, 1.2)) +
         labs(
-            title = ,
-            x = "Anova",
+            title = plot_title,
+            x = "Anova Method",
             y = "Metric"
         ) +
         theme_minimal()
@@ -375,31 +400,31 @@ plot_comparison <- function(data, sim_parameters) {
     return(p)
 }
 
-# Comparing methods
-comparison_data <- compare_methods(N, base_values = c(1,1.5), risk_threshold, sigma2_phylo,
-    sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt"))
-sim_parameters <- list(
-    base_values = base_values, 
-    risk_threshold = risk_threshold,
-    sigma2_phylo = sigma2_phylo, 
-    sigma2_measure = sigma2_measure,
-    stoch_process = stoch_process
-)
-plot_comparison(comparison_data, sim_parameters = sim_parameters)
+#  Comparing methods
+# comparison <- compare_methods(N,
+#     base_values = c(1, 2), risk_threshold, sigma2_phylo = 0,
+#     sigma2_measure = 0.5, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt")
+# )
+# comparison_data <- comparison$data
+
+# plot_comparison(comparison_data, sim_parameters = comparison$sim_parameters)
 
 
 #  TODO Adapt to the current code
-# ## Standardized parameters
-# total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
-# heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
-# snr <- 1 # signal to noise ratio snr = size_effect / total_variance
+## Standardized parameters
+total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
+heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
-# ## Try several parameter values
-# for (her in heri) {
-#   res_sim <- plot_different_sigmas(sigma2_measure_err = (1 - her) * total_variance,
-#                                    sigma2_intra_species = her * total_variance,
-#                                    mu_vect_different = c(0, snr * total_variance, -snr * total_variance))
-#   res_sim_plot <- res_sim$plot
-#   res_sim_plot
-#   ggsave(paste0("img/simulation_power_BM_her_", her, ".png"), plot = res_sim_plot)
-# }
+## Try several parameter values
+ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
+for (her in heri) {
+    sim <- compare_methods(N,
+        base_values = c(0, snr * total_variance), risk_threshold, sigma2_phylo = her * total_variance,
+        sigma2_measure = (1 - her) * total_variance, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt")
+    )
+
+    res_sim_plot <- plot_comparison(sim$data, sim$sim_parameters)
+    res_sim_plot
+    ggsave(paste0("img/simulation_BM_her_", her, ".png"), plot = res_sim_plot)
+}
