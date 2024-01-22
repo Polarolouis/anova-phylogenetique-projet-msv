@@ -71,3 +71,72 @@ compute_F_statistic <- function(r_squared, df1, df2) {
 pvalue_F_test <- function(F_stat, df1, df2) {
     return(unname(1 - pf(F_stat, df1, df2)))
 }
+
+#' This code computes the satterthwaite approximation to obtain degrees of
+#' freedom for a given tree
+ddf_satterthwaite_sum <- function(fit_phylolm, phylo, REML = FALSE) {
+    X <- fit_phylolm$X
+    y <- as.matrix(fit_phylolm$y)
+    rownames(y) <- names(fit_phylolm$y)
+    yhat <- as.matrix(fit_phylolm$fitted.values)
+    rownames(yhat) <- names(fit_phylolm$fitted.values)
+    n <- length(phylo$tip.label)
+    d <- ncol(X)
+
+    ## Likelihood function
+    minusLogLik <- function(pars, y, yhat, X, phy, model) {
+        n <- nrow(X)
+        d <- ncol(X)
+        parameters <- list(sigma2 = exp(pars[1]), sigma2_error = exp(pars[2] - pars[1]))
+        phytrans <- transf.branch.lengths(phy, model, parameters = parameters)$tree
+        comp <- three.point.compute(phytrans, P = y - yhat, Q = X)
+
+        if (!REML) {
+            n2llh <- as.numeric(n * log(2 * pi) + n * log(parameters$sigma2) + comp$logd + comp$PP / parameters$sigma2) # -2 log-likelihood
+        } else {
+            # log|X'V^{-1}X|
+            ldXX <- determinant(comp$QQ, logarithm = TRUE)$modulus
+            n2llh <- as.numeric((n - d) * log(2 * pi) + (n - d) * log(parameters$sigma2) + comp$logd + comp$PP / parameters$sigma2 + ldXX) # -2 log-likelihood
+        }
+
+        return(n2llh / 2)
+    }
+
+    # Using the log scale so that parameters are on the entire real line
+    optpars <- c(log(fit_phylolm$sigma2), log(fit_phylolm$sigma2_error))
+
+    # all.equal(minusLogLik(optpars, y, yhat, X, phylo, "BM"),
+    #           -fit_phylolm$logLik)
+
+    ## Hessian: numerical computation
+    fun <- function(x) {
+        return(minusLogLik(x, y, yhat, X, phylo, "BM"))
+    }
+    J <- diag(c(1 / fit_phylolm$sigma2, 1 / fit_phylolm$sigma2_error))
+    A <- compute_hessian(optpars = optpars, fun = fun, grad_trans = J)
+
+    ## Gradient of f
+    K <- vcv(phylo)
+    Kd <- diag(diag(K))
+    V <- fit_phylolm$sigma2 * K + fit_phylolm$sigma2_error * Kd
+    Vinv <- chol2inv(chol(V))
+    ell <- c(0, 1)
+
+    C <- fit_phylolm$vcov
+    if (!REML) C <- C * (n - d) / n
+    # Cbis <- solve(t(X) %*% Vinv %*% X)
+    # all.equal(C, Cbis)
+
+    facmat <- C %*% t(X) %*% Vinv
+    derfsigma2 <- t(ell) %*% facmat %*% K %*% t(facmat) %*% ell
+    derfsigma2_error <- t(ell) %*% facmat %*% Kd %*% t(facmat) %*% ell
+    derf <- c(derfsigma2, derfsigma2_error)
+
+    ## Variance estimation
+    varestim <- t(derf) %*% A %*% derf
+
+    ## Satterthwaite
+    ddf <- 2 * (t(ell) %*% C %*% ell)^2 / varestim
+
+    return(list(ddf = ddf, vcov = A))
+}
