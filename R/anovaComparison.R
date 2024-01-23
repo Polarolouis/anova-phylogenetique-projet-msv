@@ -108,7 +108,8 @@ phyloanova_anova_pvalues <- function(
 
         if (test_method == "satterthwaite") {
             # For satterthwaite ddf computation
-            df2 <- ddf_satterthwaite_sum(phyloanova_res, tree)$ddf
+            df2 <- ddf_satterthwaite_sum(phyloanova_res, tree, REML = TRUE)$ddf
+            print(paste0("Satterthwaite ddf :", df2))
         }
 
         phyloanova_p_value <- pvalue_F_test(phyloanova_F_stat, df1 = df1, df2 = df2)
@@ -132,7 +133,9 @@ phyloanova_anova_pvalues <- function(
 
     list(
         phyloanova_p_value = phyloanova_p_value,
-        anova_p_value = anova_p_value
+        anova_p_value = anova_p_value,
+        anova_df2 = nb_species - K,
+        phylo_df2 = df2
     )
 }
 
@@ -152,12 +155,14 @@ simulate_matching_and_random <- function(
         sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
         stoch_process = stoch_process
     )
-
-    matching_pvalues <- phyloanova_anova_pvalues(
+    matching_pval_df <- phyloanova_anova_pvalues(
         traits = matching_phylo_traits,
         groups = phylo_matching_groups, tree, stoch_process = stoch_process,
         test_method = test_method, measurement_error = TRUE
     )
+    matching_pvalues <- matching_pval_df[c(1, 2)]
+    
+    matching_df2 <- matching_pval_df[c(3, 4)]
 
     random_groups_traits <- compute_trait_values(
         groups = random_groups,
@@ -166,12 +171,14 @@ simulate_matching_and_random <- function(
         stoch_process = stoch_process
     )
 
-    random_groups_pvalues <- phyloanova_anova_pvalues(
+    random_groups_pval_df2 <- phyloanova_anova_pvalues(
         traits = random_groups_traits,
         groups = random_groups, tree, stoch_process = stoch_process,
         test_method = test_method, measurement_error = TRUE
     )
+    random_groups_pvalues <- random_groups_pval_df2[c(1,2)]
 
+    random_groups_df2 <- random_groups_pval_df2[c(3,4)]
     # Concatenate pvalues
     pvalues <- c(unlist(matching_pvalues), unlist(random_groups_pvalues))
 
@@ -187,7 +194,8 @@ simulate_matching_and_random <- function(
             anova_model = rep(c("phylo-anova", "anova"), 2),
             group_type = rep(c("matching", "random"), each = 2),
             pvalues = pvalues,
-            correctly_selected = correctly_selected
+            correctly_selected = correctly_selected,
+            df2 = unlist(c(matching_df2, random_groups_df2))
         )
     )
 }
@@ -233,6 +241,8 @@ compare_methods <- function(
         stop("Unknown method to test.")
     }
     #  Generating data for each method
+    # TODO Séparer les deux fonctions de simulation et d'inférence 
+    # TODO Utiliser les mêmes données pour les méthodes
     ##  To compute power
     full_power_data <-
         do.call("rbind", lapply(methods_to_test, function(method) {
@@ -417,7 +427,7 @@ plot_comparison <- function(data, sim_parameters) {
 #  TODO Adapt to the current code
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
-heri <- c(0.0, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+heri <- c(0.0, 0.25, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
 ## Try several parameter values
@@ -432,3 +442,5 @@ for (her in heri) {
     res_sim_plot
     ggsave(paste0("img/simulation_BM_her_", her, ".png"), plot = res_sim_plot)
 }
+
+
