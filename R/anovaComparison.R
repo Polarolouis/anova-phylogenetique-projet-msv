@@ -138,6 +138,90 @@ phyloanova_anova_pvalues <- function(
         phylo_df2 = df2
     )
 }
+# TODO Séparer les deux fonctions de simulation et d'inférence
+#' Infere an ANOVA and a phyloanova
+#'
+#' @param y the vector of traits for which to fit the models
+#' @param groups the groups to which fit the models
+#' @param tree the phylo tree to use
+#' @param stoch_process the stochastic process to use for the phylolm
+#'
+infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
+    #  The fits
+    fit_anova <- lm(y ~ groups)
+    fit_phylolm <- phylolm(y ~ groups, phy = tree, model = stoch_process)
+    return(list(anova = fit_anova, phyloanova = fit_phylolm))
+}
+
+#' Return pvalues for the anova and the phyloanova
+#'
+#' @param fit_anova
+#' @param fit_phylolm
+pvalues_from_fits <- function(
+    fit_anova,
+    fit_phylolm, tree,
+    tested_method = c("vanilla", "satterthwaite", "lrt")) {
+    #  For sanity test
+    match.arg(tested_method)
+
+    invalid_value <- function(value) {
+        return(is.nan(value) ||
+            is.null(value) ||
+            is.infinite(value) ||
+            value == 0)
+    }
+
+    #  The default value for the df2
+    df1 <- K - 1
+    df2 <- nb_species - K
+
+    anova_F_stat <- summary(fit_anova)$fstatistic[1]
+    anova_df1 <- summary(fit_anova)$fstatistic[2]
+    anova_df2 <- summary(fit_anova)$fstatistic[3]
+    pvalue_anova <- pvalue_F_test(anova_F_stat,
+        df1 = anova_df1, df2 = anova_df2
+    )
+
+    switch(tested_method,
+        "vanilla" = {
+            pvalue_phylolm <- compute_F_statistic(
+                r_squared = fit_phylolm$r.squared,
+                df1 = df1,
+                df2 = df2
+            )
+        },
+        "satterthwaite" = {
+            df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)
+            pvalue_phylolm <- compute_F_statistic(
+                r_squared = fit_phylolm$r.squared,
+                df1 = df1,
+                df2 = df2
+            )
+        },
+        "lrt" = {
+            h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
+                phy = phy,
+                model = fit_phylolm$model,
+                measurement_error = invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
+            )
+            lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
+
+
+            # Computes the pvalue from the statistic
+            # df1 = K - 1
+            pvalue_phylolm <- 1 - pchisq(lambda_ratio_stat, df1)
+        }
+    )
+    return(data.frame(
+        tested_method = tested_method,
+        pvalue_anova = pvalue_anova,
+        pvalue_phylolm = pvalue_phylolm,
+        anova_df1 = anova_df1,
+        anova_df2 = anova_df2,
+        phylolm_df1 = df1,
+        phylolm_df2 = df2
+    ))
+}
 
 simulate_matching_and_random <- function(
     id, base_values,
@@ -161,7 +245,7 @@ simulate_matching_and_random <- function(
         test_method = test_method, measurement_error = TRUE
     )
     matching_pvalues <- matching_pval_df[c(1, 2)]
-    
+
     matching_df2 <- matching_pval_df[c(3, 4)]
 
     random_groups_traits <- compute_trait_values(
@@ -176,9 +260,9 @@ simulate_matching_and_random <- function(
         groups = random_groups, tree, stoch_process = stoch_process,
         test_method = test_method, measurement_error = TRUE
     )
-    random_groups_pvalues <- random_groups_pval_df2[c(1,2)]
+    random_groups_pvalues <- random_groups_pval_df2[c(1, 2)]
 
-    random_groups_df2 <- random_groups_pval_df2[c(3,4)]
+    random_groups_df2 <- random_groups_pval_df2[c(3, 4)]
     # Concatenate pvalues
     pvalues <- c(unlist(matching_pvalues), unlist(random_groups_pvalues))
 
@@ -241,7 +325,6 @@ compare_methods <- function(
         stop("Unknown method to test.")
     }
     #  Generating data for each method
-    # TODO Séparer les deux fonctions de simulation et d'inférence 
     # TODO Utiliser les mêmes données pour les méthodes
     ##  To compute power
     full_power_data <-
@@ -316,54 +399,6 @@ plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
     return(p)
 }
 
-# # Vanilla
-# vanilla_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
-#     sigma2_measure, stoch_process,
-#     test_method = "vanilla"
-# )
-# vanilla_data <- vanilla_results$data
-# vanilla_parameters_string <- vanilla_results$parameters_string
-# plot_simulation_data(vanilla_data, vanilla_parameters_string)
-
-# vanilla_results_H0 <- simulate_data(N,
-#     base_values = c(1, 1), risk_threshold, sigma2_phylo,
-#     sigma2_measure, stoch_process,
-#     test_method = "vanilla",
-#     correct_hypothesis = "H0"
-# )
-# vanilla_data_H0 <- vanilla_results_H0$data
-# vanilla_parameters_string_H0 <- vanilla_results_H0$parameters_string
-# plot_simulation_data(vanilla_data_H0, vanilla_parameters_string_H0, threshold = 0.05)
-
-# # Satterthwaite
-
-# satterthwaite_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
-#     sigma2_measure = 1, stoch_process,
-#     test_method = "satterthwaite"
-# )
-# satterthwaite_data <- satterthwaite_results$data
-# satterthwaite_parameters_string <- satterthwaite_results$parameters_string
-# plot_simulation_data(satterthwaite_data, satterthwaite_parameters_string)
-
-# satterthwaite_results_H0 <- simulate_data(N,
-#     base_values = c(1, 1), risk_threshold, sigma2_phylo,
-#     sigma2_measure = 1, stoch_process,
-#     test_method = "satterthwaite", correct_hypothesis = "H0"
-# )
-# satterthwaite_data_H0 <- satterthwaite_results_H0$data
-# satterthwaite_parameters_string_H0 <- satterthwaite_results_H0$parameters_string
-# plot_simulation_data(satterthwaite_data_H0, satterthwaite_parameters_string_H0, threshold = 0.05)
-
-# # Likelihood ratio
-
-# lrt_results <- simulate_data(N, base_values, risk_threshold, sigma2_phylo,
-#     sigma2_measure, stoch_process,
-#     test_method = "lrt"
-# )
-# lrt_data <- lrt_results$data
-# lrt_parameters_string <- lrt_results$parameters_string
-# plot_simulation_data(lrt_data, lrt_parameters_string)
-
 plot_comparison <- function(data, sim_parameters) {
     #  Retrieving simulation parameters
     risk_threshold <- sim_parameters$risk_threshold
@@ -424,7 +459,6 @@ plot_comparison <- function(data, sim_parameters) {
 # plot_comparison(comparison_data, sim_parameters = comparison$sim_parameters)
 
 
-#  TODO Adapt to the current code
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
 heri <- c(0.0, 0.25, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
@@ -442,5 +476,3 @@ for (her in heri) {
     res_sim_plot
     ggsave(paste0("img/simulation_BM_her_", her, ".png"), plot = res_sim_plot)
 }
-
-
