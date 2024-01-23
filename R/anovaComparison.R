@@ -156,7 +156,7 @@ simulate_matching_and_random <- function(
     matching_pvalues <- phyloanova_anova_pvalues(
         traits = matching_phylo_traits,
         groups = phylo_matching_groups, tree, stoch_process = stoch_process,
-        test_method = test_method, measurement_error = (sigma2_measure != 0)
+        test_method = test_method, measurement_error = TRUE
     )
 
     random_groups_traits <- compute_trait_values(
