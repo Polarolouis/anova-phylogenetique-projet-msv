@@ -142,6 +142,10 @@ simulate_matching_and_random <- function(
     stoch_process, test_method,
     risk_threshold = 0.05,
     correct_hypothesis = "H1") {
+    # To be in the right configuration for typeI error
+    if (correct_hypothesis == "H0") {
+        base_values <- rep(0, length(base_values))
+    }
     matching_phylo_traits <- compute_trait_values(
         groups = phylo_matching_groups,
         base_values = base_values, tree,
@@ -165,7 +169,7 @@ simulate_matching_and_random <- function(
     random_groups_pvalues <- phyloanova_anova_pvalues(
         traits = random_groups_traits,
         groups = random_groups, tree, stoch_process = stoch_process,
-        test_method = test_method, measurement_error = (sigma2_measure != 0)
+        test_method = test_method, measurement_error = TRUE
     )
 
     # Concatenate pvalues
@@ -207,7 +211,7 @@ simulate_data <- function(
             stoch_process = stoch_process,
             test_method = test_method,
             risk_threshold = risk_threshold,
-            correct_hypothesis = "H1"
+            correct_hypothesis = correct_hypothesis
         )
     }))
 
