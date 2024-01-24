@@ -255,7 +255,8 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
 #' "satterthwaite", "lrt"
 pvalues_from_fits <- function(
     fit_anova,
-    fit_phylolm, tree,
+    fit_phylolm, 
+    tree,
     tested_method = c("vanilla", "satterthwaite", "lrt"),
     REML = FALSE) {
     #  For sanity test
@@ -299,7 +300,7 @@ pvalues_from_fits <- function(
         },
         "lrt" = {
             h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
-                phy = phy,
+                phy = tree,
                 model = fit_phylolm$model,
                 measurement_error = invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
             )
