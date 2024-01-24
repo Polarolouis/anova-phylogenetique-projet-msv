@@ -26,36 +26,6 @@ get_phylo_group <- function(tip, tree, ancestors = c(102, 104)) {
     ))
 }
 
-#' Compute trait values for the given groups
-#'
-#' @description
-#' For each value of group, the base value is matched in the order of
-#' the vector (1st value for 1st group and etc).
-#' Then the phylogenetic trait corresponding from the tree is computed.
-#' And finally the error (gaussian centered) is computed.
-#' The sum is returned
-compute_trait_values <- function(
-    groups,
-    base_values,
-    tree,
-    sigma2_phylo,
-    sigma2_measure,
-    stoch_process = "BM") {
-    # Here we compute the base values for each of the species
-    trait <- rowSums(sapply(seq_along(base_values), function(i) base_values[i] * (groups == i)))
-
-    # The phylogenetic induced value
-    trait_phylo <- rTrait(1, tree,
-        stoch_process,
-        parameters = list(sigma2 = sigma2_phylo)
-    )
-
-    # The measure error
-    trait_error <- rnorm(length(groups), mean = 0, sd = sqrt(sigma2_measure))
-
-    return(trait + trait_phylo + trait_error)
-}
-
 #' Computes the F_statistic from the r_squared
 #'
 #' @description
@@ -230,4 +200,122 @@ compute_hessian <- function(optpars, fun, grad_trans, tol = 1e-8, ...) {
             t(vectors[, pos, drop = FALSE])
     })
     return(h_inv)
+}
+
+#' Compute trait values for the given groups
+#'
+#' @description
+#' For each value of group, the base value is matched in the order of
+#' the vector (1st value for 1st group and etc).
+#' Then the phylogenetic trait corresponding from the tree is computed.
+#' And finally the error (gaussian centered) is computed.
+#' The sum is returned
+compute_trait_values <- function(
+    groups,
+    base_values,
+    tree,
+    sigma2_phylo,
+    sigma2_measure,
+    stoch_process = "BM") {
+    # Here we compute the base values for each of the species
+    trait <- rowSums(sapply(seq_along(base_values), function(i) base_values[i] * (groups == i)))
+
+    # The phylogenetic induced value
+    trait_phylo <- rTrait(1, tree,
+        stoch_process,
+        parameters = list(sigma2 = sigma2_phylo)
+    )
+
+    # The measure error
+    trait_error <- rnorm(length(groups), mean = 0, sd = sqrt(sigma2_measure))
+
+    return(trait + trait_phylo + trait_error)
+}
+
+# TODO Séparer les deux fonctions de simulation et d'inférence
+#' Infere an ANOVA and a phyloanova
+#'
+#' @param y the vector of traits for which to fit the models
+#' @param groups the groups to which fit the models
+#' @param tree the phylo tree to use
+#' @param stoch_process the stochastic process to use for the phylolm
+#'
+infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
+    #  The fits
+    fit_anova <- lm(y ~ groups)
+    fit_phylolm <- phylolm(y ~ groups, phy = tree, model = stoch_process)
+    return(list(anova = fit_anova, phyloanova = fit_phylolm))
+}
+
+#' Return pvalues for the anova and the phyloanova
+#'
+#' @param fit_anova the lm fit
+#' @param fit_phylolm the phylolm fit
+#' @param tree the phylo tree
+#' @param tested_method the method to test should be one of : "vanilla",
+#' "satterthwaite", "lrt"
+pvalues_from_fits <- function(
+    fit_anova,
+    fit_phylolm, tree,
+    tested_method = c("vanilla", "satterthwaite", "lrt")) {
+    #  For sanity test
+    match.arg(tested_method)
+
+    invalid_value <- function(value) {
+        return(is.nan(value) ||
+            is.null(value) ||
+            is.infinite(value) ||
+            value == 0)
+    }
+
+    #  The default value for the df2
+    df1 <- K - 1
+    df2 <- nb_species - K
+
+    anova_F_stat <- summary(fit_anova)$fstatistic[1]
+    anova_df1 <- summary(fit_anova)$fstatistic[2]
+    anova_df2 <- summary(fit_anova)$fstatistic[3]
+    pvalue_anova <- pvalue_F_test(anova_F_stat,
+        df1 = anova_df1, df2 = anova_df2
+    )
+
+    switch(tested_method,
+        "vanilla" = {
+            pvalue_phylolm <- compute_F_statistic(
+                r_squared = fit_phylolm$r.squared,
+                df1 = df1,
+                df2 = df2
+            )
+        },
+        "satterthwaite" = {
+            df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)
+            pvalue_phylolm <- compute_F_statistic(
+                r_squared = fit_phylolm$r.squared,
+                df1 = df1,
+                df2 = df2
+            )
+        },
+        "lrt" = {
+            h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
+                phy = phy,
+                model = fit_phylolm$model,
+                measurement_error = invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
+            )
+            lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
+
+
+            # Computes the pvalue from the statistic
+            # df1 = K - 1
+            pvalue_phylolm <- 1 - pchisq(lambda_ratio_stat, df1)
+        }
+    )
+    return(data.frame(
+        tested_method = tested_method,
+        pvalue_anova = pvalue_anova,
+        pvalue_phylolm = pvalue_phylolm,
+        anova_df1 = anova_df1,
+        anova_df2 = anova_df2,
+        phylolm_df1 = df1,
+        phylolm_df2 = df2
+    ))
 }
