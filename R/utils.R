@@ -89,7 +89,6 @@ ddf_species <- function(fitlm, phylo) {
 #' This code computes the satterthwaite approximation to obtain degrees of
 #' freedom for a given tree
 ddf_satterthwaite_sum <- function(fit_phylolm, phylo, REML = FALSE) {
-    
     if (is.null(fit_phylolm$sigma2_error) || fit_phylolm$sigma2_error == 0) {
         #  In this case we return the classical df
         return(ddf_species(fit_phylolm, phylo))
@@ -243,7 +242,7 @@ compute_trait_values <- function(
 infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
     #  The fits
     fit_anova <- lm(y ~ groups)
-    fit_phylolm <- phylolm(y ~ groups, phy = tree, model = stoch_process)
+    fit_phylolm <- phylolm(y ~ groups, phy = tree, model = stoch_process, measurement_error = TRUE)
     return(list(anova = fit_anova, phyloanova = fit_phylolm))
 }
 
@@ -257,7 +256,8 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
 pvalues_from_fits <- function(
     fit_anova,
     fit_phylolm, tree,
-    tested_method = c("vanilla", "satterthwaite", "lrt")) {
+    tested_method = c("vanilla", "satterthwaite", "lrt"),
+    REML = FALSE) {
     #  For sanity test
     match.arg(tested_method)
 
@@ -281,19 +281,21 @@ pvalues_from_fits <- function(
 
     switch(tested_method,
         "vanilla" = {
-            pvalue_phylolm <- compute_F_statistic(
+            F_stat <- compute_F_statistic(
                 r_squared = fit_phylolm$r.squared,
                 df1 = df1,
                 df2 = df2
             )
+            pvalue_phylolm <- 1 - pf(F_stat, df1, df2)
         },
         "satterthwaite" = {
-            df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)
-            pvalue_phylolm <- compute_F_statistic(
+            df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)$ddf
+            F_stat <- compute_F_statistic(
                 r_squared = fit_phylolm$r.squared,
                 df1 = df1,
                 df2 = df2
             )
+            pvalue_phylolm <- 1 - pf(F_stat, df1, df2)
         },
         "lrt" = {
             h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
