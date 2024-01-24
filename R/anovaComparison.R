@@ -69,75 +69,6 @@ dev.off()
 taille_tree <- diag(vcv(tree))[1]
 tree$edge.length <- tree$edge.length / taille_tree
 
-#' Returns pvalues for both F test for anova and phylogenetic anova
-#'
-#' @description
-# TODO Describe
-phyloanova_anova_pvalues <- function(
-    traits, groups, tree, stoch_process,
-    test_method, measurement_error = TRUE) {
-    # For phylo matching
-    anova_res <- lm(traits ~ groups)
-
-    # TODO Handle the stoch process and model for phylolm (OU etc)
-    model <- stoch_process
-
-    phyloanova_res <- phylolm(traits ~ groups,
-        phy = tree,
-        model = model,
-        measurement_error = measurement_error # To let phylolm know if there's measurement error
-    )
-
-    anova_res <- lm(traits ~ groups)
-    anova_F_stat <- summary(anova_res)$fstatistic[1]
-    anova_df1 <- summary(anova_res)$fstatistic[2]
-    anova_df2 <- summary(anova_res)$fstatistic[3]
-    anova_p_value <- pvalue_F_test(anova_F_stat,
-        df1 = anova_df1, df2 = anova_df2
-    )
-
-    if (test_method %in% c("vanilla", "satterthwaite")) {
-        phyloanova_F_stat <- compute_F_statistic(
-            r_squared = phyloanova_res$r.squared,
-            df1 = K - 1,
-            df2 = nb_species - K
-        )
-
-        df1 <- K - 1
-        df2 <- nb_species - K
-
-        if (test_method == "satterthwaite") {
-            # For satterthwaite ddf computation
-            df2 <- ddf_satterthwaite_sum(phyloanova_res, tree, REML = TRUE)$ddf
-            print(paste0("Satterthwaite ddf :", df2))
-        }
-
-        phyloanova_p_value <- pvalue_F_test(phyloanova_F_stat, df1 = df1, df2 = df2)
-    }
-
-    if (test_method == "lrt") {
-        # TODO Change method name to be less deceptive
-
-        h0_phyloanova <- phylolm(traits ~ 1,
-            phy = tree,
-            model = model,
-            measurement_error = measurement_error # To let phylolm know if there's measurement error
-        )
-        lambda_ratio_stat <- -2 * (h0_phyloanova$logLik - phyloanova_res$logLik)
-
-
-        # Computes the pvalue from the statistic
-        # df1 = K - 1
-        phyloanova_p_value <- 1 - pchisq(lambda_ratio_stat, K - 1)
-    }
-
-    list(
-        phyloanova_p_value = phyloanova_p_value,
-        anova_p_value = anova_p_value,
-        anova_df2 = nb_species - K,
-        phylo_df2 = df2
-    )
-}
 
 
 simulate_matching_and_random <- function(
@@ -201,39 +132,7 @@ simulate_matching_and_random <- function(
     )
 }
 
-# Parameters for the simulations
-N <- 500
-base_values <- c(1, 3) # The base trait to add
-risk_threshold <- 0.05
 
-sigma2_phylo <- 1
-sigma2_measure <- 0
-stoch_process <- "BM"
-test_method <- "satterthwaite" # "vanilla" # "satterthwaite", "likelihood_ratio"
-simulate_data <- function(
-    N, base_values, risk_threshold, sigma2_phylo,
-    sigma2_measure, stoch_process, test_method, correct_hypothesis = "H1") {
-    simulated_data <- do.call("rbind", lapply(1:N, function(id) {
-        simulate_matching_and_random(
-            id = id, base_values = base_values,
-            sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
-            stoch_process = stoch_process,
-            test_method = test_method,
-            risk_threshold = risk_threshold,
-            correct_hypothesis = correct_hypothesis
-        )
-    }))
-
-    parameters_string <- paste0(
-        " sigma2_measure = ", sigma2_measure,
-        "; sigma2_phylo = ", sigma2_phylo,
-        ";\nbase values = (", paste(c(base_values), collapse = ";"), ")",
-        "; test method : ", test_method,
-        "; correct hypothesis : ", correct_hypothesis
-    )
-
-    return(list(data = simulated_data, parameters_string = parameters_string))
-}
 
 compare_methods <- function(
     N, base_values, risk_threshold, sigma2_phylo,
