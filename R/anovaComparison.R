@@ -30,7 +30,7 @@ K <- length(ancestors) # The number of groups
 
 # I assign the groups numbers
 ## Matching the phylogeny
-phylo_matching_groups <- sapply(1:nb_species, function(tip) {
+phylomatching_groups <- sapply(1:nb_species, function(tip) {
     get_phylo_group(tip,
         tree,
         ancestors = ancestors
@@ -58,7 +58,7 @@ plot_group_on_tree <- function(tree, groups) {
 
 # Saving trees
 png(file = "img/group_phylo_matching_tree.png")
-plot_group_on_tree(tree, group = phylo_matching_groups)
+plot_group_on_tree(tree, group = phylomatching_groups)
 dev.off()
 
 png(file = "img/group_random_tree.png")
@@ -69,70 +69,128 @@ dev.off()
 taille_tree <- diag(vcv(tree))[1]
 tree$edge.length <- tree$edge.length / taille_tree
 
+#' Simulates 2 sets of data, one matching phylo, one random and apply the
+#' 3 methods on it (vanilla, satterthwaite, lrt)
+simulate_all_methods <- function(
+    sim_id, correct_hypothesis = c("H0", "H1"), base_values,
+    sigma2_phylo,
+    sigma2_measure, risk_threshold = 0.05) {
+    # Be sure to ignore base_values if testing H0
+    if (correct_hypothesis == "H0") {
+        base_values <- rep(0, length(base_values))
+    }
 
-# TODO REMOVE
-# simulate_matching_and_random <- function(
-#     id, base_values,
-#     sigma2_phylo, sigma2_measure,
-#     stoch_process, test_method,
-#     risk_threshold = 0.05,
-#     correct_hypothesis = "H1") {
-#     # To be in the right configuration for typeI error
-#     if (correct_hypothesis == "H0") {
-#         base_values <- rep(0, length(base_values))
-#     }
-#     matching_phylo_traits <- compute_trait_values(
-#         groups = phylo_matching_groups,
-#         base_values = base_values, tree,
-#         sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
-#         stoch_process = stoch_process
-#     )
-#     matching_pval_df <- phyloanova_anova_pvalues(
-#         traits = matching_phylo_traits,
-#         groups = phylo_matching_groups, tree, stoch_process = stoch_process,
-#         test_method = test_method, measurement_error = TRUE
-#     )
-#     matching_pvalues <- matching_pval_df[c(1, 2)]
+    # Computing traits
+    phylomatching_y <- compute_trait_values(
+        groups = phylomatching_groups,
+        base_values = base_values,
+        tree = tree, sigma2_phylo = sigma2_phylo,
+        sigma2_measure = sigma2_measure
+    )
+    random_y <- compute_trait_values(
+        groups = random_groups,
+        base_values = base_values,
+        tree = tree, sigma2_phylo = sigma2_phylo,
+        sigma2_measure = sigma2_measure
+    )
 
-#     matching_df2 <- matching_pval_df[c(3, 4)]
+    # Fits
+    phylomatching_fits <- infere_anova_phyloanova(
+        y = phylomatching_y,
+        groups = phylomatching_groups, tree = tree
+    )
+    random_fits <- infere_anova_phyloanova(
+        y = random_y,
+        groups = random_groups, tree = tree
+    )
 
-#     random_groups_traits <- compute_trait_values(
-#         groups = random_groups,
-#         base_values = base_values, tree,
-#         sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
-#         stoch_process = stoch_process
-#     )
+    #  pvalues
+    phylomatching_all_methods_df <- do.call("rbind", lapply(c("vanilla", "satterthwaite", "lrt"), function(method) {
+        phylomatching_pvalues_df <- pvalues_from_fits(
+            fit_anova = phylomatching_fits$anova,
+            fit_phylolm = phylomatching_fits$phyloanova, tested_method = method,
+            tree = tree, REML = FALSE
+        )
+        phylomatching_pvalues_df$tested_method <- method
+        phylomatching_pvalues_df
+    }))
 
-#     random_groups_pval_df2 <- phyloanova_anova_pvalues(
-#         traits = random_groups_traits,
-#         groups = random_groups, tree, stoch_process = stoch_process,
-#         test_method = test_method, measurement_error = TRUE
-#     )
-#     random_groups_pvalues <- random_groups_pval_df2[c(1, 2)]
+    random_all_methods_df <- do.call("rbind", lapply(c("vanilla", "satterthwaite", "lrt"), function(method) {
+        random_pvalues_df <- pvalues_from_fits(
+            fit_anova = random_fits$anova,
+            fit_phylolm = random_fits$phyloanova, tested_method = method,
+            tree = tree, REML = FALSE
+        )
+        random_pvalues_df$tested_method <- method
+        random_pvalues_df
+    }))
 
-#     random_groups_df2 <- random_groups_pval_df2[c(3, 4)]
-#     # Concatenate pvalues
-#     pvalues <- c(unlist(matching_pvalues), unlist(random_groups_pvalues))
+    #  Differientiating the two dataframes before merging
+    phylomatching_all_methods_df$group_type <- "phylomatching"
+    random_all_methods_df$group_type <- "random"
+    data_all_methods_df <- rbind(phylomatching_all_methods_df, random_all_methods_df)
 
-#     if (correct_hypothesis == "H1") {
-#         correctly_selected <- pvalues < risk_threshold
-#     }
-#     if (correct_hypothesis == "H0") {
-#         correctly_selected <- pvalues >= risk_threshold
-#     }
-#     return(
-#         data.frame(
-#             sim_id = rep(id, 4),
-#             anova_model = rep(c("phylo-anova", "anova"), 2),
-#             group_type = rep(c("matching", "random"), each = 2),
-#             pvalues = pvalues,
-#             correctly_selected = correctly_selected,
-#             df2 = unlist(c(matching_df2, random_groups_df2))
-#         )
-#     )
-# }
+    # Adding the correct_hypothesis column
+    data_all_methods_df$correct_hypothesis <- correct_hypothesis
 
 
+    # Adding the has selected correctly columns
+    data_all_methods_df$phylolm_has_selected_correctly <-
+        sapply(data_all_methods_df$pvalue_phylolm, function(pvalue) {
+            test_selected_correctly(
+                correct_hypothesis = correct_hypothesis,
+                pvalue, risk_threshold = risk_threshold
+            )
+        })
+
+    data_all_methods_df$anova_has_selected_correctly <-
+        sapply(data_all_methods_df$pvalue_anova, function(pvalue) {
+            test_selected_correctly(
+                correct_hypothesis = correct_hypothesis,
+                pvalue, risk_threshold = risk_threshold
+            )
+        })
+
+    data_all_methods_df$sim_id <- sim_id
+    return(data_all_methods_df)
+}
+
+N <- 500
+base_values <- c(0, 1)
+sigma2_phylo <- 1
+sigma2_measure <- 0.1
+risk_threshold <- 0.05
+
+dataset_df <- do.call("rbind", lapply(1:N, function(id) {
+    rbind(simulate_all_methods(
+        sim_id = id,
+        correct_hypothesis = "H0",
+        base_values = base_values,
+        sigma2_phylo = sigma2_phylo,
+        sigma2_measure = sigma2_measure,
+        risk_threshold = risk_threshold
+    ), simulate_all_methods(
+        sim_id = id,
+        correct_hypothesis = "H1",
+        base_values = base_values,
+        sigma2_phylo = sigma2_phylo,
+        sigma2_measure = sigma2_measure,
+        risk_threshold = risk_threshold
+    ))
+}))
+
+dataset_df %>%
+    group_by(tested_method, group_type) %>%
+    summarise(
+        phylolm_power =
+            mean(phylolm_has_selected_correctly[correct_hypothesis == "H1"]),
+        phylolm_typeI_error =
+            1 - mean(phylolm_has_selected_correctly[correct_hypothesis == "H0"]),
+        anova_power =
+            mean(anova_has_selected_correctly[correct_hypothesis == "H1"]),
+        anova_typeI_error =
+            1 - mean(anova_has_selected_correctly[correct_hypothesis == "H0"])
+    )
 
 # compare_methods <- function(
 #     N, base_values, risk_threshold, sigma2_phylo,

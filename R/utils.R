@@ -255,14 +255,14 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
 #' "satterthwaite", "lrt"
 pvalues_from_fits <- function(
     fit_anova,
-    fit_phylolm, 
+    fit_phylolm,
     tree,
     tested_method = c("vanilla", "satterthwaite", "lrt"),
     REML = FALSE) {
     #  For sanity test
     match.arg(tested_method)
 
-    invalid_value <- function(value) {
+    is_invalid_value <- function(value) {
         return(is.nan(value) ||
             is.null(value) ||
             is.infinite(value) ||
@@ -302,7 +302,7 @@ pvalues_from_fits <- function(
             h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
                 phy = tree,
                 model = fit_phylolm$model,
-                measurement_error = invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
+                measurement_error = !is_invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
             )
             lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
 
@@ -321,4 +321,27 @@ pvalues_from_fits <- function(
         phylolm_df1 = df1,
         phylolm_df2 = df2
     ))
+}
+
+#' Indicated if the test has selected correctly
+#'
+#' @param correct_hypothesis the real hypothesis in "H0" or "H1"
+#' @param pvalue the pvalue to test for
+#' @param risk_threshold the type I error risk threshold (default: 0.05)
+test_selected_correctly <- function(
+    correct_hypothesis = c("H0","H1"),
+    pvalue,
+    risk_threshold = 0.05) {
+    # Sanity check
+    match.arg(correct_hypothesis)
+    
+    switch(correct_hypothesis,
+        "H0" = {
+            has_selected_correctly <- (pvalue >= risk_threshold)
+        },
+        "H1" = {
+            has_selected_correctly <- (pvalue < risk_threshold)
+        }
+    )
+    return(has_selected_correctly)
 }
