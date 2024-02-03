@@ -162,36 +162,42 @@ sigma2_phylo <- 1
 sigma2_measure <- 0.1
 risk_threshold <- 0.05
 
-test_df <- do.call("rbind", lapply(1:N, function(id) {
-    rbind(simulate_all_methods(
-        sim_id = id,
-        correct_hypothesis = "H0",
-        base_values = base_values,
-        sigma2_phylo = sigma2_phylo,
-        sigma2_measure = sigma2_measure,
-        risk_threshold = risk_threshold
-    ), simulate_all_methods(
-        sim_id = id,
-        correct_hypothesis = "H1",
-        base_values = base_values,
-        sigma2_phylo = sigma2_phylo,
-        sigma2_measure = sigma2_measure,
-        risk_threshold = risk_threshold
-    ))
-}))
+N_simulation_typeI_power <- function(N, base_values, sigma2_phylo, sigma2_measure, risk_threshold = 0.05) {
+    df <- do.call("rbind", lapply(1:N, function(id) {
+        rbind(simulate_all_methods(
+            sim_id = id,
+            correct_hypothesis = "H0",
+            base_values = base_values,
+            sigma2_phylo = sigma2_phylo,
+            sigma2_measure = sigma2_measure,
+            risk_threshold = risk_threshold
+        ), simulate_all_methods(
+            sim_id = id,
+            correct_hypothesis = "H1",
+            base_values = base_values,
+            sigma2_phylo = sigma2_phylo,
+            sigma2_measure = sigma2_measure,
+            risk_threshold = risk_threshold
+        ))
+    }))
+}
 
-test_df_plot <- test_df %>%
-    group_by(tested_method, group_type) %>%
-    summarise(
-        phylolm_power =
-            mean(phylolm_has_selected_correctly[correct_hypothesis == "H1"]),
-        phylolm_typeIerror =
-            1 - mean(phylolm_has_selected_correctly[correct_hypothesis == "H0"]),
-        anova_power =
-            mean(anova_has_selected_correctly[correct_hypothesis == "H1"]),
-        anova_typeIerror =
-            1 - mean(anova_has_selected_correctly[correct_hypothesis == "H0"])
-    )
+compute_power_typeI <- function(df) {
+    df_plot <- df %>%
+        group_by(tested_method, group_type) %>%
+        summarise(
+            phylolm_power =
+                mean(phylolm_has_selected_correctly[correct_hypothesis == "H1"]),
+            phylolm_typeIerror =
+                1 - mean(phylolm_has_selected_correctly[correct_hypothesis == "H0"]),
+            anova_power =
+                mean(anova_has_selected_correctly[correct_hypothesis == "H1"]),
+            anova_typeIerror =
+                1 - mean(anova_has_selected_correctly[correct_hypothesis == "H0"])
+        )
+    return(df_plot)
+}
+
 plot_method_comparison <- function(df_plot, title = "") {
     #  Plot and compare
     anova_plot_typeI <- ggplot(df_plot) +
@@ -202,6 +208,7 @@ plot_method_comparison <- function(df_plot, title = "") {
         scale_y_continuous(limits = c(0, 1)) +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         geom_bar(stat = "identity") +
+        geom_text(aes(label = round(anova_typeIerror, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9)) +
         geom_hline(yintercept = 0.05)
 
     anova_plot_power <- ggplot(df_plot) +
@@ -212,7 +219,8 @@ plot_method_comparison <- function(df_plot, title = "") {
         scale_y_continuous(limits = c(0, 1)) +
         ggtitle("ANOVA") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-        geom_bar(stat = "identity")
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = round(anova_power, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9))
 
     phylolm_plot_typeI <- ggplot(df_plot) +
         aes(x = group_type, y = phylolm_typeIerror, fill = group_type) +
@@ -221,6 +229,7 @@ plot_method_comparison <- function(df_plot, title = "") {
         labs(fill = "Type de groupe") +
         scale_y_continuous(limits = c(0, 1)) +
         geom_bar(stat = "identity") +
+        geom_text(aes(label = round(phylolm_typeIerror, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9)) +
         geom_hline(yintercept = 0.05) +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         facet_wrap(~tested_method)
@@ -234,72 +243,12 @@ plot_method_comparison <- function(df_plot, title = "") {
         ggtitle("phylolm") +
         geom_bar(stat = "identity") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-        facet_wrap(~tested_method)
+        facet_wrap(~tested_method) +
+        geom_text(aes(label = round(phylolm_power, digits = 3)), vjust = 0.6, position = position_dodge(width = 0.9))
 
     ((anova_plot_power + phylolm_plot_power + plot_layout(axis_titles = "collect")) / (anova_plot_typeI + phylolm_plot_typeI + plot_layout(axis_titles = "collect"))) + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect") +
         plot_annotation(title = title)
 }
-
-
-plot_comparison <- function(data, sim_parameters) {
-    #  Retrieving simulation parameters
-    risk_threshold <- sim_parameters$risk_threshold
-    N <- sim_parameters$N
-    sigma2_measure <- sim_parameters$sigma2_measure
-    sigma2_phylo <- sim_parameters$sigma2_phylo
-    base_values <- sim_parameters$base_values
-    stoch_process <- sim_parameters$stoch_process
-
-    plot_title <- paste0(
-        "N = ", N, ";", " sigma2_measure = ", sigma2_measure,
-        "; sigma2_phylo = ", sigma2_phylo,
-        ";\nbase values = (", paste(c(base_values), collapse = ","), ");",
-        "\nStoch process : ", stoch_process
-    )
-
-    #  Preparing plot data
-    plot_data <- data %>%
-        group_by(tested_method, anova_model, group_type, metric_type) %>%
-        summarize(metric = mean(correctly_selected))
-    #  Reversing the metric to really be typeI error (ie the prop of errors made)
-    plot_data[plot_data$metric_type == "typeI", ] <- plot_data[plot_data$metric_type == "typeI", ] %>% mutate(metric = 1 - metric)
-
-    # Adding a threshold
-    plot_data <- plot_data %>%
-        ungroup() %>%
-        mutate(
-            hline_risk_threshold = case_when(
-                plot_data$metric_type == "power" ~ -0.1,
-                plot_data$metric_type == "typeI" ~ risk_threshold
-            )
-        )
-    #  To be out of bounds
-
-    p <- ggplot(plot_data, aes(x = anova_model, y = metric, fill = group_type)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        geom_text(aes(label = round(metric, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9)) +
-        scale_y_continuous(limits = c(0, 1.2)) +
-        labs(
-            title = plot_title,
-            x = "Anova Method",
-            y = "Metric"
-        ) +
-        theme_minimal()
-    p <- p + facet_grid(tested_method ~ metric_type)
-    p <- p + geom_hline(aes(yintercept = hline_risk_threshold))
-
-    return(p)
-}
-
-#  Comparing methods
-# comparison <- compare_methods(N,
-#     base_values = c(1, 2), risk_threshold, sigma2_phylo = 0,
-#     sigma2_measure = 0.5, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt")
-# )
-# comparison_data <- comparison$data
-
-# plot_comparison(comparison_data, sim_parameters = comparison$sim_parameters)
-
 
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
@@ -309,12 +258,14 @@ snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 ## Try several parameter values
 ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
 for (her in heri) {
-    sim <- compare_methods(N,
-        base_values = c(0, snr * total_variance), risk_threshold, sigma2_phylo = her * total_variance,
-        sigma2_measure = (1 - her) * total_variance, stoch_process, methods_to_test = c("vanilla", "satterthwaite", "lrt")
+    sim <- N_simulation_typeI_power(N,
+        base_values = c(0, snr * total_variance), 
+        sigma2_phylo = her * total_variance,
+        sigma2_measure = (1 - her) * total_variance,
     )
+    df_sim_plot <- compute_power_typeI(df = sim)
 
-    res_sim_plot <- plot_comparison(sim$data, sim$sim_parameters)
+    res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("BM héritabilité ", her))
     res_sim_plot
     ggsave(paste0("img/simulation_BM_her_", her, ".png"), plot = res_sim_plot)
 }
