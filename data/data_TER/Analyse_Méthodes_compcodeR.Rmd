@@ -1,0 +1,1202 @@
+---
+title: "Anlayse appliquée sur les données réelles rodents"
+output: html_notebook
+---
+```{r}
+#Méthode EVE empirique 
+
+require(evemodel)
+require(limma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+tree_rep <- compcodeR:::getTree(cdata)
+tree_norep <- compcodeR:::getTreeEVE(cdata)
+theta_2_vec <- compcodeR:::getIsTheta2edge(cdata, tree_norep)
+# col_species <- tree_norep$tip.label[compcodeR:::sample.annotations(cdata)$id.species]
+col_species <- tree_norep$tip.label[cumsum(!duplicated(compcodeR:::sample.annotations(cdata)$id.species))]
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Analysis with EVE
+evemodel.results_list <- evemodel::twoThetaTest(tree = tree_norep, gene.data = data.trans, isTheta2edge = theta_2_vec, colSpecies = col_species, upperBound  =  c(theta = Inf, sigma2 = Inf, alpha = log(2)/0.001/1))
+
+parEstim <- apply(evemodel.results_list$oneThetaRes$par, 2, median)
+set.seed(1289)
+nullData <- evemodel::simOneTheta(n = 100, tree = tree_norep, colSpecies = col_species, theta = parEstim["theta"], sigma2 = parEstim["sigma2"], alpha = parEstim["alpha"], beta = parEstim["beta"])
+test.nullData_full <- evemodel::twoThetaTest(tree = tree_norep, gene.data = nullData, isTheta2edge = theta_2_vec, colSpecies = col_species)
+
+emp_cff <- ecdf(test.nullData_full$LRT)
+result.table <- data.frame(pvalue = 1 - emp_cff(evemodel.results_list$LRT), logFC = compcodeR:::getlogFCEVE(evemodel.results_list$twoThetaRes, theta_2_vec, tree_norep))
+result.table$score <- 1 - result.table$pvalue
+result.table$adjpvalue <- p.adjust(result.table$pvalue, 'BH')
+
+# Save the results
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('evemodel,', packageVersion('evemodel'))
+compcodeR:::package.version(cdata) <- paste('edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'evetwotheta', 'full.name' = 'evemodel0.0.0.9008.TMM.lengthNorm.TPM.dataTrans.log2.empNull.TRUE.nGenesNull.100')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_evemodel_emp.TPM.log2.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode evemodel_emp 
+
+# data_csv <- "data_evemodel_emp.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+
+# data_real <- "data_real"
+# 
+# dir.create(data_real)
+# 
+# if(file.exists(data_real)) {
+#   print("Le dossier a été créé.")
+# } else {
+#   print("Une erreur s'est produite lors de la création du dossier.")
+# }
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/evemodel_emp.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/evemodel_emp.csv")
+
+```
+
+Il y a 404 gènes différentiellement exprimés pour la méthode evemodel_emp 
+
+NB : Les gènes dont la valeur p ajustée (adjpvalue) est inférieure à 0.05 sont considérés comme différentiellement exprimés, ce qui signifie qu'ils présentent des différences d'expression significatives par rapport aux autres gènes étudié. 
+```{r}
+#Méthode EVE 
+
+require(evemodel)
+require(limma)
+require(edgeR)
+library(here)
+
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+tree_rep <- compcodeR:::getTree(cdata)
+tree_norep <- compcodeR:::getTreeEVE(cdata)
+theta_2_vec <- compcodeR:::getIsTheta2edge(cdata, tree_norep)
+#col_species <- tree_norep$tip.label[compcodeR:::sample.annotations(cdata)$id.species]
+col_species <- tree_norep$tip.label[cumsum(!duplicated(compcodeR:::sample.annotations(cdata)$id.species))]
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Analysis with EVE
+evemodel.results_list <- evemodel::twoThetaTest(tree = tree_norep, gene.data = data.trans, isTheta2edge = theta_2_vec, colSpecies = col_species, upperBound  =  c(theta = Inf, sigma2 = Inf, alpha = log(2)/0.001/1))
+
+result.table <- data.frame(pvalue = pchisq(evemodel.results_list$LRT, df = 1, lower.tail = FALSE), logFC = compcodeR:::getlogFCEVE(evemodel.results_list$twoThetaRes, theta_2_vec, tree_norep))
+result.table$score <- 1 - result.table$pvalue
+result.table$adjpvalue <- p.adjust(result.table$pvalue, 'BH')
+
+# Save the results
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('evemodel,', packageVersion('evemodel'))
+compcodeR:::package.version(cdata) <- paste('edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'evetwotheta', 'full.name' = 'evemodel0.0.0.9008.TMM.lengthNorm.TPM.dataTrans.log2.empNull.FALSE')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_evemodel.TPM.log2.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode evemodel  
+
+# data_csv <- "data_evemodel.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_evemodel.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_evemodel.csv")
+
+```
+
+Il y a 158 gènes différentiellement exprimés pour la méthode evemodel.
+
+```{r}
+
+#Méthode Limma (paramètres : no trend, no blocks)
+
+require(limma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Fit
+length.fitlimma <- limma::lmFit(data.trans, design = design)
+length.fitbayes <- limma::eBayes(length.fitlimma)
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+length.score <- 1 - length.pvalues
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('limma,', packageVersion('limma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'lengthNorm.limma', 'full.name' = 'length.3.54.2.limma.TMM.lengthNorm.TPM.dataTrans.log2.no_trend')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_lengthNorm.limma.TPM.log2.no_trend.no_blocks.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode limma.no_trend.no_blocks 
+
+# data_csv <- "data_limma.no_trend.no_blocks .csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_limma.no_trend.no_blocks .csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_limma.no_trend.no_blocks.csv")
+
+```
+Il y a 3916 gènes différentiellement exprimés pour la méthode limma.no_trend.no_blocks 
+
+
+```{r}
+#Méthode Limma (paramètres : no trend, with blocks)
+
+require(limma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Fitting Block correlations
+block <- compcodeR:::sample.annotations(cdata)[['id.species']]
+corfit <- duplicateCorrelation(data.trans, design = design, block = block, ndups = 1)
+
+# Fit
+length.fitlimma <- limma::lmFit(data.trans, design = design, correlation = corfit$consensus, block = block)
+length.fitbayes <- limma::eBayes(length.fitlimma)
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+length.score <- 1 - length.pvalues
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('limma,', packageVersion('limma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'lengthNorm.limma', 'full.name' = 'length.3.54.2.limma.TMM.lengthNorm.TPM.dataTrans.log2.no_trend')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_lengthNorm.limma.TPM.log2.no_trend.with_blocks.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode limma.no_trend.with_blocks
+
+# data_csv <- "data_limma.no_trend.with_blocks.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_limma.no_trend.with_blocks.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_limma.no_trend.with_blocks.csv")
+```
+Il y a 1515 gènes différentiellement exprimés pour la méthode limma.no_trend.with_blocks
+
+```{r}
+#Méthode Limma ( with Trend, no blocks)
+
+require(limma)
+require(edgeR)
+library(here)
+
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Fit
+length.fitlimma <- limma::lmFit(data.trans, design = design)
+length.fitbayes <- limma::eBayes(length.fitlimma, trend = TRUE)
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+length.score <- 1 - length.pvalues
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('limma,', packageVersion('limma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'lengthNorm.limma', 'full.name' = 'length.3.54.2.limma.TMM.lengthNorm.TPM.dataTrans.log2.with_trend')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_lengthNorm.limma.TPM.log2.with_trend.no_blocks.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode limma.with_trend.no_blocks
+
+# data_csv <- "data_limma.with_trend.no_blocks.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_limma.with_trend.no_blocks.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_limma.with_trend.no_blocks.csv")
+
+```
+Il y a 3924 gènes différentiellement exprimés pour la méthode limma.with_trend.no_blocks
+
+```{r}
+#Méthode Limma (with trend, with blocks)
+
+require(limma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Fitting Block correlations
+block <- compcodeR:::sample.annotations(cdata)[['id.species']]
+corfit <- duplicateCorrelation(data.trans, design = design, block = block, ndups = 1)
+
+# Fit
+length.fitlimma <- limma::lmFit(data.trans, design = design, correlation = corfit$consensus, block = block)
+
+length.fitbayes <- limma::eBayes(length.fitlimma, trend = TRUE)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('limma,', packageVersion('limma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'lengthNorm.limma', 'full.name' = 'length.3.54.2.limma.TMM.lengthNorm.TPM.dataTrans.log2.with_trend.id.species')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_lengthNorm.limma.TPM.log2.with_trend.with_blocks.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode limma.with_trend.with_blocks
+
+# data_csv <- "data_limma.with_trend.with_blocks.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_limma.with_trend.with_blocks.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_limma.with_trend.with_blocks.csv")
+```
+
+Il y a 1542 gènes différentiellement exprimés pour la méthode limma.with_trend.with_blocks
+
+```{r}
+#Méthode Phylolimma (Paramètres : no trend, regCor FALSE, BM)
+
+#install.packages("remotes")
+#remotes::install_github("pbastide/phylolimma")
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'BM', measurement_error = TRUE, use_consensus = FALSE,)
+length.fitbayes <- limma::eBayes(length.fitlimma)
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+length.score <- 1 - length.pvalues
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.BM.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.no_trend.nonregularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.BM.no_trend.regCor_FALSE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.no_trend.regCor_FALSE
+
+# data_csv <- "data_phylolimma.no_trend.regCor_FALSE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.no_trend.regCor_FALSE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.no_trend.regCor_FALSE.csv")
+
+```
+Il y a 1655 gènes différentiellement exprimés pour la méthode phylolimma.no_trend.regCor_FALSE 
+
+```{r}
+
+#Méthode Phylolimma (Paramètres : no trend, regCor True,BM)
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'BM', measurement_error = TRUE, use_consensus = TRUE,)
+length.fitbayes <- limma::eBayes(length.fitlimma)
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+length.score <- 1 - length.pvalues
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.BM.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.no_trend.regularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.BM.no_trend.regCor_TRUE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.no_trend.regCor_TRUE
+
+# data_csv <- "data_phylolimma.no_trend.regCor_TRUE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.no_trend.regCor_TRUE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.no_trend.regCor_TRUE.csv")
+```
+Il y a 207 gènes différentiellement exprimés phylolimma.no_trend.regCor_TRUE
+
+```{r}
+
+#Méthode Phylolimma (Paramètres : with trend, regCor False,BM)
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'BM', measurement_error = TRUE, use_consensus = FALSE,)
+length.fitbayes <- limma::eBayes(length.fitlimma, trend = TRUE)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.BM.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.with_trend.nonregularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.BM.with_trend.regCor_FALSE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.with_trend.regCor_FALSE
+
+# data_csv <- "data_phylolimma.with_trend.regCor_FALSE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.with_trend.regCor_FALSE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.with_trend.regCor_FALSE.csv")
+
+```
+Il y a 1690 gènes différentiellement exprimés pour la méthode phylolimma.with_trend.regCor_FALSE
+
+```{r}
+#Méthode Phylolimma (Paramètres : with trend, regCor TRUE,BM)
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'BM', measurement_error = TRUE, use_consensus = TRUE,)
+
+length.fitbayes <- limma::eBayes(length.fitlimma, trend = TRUE)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.BM.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.with_trend.regularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.BM.with_trend.regCor_TRUE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.with_trend.regCor_TRUE
+
+# data_csv <- "data_phylolimma.with_trend.regCor_TRUE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.with_trend.regCor_TRUE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.with_trend.regCor_TRUE.csv")
+```
+Il y a 228 gènes différentiellement exprimés pour la méthode phylolimma.with_trend.regCor_TRUE
+
+```{r}
+#Méthode Phylolimma (Paramètres : no trend, regCor False, OU)
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'OUfixedRoot', measurement_error = TRUE, use_consensus = FALSE,)
+
+length.fitbayes <- limma::eBayes(length.fitlimma)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.BM.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.no_trend.regularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.OUfixedRoot.no_trend.regCor_FALSE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.no_trend.regCor_FALSE
+
+# data_csv <- "data_phylolimma.OUfixedRoot.no_trend.regCor_FALSE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.OUfixedRoot.no_trend.regCor_FALSE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.OUfixedRoot.no_trend.regCor_FALSE.csv")
+```
+
+Il y a 1726 gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.no_trend.regCor_FALSE 
+
+
+```{r}
+#Méthode Phylolimma (Paramètres : no trend, regCor True, OU)
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'OUfixedRoot', measurement_error = TRUE, use_consensus = TRUE,)
+
+length.fitbayes <- limma::eBayes(length.fitlimma)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.OUfixedRoot.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.no_trend.regularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.OUfixedRoot.no_trend.regCor_TRUE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.no_trend.regCor_TRUE
+
+# data_csv <- "data_phylolimma.OUfixedRoot.no_trend.regCor_TRUE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.OUfixedRoot.no_trend.regCor_TRUE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.OUfixedRoot.no_trend.regCor_TRUE.csv")
+
+```
+Il y a 1730 gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.no_trend.regCor_TRUE
+
+```{r}
+#Méthode Phylolimma (Paramètres : with trend, regCor False, OU )
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'OUfixedRoot', measurement_error = TRUE, use_consensus = FALSE,)
+
+length.fitbayes <- limma::eBayes(length.fitlimma, trend = TRUE)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.OUfixedRoot.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.with_trend.nonregularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.OUfixedRoot.with_trend.regCor_FALSE.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.with_trend.regCor_FALSE
+
+# data_csv <- "data_phylolimma.OUfixedRoot.with_trend.regCor_FALSE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.OUfixedRoot.with_trend.regCor_FALSE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.OUfixedRoot.with_trend.regCor_FALSE.csv")
+
+```
+Il y a 1736 gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.with_trend.regCor_FALSE
+
+```{r}
+#Méthode Phylolimma (Paramètres : with trend, regCor True, OU)
+
+require(phylolimma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+data.trans <- phylolimma::lengthNormalizeRNASeq(compcodeR:::count.matrix(cdata), compcodeR:::length.matrix(cdata), normalisationFactor = nf, lengthNormalization = 'TPM', dataTransformation = 'log2')
+
+# Fit
+tree <- compcodeR:::getTree(cdata)
+length.fitlimma <- phylolimma::phylolmFit(data.trans, design = design, phy = tree, model = 'OUfixedRoot', measurement_error = TRUE, use_consensus = TRUE,)
+
+length.fitbayes <- limma::eBayes(length.fitlimma, trend = TRUE)
+
+length.pvalues <- length.fitbayes$p.value[, ncol(length.fitbayes$p.value)]
+
+length.logFC <- length.fitbayes$coefficients[, ncol(length.fitbayes$coefficients)]
+
+length.adjpvalues <- p.adjust(length.pvalues, method = 'BH')
+
+length.score <- 1 - length.pvalues
+
+result.table <- data.frame('pvalue' = length.pvalues, 'adjpvalue' = length.adjpvalues, 'logFC' = length.logFC, 'score' = length.score)
+
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+
+compcodeR:::result.table(cdata) <- result.table
+
+compcodeR:::package.version(cdata) <- paste('phylolimma,', packageVersion('phylolimma'), ';', 'edgeR,', packageVersion('edgeR'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolimma', 'full.name' = 'phylolimma0.1.03.38.4.TMM.OUfixedRoot.me.lengthNorm.TPM.dataTrans.log2.moderation.eBayes.with_trend.regularized_correlation')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolimma.TPM.log2.OUfixedRoot.with_trend.regCor_TRUE.rds')
+
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolimma.OUfixedRoot.with_trend.regCor_TRUE
+
+# data_csv <- "data_phylolimma.OUfixedRoot.with_trend.regCor_TRUE.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolimma.OUfixedRoot.with_trend.regCor_TRUE.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolimma.OUfixedRoot.with_trend.regCor_TRUE.csv")
+
+```
+Il y a 1753 gènes différentiellement exprimés 
+
+```{r}
+#Méthode Phylolm (Paramètres : BM)
+
+require(limma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Wrapper functions
+extract_results_phylolm <- function (phylo_lm_obj) 
+{
+    res <- as.data.frame(summary(phylo_lm_obj)$coefficients)
+    result.table <- data.frame(pvalue = res["condition2", "p.value"], 
+        logFC = res["condition2", "Estimate"], score = 1 - res["condition2", 
+            "p.value"])
+    return(result.table)
+}
+phylolm_analysis <- function (dat, design_data, design_formula, tree, model, measurement_error, 
+    upper.bound = NULL, lower.bound = NULL, starting.value = NULL, 
+    ...) 
+{
+    data_reg <- design_data
+    data_reg$expr <- dat
+    levels(data_reg$condition) <- c(1, 2)
+    res <- try(extract_results_phylolm(suppressWarnings(phylolm::phylolm(paste("expr", 
+        paste(as.character(design_formula), collapse = "")), 
+        data = data_reg, phy = tree, model = model, measurement_error = measurement_error, 
+        upper.bound = upper.bound, starting.value = starting.value, 
+        lower.bound = lower.bound, ...))), silent = TRUE)
+    if (inherits(res, "try-error")) {
+        if (model == "BM" && measurement_error) {
+            res <- try(extract_results_phylolm(phylolm::phylolm(paste("expr", 
+                paste(as.character(design_formula), collapse = "")), 
+                data = data_reg, phy = tree, model = "lambda", 
+                measurement_error = FALSE, upper.bound = upper.bound, 
+                starting.value = starting.value, lower.bound = lower.bound, 
+                ...)), silent = TRUE)
+        }
+        else {
+            h_tree <- max(ape::node.depth.edgelength(tree))
+            res <- try(extract_results_phylolm(suppressWarnings(phylolm::phylolm(paste("expr", 
+                paste(as.character(design_formula), collapse = "")), 
+                data = data_reg, phy = tree, model = model, measurement_error = measurement_error, 
+                upper.bound = list(alpha = log(2)/0.1/h_tree), 
+                starting.value = list(alpha = log(2)/1/h_tree), 
+                lower.bound = list(alpha = log(2)/10/h_tree), 
+                ...))), silent = TRUE)
+        }
+    }
+    if (inherits(res, "try-error")) {
+        res <- data.frame(pvalue = 1, logFC = 0, score = 0)
+        warning(paste0("A gene produced an error."))
+    }
+    return(res)
+}
+
+# Analysis
+tree <-compcodeR::: getTree(cdata)
+phylolm.results_list <- apply(data.trans, 1, phylolm_analysis, design_data = design_data, design_formula = design_formula, tree = tree, model = 'BM', measurement_error = TRUE, lower.bound  =  list(sigma2_error = min_sigma2_error), upper.bound  =  list(lambda = 1/(1 + min_sigma2_error)))
+result.table <- do.call(rbind, phylolm.results_list)
+result.table$adjpvalue <- p.adjust(result.table$pvalue, 'BH')
+
+# Save the results
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('phylolm,', packageVersion('phylolm'))
+compcodeR:::package.version(cdata) <- paste('limma,', packageVersion('limma'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolm', 'full.name' = 'phylolm3.54.22.6.4.TMM.BM.me.lengthNorm.TPM.dataTrans.log2')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolm.TPM.log2.BM.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolm_BM
+
+# data_csv <- "data_phylolm_BM.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolm_BM.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolm_BM.csv")
+
+```
+Il n'y a pas de gène différentiellement exprimés avec la méthode phylolm_BM
+
+```{r}
+#Méthode Phylolm (Pamamètres : OU)
+
+require(phylolm)
+require(limma)
+require(edgeR)
+library(here)
+
+cdata <- readRDS(here("data", "chen2019_rodents_cpd.rds"))
+is.valid <- compcodeR:::check_phyloCompData(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+
+# Design
+design_formula <- as.formula(~ condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_data$condition <- factor(design_data$condition)
+design <- model.matrix(design_formula, design_data)
+
+# Normalisation
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- data.norm * 1e6
+
+# Transformation
+data.trans <- log2(data.norm)
+rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+
+# Wrapper functions
+extract_results_phylolm <- function (phylo_lm_obj) 
+{
+    res <- as.data.frame(summary(phylo_lm_obj)$coefficients)
+    result.table <- data.frame(pvalue = res["condition2", "p.value"], 
+        logFC = res["condition2", "Estimate"], score = 1 - res["condition2", 
+            "p.value"])
+    return(result.table)
+}
+phylolm_analysis <- function (dat, design_data, design_formula, tree, model, measurement_error, 
+    upper.bound = NULL, lower.bound = NULL, starting.value = NULL, 
+    ...) 
+{
+    data_reg <- design_data
+    data_reg$expr <- dat
+    levels(data_reg$condition) <- c(1, 2)
+    res <- try(extract_results_phylolm(suppressWarnings(phylolm::phylolm(paste("expr", 
+        paste(as.character(design_formula), collapse = "")), 
+        data = data_reg, phy = tree, model = model, measurement_error = measurement_error, 
+        upper.bound = upper.bound, starting.value = starting.value, 
+        lower.bound = lower.bound, ...))), silent = TRUE)
+    if (inherits(res, "try-error")) {
+        if (model == "BM" && measurement_error) {
+            res <- try(extract_results_phylolm(phylolm::phylolm(paste("expr", 
+                paste(as.character(design_formula), collapse = "")), 
+                data = data_reg, phy = tree, model = "lambda", 
+                measurement_error = FALSE, upper.bound = upper.bound, 
+                starting.value = starting.value, lower.bound = lower.bound, 
+                ...)), silent = TRUE)
+        }
+        else {
+            h_tree <- max(ape::node.depth.edgelength(tree))
+            res <- try(extract_results_phylolm(suppressWarnings(phylolm::phylolm(paste("expr", 
+                paste(as.character(design_formula), collapse = "")), 
+                data = data_reg, phy = tree, model = model, measurement_error = measurement_error, 
+                upper.bound = list(alpha = log(2)/0.1/h_tree), 
+                starting.value = list(alpha = log(2)/1/h_tree), 
+                lower.bound = list(alpha = log(2)/10/h_tree), 
+                ...))), silent = TRUE)
+        }
+    }
+    if (inherits(res, "try-error")) {
+        res <- data.frame(pvalue = 1, logFC = 0, score = 0)
+        warning(paste0("A gene produced an error."))
+    }
+return(res)
+}
+
+# Analysis
+tree <- compcodeR:::getTree(cdata)
+phylolm.results_list <- apply(data.trans, 1, phylolm_analysis, design_data = design_data, design_formula = design_formula, tree = tree, model = 'OUfixedRoot', measurement_error = TRUE, lower.bound  =  list(sigma2_error = min_sigma2_error), upper.bound  =  list(lambda = 1/(1 + min_sigma2_error)))
+result.table <- do.call(rbind, phylolm.results_list)
+result.table$adjpvalue <- p.adjust(result.table$pvalue, 'BH')
+
+# Save the results
+rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
+compcodeR:::result.table(cdata) <- result.table
+compcodeR:::package.version(cdata) <- paste('phylolm,', packageVersion('phylolm'))
+compcodeR:::package.version(cdata) <- paste('limma,', packageVersion('limma'))
+compcodeR:::analysis.date(cdata) <- date()
+compcodeR:::method.names(cdata) <- list('short.name' = 'phylolm', 'full.name' = 'phylolm3.54.22.6.4.TMM.OUfixedRoot.me.lengthNorm.TPM.dataTrans.log2')
+is.valid <- compcodeR:::check_compData_results(cdata)
+if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+saveRDS(cdata, '/Users/marinetognia/InterspeciesDEMethods/code/2023-05-16_2023-05-16_simulations_chen2019_results/real_tree_rodents_BM_with_lengths_3_0.8_1_1_phylolm.TPM.log2.OUfixedRoot.rds')
+print(paste('Unique data set ID:', compcodeR:::info.parameters(cdata)$uID))
+
+table(cdata@result.table$adjpvalue<0.05)
+
+#Donnees incluant les gènes différentiellement exprimés pour la méthode phylolm_OUfixedRoot
+
+# data_csv <- "data_phylolm_OUfixedRoot.csv"
+# df <- data.frame(Genes = rownames(cdata@result.table)[cdata@result.table$adjpvalue<0.05] )
+# write.csv(df, file = data_csv, row.names = FALSE)
+
+# file.rename(from = "/Users/marinetognia/InterspeciesDEMethods/code/data_phylolm_OUfixedRoot.csv", to = "/Users/marinetognia/InterspeciesDEMethods/code/data_real/data_phylolm_OUfixedRoot.csv")
+
+```
+
+Il y a 649 gènes différentiellement exprimés pour la méthode phylolm_OUfixedRoot.
+
+
+```{r}
+
+library(UpSetR)
+library(here)
+
+#Données evemodel
+
+data1 <- read.csv(here("data_real","evemodel_emp.csv"))
+
+data2 <- read.csv(here("data_real","data_evemodel.csv"))
+
+data15 <- read.csv(here("data_real","data_evemodel_emp_primates.csv"))
+
+data16 <- read.csv(here("data_real","data_evemodel_primates.csv"))
+
+
+#Données phylolm
+
+data3 <- read.csv(here("data_real","data_phylolm_BM.csv"))
+
+data4 <- read.csv(here("data_real","data_phylolm_OUfixedRoot.csv"))
+
+data17 <- read.csv(here("data_real","data_phylolm_BM_primates.csv"))
+
+data18 <- read.csv(here("data_real","data_phylolm_OUfixedRoot_primates.csv"))
+
+#Données limma 
+
+data5 <- read.csv(here("data_real","data_limma.no_trend.no_blocks.csv"))
+
+data6 <- read.csv(here("data_real","data_limma.no_trend.with_blocks.csv"))
+
+data19 <- read.csv(here("data_real","data_limma.no_trend.no_blocks_primates.csv"))
+
+data20 <- read.csv(here("data_real","data_limma.no_trend.with_blocks_primates.csv"))
+
+#data7 <- read.csv(here("data_real","data_limma.with_trend.no_blocks.csv"))
+
+#data8 <- read.csv(here("data_real", "data_limma.with_trend.with_blocks.csv"))
+
+
+#Données Phylolimma 
+
+
+#data9 <- read.csv(here("data_real", "data_phylolimma.no_trend.regCor_FALSE.csv"))
+
+data10 <- read.csv(here("data_real","data_phylolimma.no_trend.regCor_TRUE.csv"))
+
+data21 <- read.csv(here("data_real","data_phylolimma.no_trend.regCor_TRUE_primates.csv"))
+
+#data11 <- read.csv(here("data_real","data_phylolimma.with_trend.regCor_FALSE.csv"))
+
+#data12 <- read.csv(here("data_real","data_phylolimma.with_trend.regCor_TRUE.csv"))
+
+#data13 <- read.csv(here("data_real","data_phylolimma.OUfixedRoot.no_trend.regCor_FALSE.csv"))
+
+data14 <- read.csv(here("data_real","data_phylolimma.OUfixedRoot.no_trend.regCor_TRUE.csv"))
+
+data22 <- read.csv(here("data_real","data_phylolimma.OUfixedRoot.no_trend.regCor_TRUE_primates.csv"))
+
+#data15 <- read.csv(here("data_real","data_phylolimma.OUfixedRoot.with_trend.regCor_FALSE.csv"))
+
+#data16 <- read.csv(here("data_real","data_phylolimma.OUfixedRoot.with_trend.regCor_TRUE.csv"))
+
+
+
+# Créer un objet upSet à partir des données rodents 
+
+x = list (
+  evemodel_emp = data1$Genes,
+  evemodel = data2$Genes,
+  phylolm_OU = data4$Genes,
+  limma.no_trend.no_blocks = data5$Genes,
+  limma.no_trend.with_blocks = data6$Genes,
+  #limma.with_trend.no_blocks = filtered_data7,
+  #limma.with_trend.with_blocks = filtered_data8,
+  #phylolimma.BM.no_trend.regCor_FALSE = filtered_data_9,
+  phylolimma.BM.no_trend.regCor_TRUE = data10$Genes, 
+  #phylolimma.BM.with_trend.regCor_FALSE = filtered_data_11,
+  #phylolimma.BM.with_trend.regCor_TRUE = filtered_data_12,
+  #phylolimma.OU.no_trend.regCor_FALSE = filtered_data_13,
+  phylolimma.OU.no_trend.regCor_TRUE = data14$Genes
+  #phylolimma.OU.with_trend.regCor_FALSE = filtered_data_15,
+  #phylolimma.OU.with_trend.regCor_TRUE = filtered_data_16
+)
+
+# Créer un objet upSet à partir des données primates 
+
+x1 = list (
+  evemodel_emp = data15$Genes,
+  evemodel = data16$Genes,
+  phylolm_OU = data18$Genes,
+  limma.no_trend.no_blocks = data19$Genes,
+  limma.no_trend.with_blocks = data20$Genes,
+  phylolimma.BM.no_trend.regCor_TRUE = data21$Genes, 
+  phylolimma.OU.no_trend.regCor_TRUE = data22$Genes
+)
+
+#graphique UpSet données rodents 
+upset(fromList(x), nsets = 16, point.size = 1.2,line.size = 0.5, text.scale = 0.6, order.by = "freq")
+
+#graphique UpSet données primates 
+upset(fromList(x1), nsets = 10, point.size = 1.2,line.size = 0.5, text.scale = 0.6, order.by = "freq")
+
+```
+
