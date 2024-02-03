@@ -208,10 +208,11 @@ plot_method_comparison <- function(df_plot, title = "") {
         scale_y_continuous(limits = c(0, 1)) +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         geom_bar(stat = "identity") +
-        geom_text(aes(label = round(anova_typeIerror, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9)) +
+        geom_text(aes(label = round(anova_typeIerror, digits = 2)), vjust = -0.5, position = position_dodge(width = 0.9)) +
         geom_hline(yintercept = 0.05)
 
     anova_plot_power <- ggplot(df_plot) +
+        # The /3 is there to account that anova data is repeated 3 times
         aes(x = group_type, y = anova_power / 3, fill = group_type) +
         ylab("Puissance") +
         xlab("Type de groupe") +
@@ -220,7 +221,7 @@ plot_method_comparison <- function(df_plot, title = "") {
         ggtitle("ANOVA") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         geom_bar(stat = "identity") +
-        geom_text(aes(label = round(anova_power, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9))
+        geom_text(aes(label = round(anova_power, digits = 2)), vjust = -0.5, position = position_dodge(width = 0.9))
 
     phylolm_plot_typeI <- ggplot(df_plot) +
         aes(x = group_type, y = phylolm_typeIerror, fill = group_type) +
@@ -229,7 +230,7 @@ plot_method_comparison <- function(df_plot, title = "") {
         labs(fill = "Type de groupe") +
         scale_y_continuous(limits = c(0, 1)) +
         geom_bar(stat = "identity") +
-        geom_text(aes(label = round(phylolm_typeIerror, digits = 3)), vjust = -0.5, position = position_dodge(width = 0.9)) +
+        geom_text(aes(label = round(phylolm_typeIerror, digits = 2)), vjust = -0.5, position = position_dodge(width = 0.9)) +
         geom_hline(yintercept = 0.05) +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         facet_wrap(~tested_method)
@@ -244,7 +245,7 @@ plot_method_comparison <- function(df_plot, title = "") {
         geom_bar(stat = "identity") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
         facet_wrap(~tested_method) +
-        geom_text(aes(label = round(phylolm_power, digits = 3)), vjust = 0.6, position = position_dodge(width = 0.9))
+        geom_text(aes(label = round(phylolm_power, digits = 2)), vjust = 0.6, position = position_dodge(width = 0.9))
 
     ((anova_plot_power + phylolm_plot_power + plot_layout(axis_titles = "collect")) / (anova_plot_typeI + phylolm_plot_typeI + plot_layout(axis_titles = "collect"))) + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect") +
         plot_annotation(title = title)
