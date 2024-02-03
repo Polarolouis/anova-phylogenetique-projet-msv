@@ -8,6 +8,7 @@ library(tidyverse)
 
 # Plotting
 library(ggplot2)
+library(patchwork)
 
 # Sourcing the utils
 source("./R/utils.R")
@@ -161,7 +162,7 @@ sigma2_phylo <- 1
 sigma2_measure <- 0.1
 risk_threshold <- 0.05
 
-dataset_df <- do.call("rbind", lapply(1:N, function(id) {
+test_df <- do.call("rbind", lapply(1:N, function(id) {
     rbind(simulate_all_methods(
         sim_id = id,
         correct_hypothesis = "H0",
@@ -179,99 +180,66 @@ dataset_df <- do.call("rbind", lapply(1:N, function(id) {
     ))
 }))
 
-dataset_df %>%
+test_df_plot <- test_df %>%
     group_by(tested_method, group_type) %>%
     summarise(
         phylolm_power =
             mean(phylolm_has_selected_correctly[correct_hypothesis == "H1"]),
-        phylolm_typeI_error =
+        phylolm_typeIerror =
             1 - mean(phylolm_has_selected_correctly[correct_hypothesis == "H0"]),
         anova_power =
             mean(anova_has_selected_correctly[correct_hypothesis == "H1"]),
-        anova_typeI_error =
+        anova_typeIerror =
             1 - mean(anova_has_selected_correctly[correct_hypothesis == "H0"])
     )
+plot_method_comparison <- function(df_plot, title = "") {
+    #  Plot and compare
+    anova_plot_typeI <- ggplot(df_plot) +
+        aes(x = group_type, y = anova_typeIerror / 3, fill = group_type) +
+        ylab("Erreur Type I") +
+        xlab("Type de groupe") +
+        labs(fill = "Type de groupe") +
+        scale_y_continuous(limits = c(0, 1)) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        geom_bar(stat = "identity") +
+        geom_hline(yintercept = 0.05)
 
-# compare_methods <- function(
-#     N, base_values, risk_threshold, sigma2_phylo,
-#     sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite"), correct_hypothesis = "H1") {
-#     if (any(!(methods_to_test %in% c("vanilla", "satterthwaite", "lrt")))) {
-#         stop("Unknown method to test.")
-#     }
-#     #  Generating data for each method
-#     # TODO Utiliser les mêmes données pour les méthodes
-#     ##  To compute power
-#     full_power_data <-
-#         do.call("rbind", lapply(methods_to_test, function(method) {
-#             data <- simulate_data(
-#                 N = N,
-#                 base_values = base_values,
-#                 risk_threshold = risk_threshold,
-#                 sigma2_phylo = sigma2_phylo,
-#                 sigma2_measure = sigma2_measure,
-#                 test_method = method,
-#                 stoch_process = stoch_process,
-#                 correct_hypothesis = "H1"
-#             )$data
-#             #  Adding a column to identify the approximation method
-#             data$tested_method <- method
-#             data$metric_type <- "power"
-#             data
-#         }))
-#     ##  To compute type I error
-#     full_typeI_data <-
-#         do.call("rbind", lapply(methods_to_test, function(method) {
-#             data <- simulate_data(
-#                 N = N,
-#                 base_values = base_values,
-#                 risk_threshold = risk_threshold,
-#                 sigma2_phylo = sigma2_phylo,
-#                 sigma2_measure = sigma2_measure,
-#                 test_method = method,
-#                 stoch_process = stoch_process,
-#                 correct_hypothesis = "H0"
-#             )$data
-#             #  Adding a column to identify the approximation method
-#             data$tested_method <- method
-#             data$metric_type <- "typeI"
-#             data
-#         }))
+    anova_plot_power <- ggplot(df_plot) +
+        aes(x = group_type, y = anova_power / 3, fill = group_type) +
+        ylab("Puissance") +
+        xlab("Type de groupe") +
+        labs(fill = "Type de groupe") +
+        scale_y_continuous(limits = c(0, 1)) +
+        ggtitle("ANOVA") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        geom_bar(stat = "identity")
 
-#     data <- rbind(full_power_data, full_typeI_data)
-#     return(
-#         list(
-#             data = data,
-#             sim_parameters = list(
-#                 N = N,
-#                 base_values = base_values,
-#                 risk_threshold = risk_threshold,
-#                 sigma2_phylo = sigma2_phylo,
-#                 sigma2_measure = sigma2_measure,
-#                 stoch_process = stoch_process
-#             )
-#         )
-#     )
-# }
+    phylolm_plot_typeI <- ggplot(df_plot) +
+        aes(x = group_type, y = phylolm_typeIerror, fill = group_type) +
+        ylab("Erreur Type I") +
+        xlab("Type de groupe") +
+        labs(fill = "Type de groupe") +
+        scale_y_continuous(limits = c(0, 1)) +
+        geom_bar(stat = "identity") +
+        geom_hline(yintercept = 0.05) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        facet_wrap(~tested_method)
 
-# plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
-#     plot_data <- data %>%
-#         group_by(anova_model, group_type) %>%
-#         summarize(power = mean(correctly_selected))
+    phylolm_plot_power <- ggplot(df_plot) +
+        aes(x = group_type, y = phylolm_power, fill = group_type) +
+        ylab("Puissance") +
+        xlab("Type de groupe") +
+        labs(fill = "Type de groupe") +
+        scale_y_continuous(limits = c(0, 1)) +
+        ggtitle("phylolm") +
+        geom_bar(stat = "identity") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        facet_wrap(~tested_method)
 
-#     p <- ggplot(plot_data, aes(x = anova_model, y = power, fill = group_type)) +
-#         geom_bar(stat = "identity", position = "dodge") +
-#         scale_y_continuous(limits = c(0, 1)) +
-#         labs(
-#             title = paste0("Power vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters_string),
-#             x = "Tested Method",
-#             y = "Power"
-#         ) +
-#         geom_hline(yintercept = threshold) +
-#         theme_minimal()
-#     p
+    ((anova_plot_power + phylolm_plot_power + plot_layout(axis_titles = "collect")) / (anova_plot_typeI + phylolm_plot_typeI + plot_layout(axis_titles = "collect"))) + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect") +
+        plot_annotation(title = title)
+}
 
-#     return(p)
-# }
 
 plot_comparison <- function(data, sim_parameters) {
     #  Retrieving simulation parameters
