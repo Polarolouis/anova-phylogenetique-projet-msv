@@ -16,7 +16,7 @@ source("./R/utils.R")
 set.seed(1234)
 
 # Parameters
-nb_species <- 100
+nb_species <- 20
 
 # Generating the phylo tree
 tree <- rphylo(nb_species, birth = 0.1, death = 0)
@@ -25,7 +25,7 @@ tree <- rphylo(nb_species, birth = 0.1, death = 0)
 plotTree(tree, node.numbers = TRUE)
 
 # Here I chose two ancestors to split in two the tree
-ancestors <- c(102, 104)
+ancestors <- c(22, 23)
 K <- length(ancestors) # The number of groups
 
 # I assign the groups numbers
@@ -70,150 +70,150 @@ taille_tree <- diag(vcv(tree))[1]
 tree$edge.length <- tree$edge.length / taille_tree
 
 
+# TODO REMOVE
+# simulate_matching_and_random <- function(
+#     id, base_values,
+#     sigma2_phylo, sigma2_measure,
+#     stoch_process, test_method,
+#     risk_threshold = 0.05,
+#     correct_hypothesis = "H1") {
+#     # To be in the right configuration for typeI error
+#     if (correct_hypothesis == "H0") {
+#         base_values <- rep(0, length(base_values))
+#     }
+#     matching_phylo_traits <- compute_trait_values(
+#         groups = phylo_matching_groups,
+#         base_values = base_values, tree,
+#         sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
+#         stoch_process = stoch_process
+#     )
+#     matching_pval_df <- phyloanova_anova_pvalues(
+#         traits = matching_phylo_traits,
+#         groups = phylo_matching_groups, tree, stoch_process = stoch_process,
+#         test_method = test_method, measurement_error = TRUE
+#     )
+#     matching_pvalues <- matching_pval_df[c(1, 2)]
 
-simulate_matching_and_random <- function(
-    id, base_values,
-    sigma2_phylo, sigma2_measure,
-    stoch_process, test_method,
-    risk_threshold = 0.05,
-    correct_hypothesis = "H1") {
-    # To be in the right configuration for typeI error
-    if (correct_hypothesis == "H0") {
-        base_values <- rep(0, length(base_values))
-    }
-    matching_phylo_traits <- compute_trait_values(
-        groups = phylo_matching_groups,
-        base_values = base_values, tree,
-        sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
-        stoch_process = stoch_process
-    )
-    matching_pval_df <- phyloanova_anova_pvalues(
-        traits = matching_phylo_traits,
-        groups = phylo_matching_groups, tree, stoch_process = stoch_process,
-        test_method = test_method, measurement_error = TRUE
-    )
-    matching_pvalues <- matching_pval_df[c(1, 2)]
+#     matching_df2 <- matching_pval_df[c(3, 4)]
 
-    matching_df2 <- matching_pval_df[c(3, 4)]
+#     random_groups_traits <- compute_trait_values(
+#         groups = random_groups,
+#         base_values = base_values, tree,
+#         sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
+#         stoch_process = stoch_process
+#     )
 
-    random_groups_traits <- compute_trait_values(
-        groups = random_groups,
-        base_values = base_values, tree,
-        sigma2_phylo = sigma2_phylo, sigma2_measure = sigma2_measure,
-        stoch_process = stoch_process
-    )
+#     random_groups_pval_df2 <- phyloanova_anova_pvalues(
+#         traits = random_groups_traits,
+#         groups = random_groups, tree, stoch_process = stoch_process,
+#         test_method = test_method, measurement_error = TRUE
+#     )
+#     random_groups_pvalues <- random_groups_pval_df2[c(1, 2)]
 
-    random_groups_pval_df2 <- phyloanova_anova_pvalues(
-        traits = random_groups_traits,
-        groups = random_groups, tree, stoch_process = stoch_process,
-        test_method = test_method, measurement_error = TRUE
-    )
-    random_groups_pvalues <- random_groups_pval_df2[c(1, 2)]
+#     random_groups_df2 <- random_groups_pval_df2[c(3, 4)]
+#     # Concatenate pvalues
+#     pvalues <- c(unlist(matching_pvalues), unlist(random_groups_pvalues))
 
-    random_groups_df2 <- random_groups_pval_df2[c(3, 4)]
-    # Concatenate pvalues
-    pvalues <- c(unlist(matching_pvalues), unlist(random_groups_pvalues))
-
-    if (correct_hypothesis == "H1") {
-        correctly_selected <- pvalues < risk_threshold
-    }
-    if (correct_hypothesis == "H0") {
-        correctly_selected <- pvalues >= risk_threshold
-    }
-    return(
-        data.frame(
-            sim_id = rep(id, 4),
-            anova_model = rep(c("phylo-anova", "anova"), 2),
-            group_type = rep(c("matching", "random"), each = 2),
-            pvalues = pvalues,
-            correctly_selected = correctly_selected,
-            df2 = unlist(c(matching_df2, random_groups_df2))
-        )
-    )
-}
+#     if (correct_hypothesis == "H1") {
+#         correctly_selected <- pvalues < risk_threshold
+#     }
+#     if (correct_hypothesis == "H0") {
+#         correctly_selected <- pvalues >= risk_threshold
+#     }
+#     return(
+#         data.frame(
+#             sim_id = rep(id, 4),
+#             anova_model = rep(c("phylo-anova", "anova"), 2),
+#             group_type = rep(c("matching", "random"), each = 2),
+#             pvalues = pvalues,
+#             correctly_selected = correctly_selected,
+#             df2 = unlist(c(matching_df2, random_groups_df2))
+#         )
+#     )
+# }
 
 
 
-compare_methods <- function(
-    N, base_values, risk_threshold, sigma2_phylo,
-    sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite"), correct_hypothesis = "H1") {
-    if (any(!(methods_to_test %in% c("vanilla", "satterthwaite", "lrt")))) {
-        stop("Unknown method to test.")
-    }
-    #  Generating data for each method
-    # TODO Utiliser les mêmes données pour les méthodes
-    ##  To compute power
-    full_power_data <-
-        do.call("rbind", lapply(methods_to_test, function(method) {
-            data <- simulate_data(
-                N = N,
-                base_values = base_values,
-                risk_threshold = risk_threshold,
-                sigma2_phylo = sigma2_phylo,
-                sigma2_measure = sigma2_measure,
-                test_method = method,
-                stoch_process = stoch_process,
-                correct_hypothesis = "H1"
-            )$data
-            #  Adding a column to identify the approximation method
-            data$tested_method <- method
-            data$metric_type <- "power"
-            data
-        }))
-    ##  To compute type I error
-    full_typeI_data <-
-        do.call("rbind", lapply(methods_to_test, function(method) {
-            data <- simulate_data(
-                N = N,
-                base_values = base_values,
-                risk_threshold = risk_threshold,
-                sigma2_phylo = sigma2_phylo,
-                sigma2_measure = sigma2_measure,
-                test_method = method,
-                stoch_process = stoch_process,
-                correct_hypothesis = "H0"
-            )$data
-            #  Adding a column to identify the approximation method
-            data$tested_method <- method
-            data$metric_type <- "typeI"
-            data
-        }))
+# compare_methods <- function(
+#     N, base_values, risk_threshold, sigma2_phylo,
+#     sigma2_measure, stoch_process, methods_to_test = c("vanilla", "satterthwaite"), correct_hypothesis = "H1") {
+#     if (any(!(methods_to_test %in% c("vanilla", "satterthwaite", "lrt")))) {
+#         stop("Unknown method to test.")
+#     }
+#     #  Generating data for each method
+#     # TODO Utiliser les mêmes données pour les méthodes
+#     ##  To compute power
+#     full_power_data <-
+#         do.call("rbind", lapply(methods_to_test, function(method) {
+#             data <- simulate_data(
+#                 N = N,
+#                 base_values = base_values,
+#                 risk_threshold = risk_threshold,
+#                 sigma2_phylo = sigma2_phylo,
+#                 sigma2_measure = sigma2_measure,
+#                 test_method = method,
+#                 stoch_process = stoch_process,
+#                 correct_hypothesis = "H1"
+#             )$data
+#             #  Adding a column to identify the approximation method
+#             data$tested_method <- method
+#             data$metric_type <- "power"
+#             data
+#         }))
+#     ##  To compute type I error
+#     full_typeI_data <-
+#         do.call("rbind", lapply(methods_to_test, function(method) {
+#             data <- simulate_data(
+#                 N = N,
+#                 base_values = base_values,
+#                 risk_threshold = risk_threshold,
+#                 sigma2_phylo = sigma2_phylo,
+#                 sigma2_measure = sigma2_measure,
+#                 test_method = method,
+#                 stoch_process = stoch_process,
+#                 correct_hypothesis = "H0"
+#             )$data
+#             #  Adding a column to identify the approximation method
+#             data$tested_method <- method
+#             data$metric_type <- "typeI"
+#             data
+#         }))
 
-    data <- rbind(full_power_data, full_typeI_data)
-    return(
-        list(
-            data = data,
-            sim_parameters = list(
-                N = N,
-                base_values = base_values,
-                risk_threshold = risk_threshold,
-                sigma2_phylo = sigma2_phylo,
-                sigma2_measure = sigma2_measure,
-                stoch_process = stoch_process
-            )
-        )
-    )
-}
+#     data <- rbind(full_power_data, full_typeI_data)
+#     return(
+#         list(
+#             data = data,
+#             sim_parameters = list(
+#                 N = N,
+#                 base_values = base_values,
+#                 risk_threshold = risk_threshold,
+#                 sigma2_phylo = sigma2_phylo,
+#                 sigma2_measure = sigma2_measure,
+#                 stoch_process = stoch_process
+#             )
+#         )
+#     )
+# }
 
-plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
-    plot_data <- data %>%
-        group_by(anova_model, group_type) %>%
-        summarize(power = mean(correctly_selected))
+# plot_simulation_data <- function(data, parameters_string, threshold = 0.95) {
+#     plot_data <- data %>%
+#         group_by(anova_model, group_type) %>%
+#         summarize(power = mean(correctly_selected))
 
-    p <- ggplot(plot_data, aes(x = anova_model, y = power, fill = group_type)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        scale_y_continuous(limits = c(0, 1)) +
-        labs(
-            title = paste0("Power vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters_string),
-            x = "Tested Method",
-            y = "Power"
-        ) +
-        geom_hline(yintercept = threshold) +
-        theme_minimal()
-    p
+#     p <- ggplot(plot_data, aes(x = anova_model, y = power, fill = group_type)) +
+#         geom_bar(stat = "identity", position = "dodge") +
+#         scale_y_continuous(limits = c(0, 1)) +
+#         labs(
+#             title = paste0("Power vs Tested Method (", stoch_process, ") | N = ", N, ";", parameters_string),
+#             x = "Tested Method",
+#             y = "Power"
+#         ) +
+#         geom_hline(yintercept = threshold) +
+#         theme_minimal()
+#     p
 
-    return(p)
-}
+#     return(p)
+# }
 
 plot_comparison <- function(data, sim_parameters) {
     #  Retrieving simulation parameters
