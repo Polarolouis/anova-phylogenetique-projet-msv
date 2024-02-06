@@ -231,7 +231,7 @@ compute_trait_values <- function(
     return(trait + trait_phylo + trait_error)
 }
 
-# TODO Séparer les deux fonctions de simulation et d'inférence
+# TODO Récupérer K et nb_species des objets
 #' Infere an ANOVA and a phyloanova
 #'
 #' @param y the vector of traits for which to fit the models
@@ -246,6 +246,7 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
     return(list(anova = fit_anova, phyloanova = fit_phylolm))
 }
 
+# TODO renvoyer pour toutes les méthodes testées
 #' Return pvalues for the anova and the phyloanova
 #'
 #' @param fit_anova the lm fit
