@@ -106,21 +106,21 @@ simulate_all_methods <- function(
     )
 
     #  pvalues
-    phylomatching_all_methods_df <- do.call("rbind", lapply(c("vanilla", "satterthwaite", "lrt"), function(method) {
+    phylomatching_all_methods_df <- do.call("rbind", lapply(c("vanilla", "satterthwaite"), function(method) {
         phylomatching_pvalues_df <- pvalues_from_fits(
             fit_anova = phylomatching_fits$anova,
             fit_phylolm = phylomatching_fits$phyloanova, tested_method = method,
-            tree = tree, REML = FALSE
+            tree = tree, REML = TRUE
         )
         phylomatching_pvalues_df$tested_method <- method
         phylomatching_pvalues_df
     }))
 
-    random_all_methods_df <- do.call("rbind", lapply(c("vanilla", "satterthwaite", "lrt"), function(method) {
+    random_all_methods_df <- do.call("rbind", lapply(c("vanilla", "satterthwaite"), function(method) {
         random_pvalues_df <- pvalues_from_fits(
             fit_anova = random_fits$anova,
             fit_phylolm = random_fits$phyloanova, tested_method = method,
-            tree = tree, REML = FALSE
+            tree = tree, REML = TRUE
         )
         random_pvalues_df$tested_method <- method
         random_pvalues_df
@@ -264,6 +264,9 @@ for (her in heri) {
         sigma2_phylo = her * total_variance,
         sigma2_measure = (1 - her) * total_variance,
     )
+
+
+
     df_sim_plot <- compute_power_typeI(df = sim)
 
     res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("BM héritabilité ", her))
