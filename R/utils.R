@@ -231,7 +231,6 @@ compute_trait_values <- function(
     return(trait + trait_phylo + trait_error)
 }
 
-# TODO Récupérer K et nb_species des objets
 #' Infere an ANOVA and a phyloanova
 #'
 #' @param y the vector of traits for which to fit the models
@@ -262,6 +261,10 @@ pvalues_from_fits <- function(
     REML = FALSE) {
     #  For sanity test
     match.arg(tested_method)
+
+    # Extracting values
+    nb_species <- nrow(model.frame(fit_anova))
+    K <- length(unique(model.frame(fit_anova)$groups))
 
     is_invalid_value <- function(value) {
         return(is.nan(value) ||
