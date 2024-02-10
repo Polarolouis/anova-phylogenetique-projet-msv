@@ -52,7 +52,7 @@ random_groups <- sample(1:K, nb_species, replace = TRUE)
 
 # Saving images of tree
 plot_group_on_tree <- function(tree, groups) {
-    plot(tree, show.tip.label = FALSE, x.lim = 50)
+    plot(tree, show.tip.label = FALSE)
     tiplabels(bg = groups, pch = 21)
     text(x = 10, y = 0, label = "This tree will be normalised.")
 }
@@ -201,7 +201,7 @@ compute_power_typeI <- function(df) {
 plot_method_comparison <- function(df_plot, title = "") {
     #  Plot and compare
     anova_plot_typeI <- ggplot(df_plot) +
-        aes(x = group_type, y = anova_typeIerror / 3, fill = group_type) +
+        aes(x = group_type, y = anova_typeIerror / 2, fill = group_type) +
         ylab("Erreur Type I") +
         xlab("Type de groupe") +
         labs(fill = "Type de groupe") +
@@ -213,7 +213,7 @@ plot_method_comparison <- function(df_plot, title = "") {
 
     anova_plot_power <- ggplot(df_plot) +
         # The /3 is there to account that anova data is repeated 3 times
-        aes(x = group_type, y = anova_power / 3, fill = group_type) +
+        aes(x = group_type, y = anova_power / 2, fill = group_type) +
         ylab("Puissance") +
         xlab("Type de groupe") +
         labs(fill = "Type de groupe") +
