@@ -5,12 +5,30 @@ require("ape")
 require("phylolm")
 require("phytools")
 
-tree <- read.tree("./R/chen2019.tree")
-tree <- read.tree("./data/data_TER/data_raw/mammals_tree_chen2019.tree")
+source("./R/utils.R")
 
-plotTree(tree)
+plot_group_on_tree <- function(tree, groups) {
+    plot(tree)
+    tiplabels(bg = groups, pch = 21)
+}
+
+tree <- read.tree("./R/chen2019.tree")
+# Normalising tree edge length
+taille_tree <- diag(vcv(tree))[1]
+tree$edge.length <- tree$edge.length / taille_tree
+
+plotTree(tree, ftype="i")
 
 # Mus et Rat vs le reste
 
-# Groupes équilibrës
+group_mus_rat_vs_other <- sapply(44:(44+41), function(tip) {
+    if (tip %in% getDescendants(tree = tree, 55)) {
+        return(1)
+    }
+    return(2)
+})
 
+plot_group_on_tree(tree, group = group_mus_rat_vs_other)
+
+
+# Groupes équilibrës
