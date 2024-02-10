@@ -380,10 +380,10 @@ simulate_all_methods <- function(
 
     data_all_methods_df <- data.frame()
 
-    for(idx in seq(length(groups))){
+    for(idx in seq(length(groups_list))){
         # Traits
         trait <- compute_trait_values(
-            groups = groups[[idx]],
+            groups = groups_list[[idx]],
             base_values = base_values,
             tree = tree, sigma2_phylo = sigma2_phylo,
             sigma2_measure = sigma2_measure
@@ -392,7 +392,7 @@ simulate_all_methods <- function(
         # Compute fits
         fits <- infere_anova_phyloanova(
         y = trait,
-        groups = groups[[idx]], tree = tree
+        groups = groups_list[[idx]], tree = tree
         )
 
         # Computing the dataframe
