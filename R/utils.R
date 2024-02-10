@@ -251,16 +251,19 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
 #' @param fit_anova the lm fit
 #' @param fit_phylolm the phylolm fit
 #' @param tree the phylo tree
-#' @param tested_method the method to test should be one of : "vanilla",
+#' @param tested_methods the methods to test should be one of : "vanilla",
 #' "satterthwaite", "lrt"
 pvalues_from_fits <- function(
     fit_anova,
     fit_phylolm,
     tree,
-    tested_method = c("vanilla", "satterthwaite", "lrt"),
+    tested_methods = c("anova", "vanilla", "satterthwaite", "lrt"),
     REML = FALSE) {
+
     #  For sanity test
-    match.arg(tested_method)
+    rlang::arg_match(tested_methods, 
+        values = c("anova", "vanilla", "satterthwaite", "lrt"), 
+        multiple = TRUE)
 
     # Extracting values
     nb_species <- nrow(model.frame(fit_anova))
@@ -273,58 +276,61 @@ pvalues_from_fits <- function(
             value == 0)
     }
 
-    #  The default value for the df2
-    df1 <- K - 1
-    df2 <- nb_species - K
+    res_df <- data.frame(matrix(ncol = 4, nrow = 0))
+    colnames(res_df) <- c("tested_method", "pvalue", "df1", "df2")
 
-    anova_F_stat <- summary(fit_anova)$fstatistic[1]
-    anova_df1 <- summary(fit_anova)$fstatistic[2]
-    anova_df2 <- summary(fit_anova)$fstatistic[3]
-    pvalue_anova <- pvalue_F_test(anova_F_stat,
-        df1 = anova_df1, df2 = anova_df2
-    )
+    # Iterates over the methods to test
+    for(method in tested_methods) {
 
-    switch(tested_method,
-        "vanilla" = {
-            F_stat <- compute_F_statistic(
-                r_squared = fit_phylolm$r.squared,
-                df1 = df1,
-                df2 = df2
-            )
-            pvalue_phylolm <- 1 - pf(F_stat, df1, df2)
-        },
-        "satterthwaite" = {
-            df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)$ddf
-            F_stat <- compute_F_statistic(
-                r_squared = fit_phylolm$r.squared,
-                df1 = df1,
-                df2 = df2
-            )
-            pvalue_phylolm <- 1 - pf(F_stat, df1, df2)
-        },
-        "lrt" = {
-            h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
-                phy = tree,
-                model = fit_phylolm$model,
-                measurement_error = !is_invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
-            )
-            lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
+        #  The default value for the df2
+        df1 <- K - 1
 
+        switch(method,
+            "anova" = {             
+                anova_F_stat <- summary(fit_anova)$fstatistic[1]
+                df1 <- summary(fit_anova)$fstatistic[2]
+                df2 <- summary(fit_anova)$fstatistic[3]
+                pvalue <- pvalue_F_test(anova_F_stat,
+                    df1 = df1, df2 = df2
+                )
+            },
+            "vanilla" = {
+                df2 <- nb_species - K
+                F_stat <- compute_F_statistic(
+                    r_squared = fit_phylolm$r.squared,
+                    df1 = df1,
+                    df2 = df2
+                )
+                pvalue <- 1 - pf(F_stat, df1, df2)
+            },
+            "satterthwaite" = {
+                df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)$ddf
+                F_stat <- compute_F_statistic(
+                    r_squared = fit_phylolm$r.squared,
+                    df1 = df1,
+                    df2 = df2
+                )
+                pvalue <- 1 - pf(F_stat, df1, df2)
+            },
+            "lrt" = {
+                h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
+                    phy = tree,
+                    model = fit_phylolm$model,
+                    measurement_error = !is_invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
+                )
+                lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
+                df2 <- NA
 
-            # Computes the pvalue from the statistic
-            # df1 = K - 1
-            pvalue_phylolm <- 1 - pchisq(lambda_ratio_stat, df1)
-        }
-    )
-    return(data.frame(
-        tested_method = tested_method,
-        pvalue_anova = pvalue_anova,
-        pvalue_phylolm = pvalue_phylolm,
-        anova_df1 = anova_df1,
-        anova_df2 = anova_df2,
-        phylolm_df1 = df1,
-        phylolm_df2 = df2
-    ))
+                # Computes the pvalue from the statistic
+                # df1 = K - 1
+                pvalue <- 1 - pchisq(lambda_ratio_stat, df1)
+            })
+
+            # Append the result
+            res_df[nrow(res_df)+1, ] <- c(method, pvalue, df1, df2)
+    }
+
+    return(res_df)
 }
 
 #' Indicated if the test has selected correctly
@@ -348,4 +354,103 @@ test_selected_correctly <- function(
         }
     )
     return(has_selected_correctly)
+}
+
+#' Simulates sets of data for each group in groups_list
+simulate_all_methods <- function(
+    sim_id, 
+    correct_hypothesis = c("H0", "H1"), 
+    base_values,
+    sigma2_phylo,
+    sigma2_measure,
+    groups_list,
+    groups_names = names(groups_list),
+    risk_threshold = 0.05,
+    REML = FALSE) {
+
+    # Be sure to ignore base_values if testing H0
+    if (correct_hypothesis == "H0") {
+        base_values <- rep(0, length(base_values))
+    }
+
+    # Setting names
+    if(is.null(groups_names)){
+        groups_names <- seq(groups_list)
+    }
+
+    data_all_methods_df <- data.frame()
+
+    for(idx in seq(length(groups))){
+        # Traits
+        trait <- compute_trait_values(
+            groups = groups[[idx]],
+            base_values = base_values,
+            tree = tree, sigma2_phylo = sigma2_phylo,
+            sigma2_measure = sigma2_measure
+        )
+
+        # Compute fits
+        fits <- infere_anova_phyloanova(
+        y = trait,
+        groups = groups[[idx]], tree = tree
+        )
+
+        # Computing the dataframe
+        all_methods_df <- pvalues_from_fits(
+            fit_anova = fits$anova,
+            fit_phylolm = fits$phyloanova,
+            tree = tree, 
+            REML = REML
+        )
+
+        # Adding the group name
+        all_methods_df$group_type <- groups_names[idx]
+
+        data_all_methods_df <- rbind(data_all_methods_df, all_methods_df)
+
+    }
+
+    # Adding the correct_hypothesis column
+    data_all_methods_df$correct_hypothesis <- correct_hypothesis
+
+
+    # Adding the has selected correctly columns
+    data_all_methods_df$has_selected_correctly <-
+        sapply(data_all_methods_df$pvalue, function(pvalue) {
+            test_selected_correctly(
+                correct_hypothesis = correct_hypothesis,
+                pvalue, risk_threshold = risk_threshold
+            )
+        })
+
+    data_all_methods_df$sim_id <- sim_id
+    return(data_all_methods_df)
+}
+
+#' Simulates N simulations for error type I and power
+N_simulation_typeI_power <- function(N, 
+    groups_list,
+    base_values, 
+    sigma2_phylo, 
+    sigma2_measure, 
+    risk_threshold = 0.05) {
+    df <- do.call("rbind", lapply(1:N, function(id) {
+        rbind(simulate_all_methods(
+            sim_id = id,
+            groups_list = groups_list,
+            correct_hypothesis = "H0",
+            base_values = base_values,
+            sigma2_phylo = sigma2_phylo,
+            sigma2_measure = sigma2_measure,
+            risk_threshold = risk_threshold
+        ), simulate_all_methods(
+            sim_id = id,
+            groups_list = groups_list,
+            correct_hypothesis = "H1",
+            base_values = base_values,
+            sigma2_phylo = sigma2_phylo,
+            sigma2_measure = sigma2_measure,
+            risk_threshold = risk_threshold
+        ))
+    }))
 }
