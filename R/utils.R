@@ -245,7 +245,94 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
     return(list(anova = fit_anova, phyloanova = fit_phylolm))
 }
 
-# TODO renvoyer pour toutes les méthodes testées
+#' Function used to check if a value is considered invalid for the lrt test
+is_invalid_value <- function(value) {
+    return(is.nan(value) ||
+        is.null(value) ||
+        is.infinite(value) ||
+        value == 0)
+}
+
+#' Computes vanilla pvalue for phylolm fit Fisher test
+#' 
+#' @param fit_phylolm The phylolm fit for which to test
+#' 
+#' @return pvalue
+compute_vanilla_pvalue <- function(fit_phylolm){
+
+    # Extract parameters
+    nb_species <- nrow(fit_phylolm$X)
+    K <- length(unique(fit_phylolm$X[,2]))
+
+    # Compute degrees of freedom
+    df1 <- K - 1
+    df2 <- nb_species - K
+
+    F_stat <- compute_F_statistic(
+        r_squared = fit_phylolm$r.squared,
+        df1 = df1,
+        df2 = df2
+    )
+    pvalue <- 1 - pf(F_stat, df1, df2)
+    return(pvalue)
+}
+
+#' Computes pvalue with Satterthwaite approximation for phylolm fit Fisher test
+#' 
+#' @param fit_phylolm The phylolm fit for which to test
+#' @param REML Use REML for computation
+#' 
+#' @return pvalue
+compute_satterthwaite_pvalue <- function(fit_phylolm, REML = FALSE){
+
+    # Extract parameters
+    nb_species <- nrow(fit_phylolm$X)
+    K <- length(unique(fit_phylolm$X[,2]))
+
+    # Compute degrees of freedom
+    df1 <- K - 1
+    # Satterthwaite approximation
+    df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, 
+        phylo = tree, 
+        REML = REML)$ddf
+
+    F_stat <- compute_F_statistic(
+        r_squared = fit_phylolm$r.squared,
+        df1 = df1,
+        df2 = df2
+    )
+    pvalue <- 1 - pf(F_stat, df1, df2)
+    return(pvalue)
+}
+
+#' Computes pvalue for phylolm fit likelihood ratio test
+#' 
+#' @param fit_phylolm The phylolm fit for which to test
+#' 
+#' @return pvalue
+compute_lrt_pvalue <- function(fit_phylolm){
+
+    # Extract parameters
+    nb_species <- nrow(fit_phylolm$X)
+    K <- length(unique(fit_phylolm$X[,2]))
+
+    # Compute degrees of freedom
+    df1 <- K - 1
+    h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
+        phy = tree,
+        model = fit_phylolm$model,
+        measurement_error = !is_invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
+    )
+    lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
+    df2 <- NA
+
+    # Computes the pvalue from the statistic
+    # df1 = K - 1
+    pvalue <- 1 - pchisq(lambda_ratio_stat, df1)
+    return(pvalue)
+}
+
+
 #' Return pvalues for the anova and the phyloanova
 #'
 #' @param fit_anova the lm fit
@@ -253,6 +340,10 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
 #' @param tree the phylo tree
 #' @param tested_methods the methods to test should be one of : "vanilla",
 #' "satterthwaite", "lrt"
+#' @param REML use REML for computation
+#' 
+#' @details If you set REML to true please note that lrt will continue using 
+#' likelihood
 pvalues_from_fits <- function(
     fit_anova,
     fit_phylolm,
@@ -269,12 +360,6 @@ pvalues_from_fits <- function(
     nb_species <- nrow(model.frame(fit_anova))
     K <- length(unique(model.frame(fit_anova)$groups))
 
-    is_invalid_value <- function(value) {
-        return(is.nan(value) ||
-            is.null(value) ||
-            is.infinite(value) ||
-            value == 0)
-    }
 
     res_df <- data.frame(matrix(ncol = 4, nrow = 0))
     colnames(res_df) <- c("tested_method", "pvalue", "df1", "df2")
@@ -296,34 +381,17 @@ pvalues_from_fits <- function(
             },
             "vanilla" = {
                 df2 <- nb_species - K
-                F_stat <- compute_F_statistic(
-                    r_squared = fit_phylolm$r.squared,
-                    df1 = df1,
-                    df2 = df2
-                )
-                pvalue <- 1 - pf(F_stat, df1, df2)
+                pvalue <- compute_vanilla_pvalue(fit_phylolm = fit_phylolm)
             },
             "satterthwaite" = {
-                df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, phylo = tree, REML = REML)$ddf
-                F_stat <- compute_F_statistic(
-                    r_squared = fit_phylolm$r.squared,
-                    df1 = df1,
-                    df2 = df2
-                )
-                pvalue <- 1 - pf(F_stat, df1, df2)
+                df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, 
+                        phylo = tree, 
+                        REML = REML)$ddf
+                pvalue <- compute_satterthwaite_pvalue(fit_phylolm = fit_phylolm, REML = REML)
             },
             "lrt" = {
-                h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
-                    phy = tree,
-                    model = fit_phylolm$model,
-                    measurement_error = !is_invalid_value(fit_phylolm$sigma2_error) # To let phylolm know if there's measurement error
-                )
-                lambda_ratio_stat <- -2 * (h0_phylolm$logLik - fit_phylolm$logLik)
                 df2 <- NA
-
-                # Computes the pvalue from the statistic
-                # df1 = K - 1
-                pvalue <- 1 - pchisq(lambda_ratio_stat, df1)
+                pvalue <- compute_lrt_pvalue(fit_phylolm = fit_phylolm)
             })
 
             # Append the result
