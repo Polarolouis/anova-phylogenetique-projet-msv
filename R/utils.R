@@ -280,10 +280,11 @@ compute_vanilla_pvalue <- function(fit_phylolm){
 #' Computes pvalue with Satterthwaite approximation for phylolm fit Fisher test
 #' 
 #' @param fit_phylolm The phylolm fit for which to test
+#' @param tree the phylotree
 #' @param REML Use REML for computation
 #' 
 #' @return pvalue
-compute_satterthwaite_pvalue <- function(fit_phylolm, REML = FALSE){
+compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE){
 
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
@@ -308,9 +309,10 @@ compute_satterthwaite_pvalue <- function(fit_phylolm, REML = FALSE){
 #' Computes pvalue for phylolm fit likelihood ratio test
 #' 
 #' @param fit_phylolm The phylolm fit for which to test
+#' @param tree the phylotree
 #' 
 #' @return pvalue
-compute_lrt_pvalue <- function(fit_phylolm){
+compute_lrt_pvalue <- function(fit_phylolm, tree){
 
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
@@ -387,11 +389,14 @@ pvalues_from_fits <- function(
                 df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, 
                         phylo = tree, 
                         REML = REML)$ddf
-                pvalue <- compute_satterthwaite_pvalue(fit_phylolm = fit_phylolm, REML = REML)
+                pvalue <- compute_satterthwaite_pvalue(fit_phylolm = fit_phylolm, 
+                tree = tree, 
+                REML = REML)
             },
             "lrt" = {
                 df2 <- NA
-                pvalue <- compute_lrt_pvalue(fit_phylolm = fit_phylolm)
+                pvalue <- compute_lrt_pvalue(fit_phylolm = fit_phylolm,
+                tree = tree)
             })
 
             # Append the result
