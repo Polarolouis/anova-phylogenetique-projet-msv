@@ -57,14 +57,14 @@ plot_group_on_tree <- function(tree, groups) {
     text(x = 10, y = 0, label = "This tree will be normalised.")
 }
 
-# # Saving trees
-# png(file = "img/group_phylo_matching_tree.png")
-# plot_group_on_tree(tree, group = phylomatching_groups)
-# dev.off()
+# Saving trees
+png(file = "img/group_phylo_matching_tree.png")
+plot_group_on_tree(tree, group = phylomatching_groups)
+dev.off()
 
-# png(file = "img/group_random_tree.png")
-# plot_group_on_tree(tree, group = random_groups)
-# dev.off()
+png(file = "img/group_random_tree.png")
+plot_group_on_tree(tree, group = random_groups)
+dev.off()
 
 # Normalising tree edge length
 taille_tree <- diag(vcv(tree))[1]
@@ -81,7 +81,8 @@ compute_power_typeI <- function(df) {
         group_by(tested_method, group_type) %>%
             summarise(
                 power = mean(has_selected_correctly[correct_hypothesis == "H1"]),
-                errortypeI = 1 - mean(has_selected_correctly[correct_hypothesis == "H0"]))
+                errortypeI = 1 - mean(has_selected_correctly[correct_hypothesis == "H0"]), 
+                .groups = "drop_last")
     return(df_plot)
 }
 
@@ -124,7 +125,7 @@ heri <- c(0.0, 0.25, 0.5, 1.0) # heritability her = sigma2_phylo / total_varianc
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
 ## Try several parameter values
-ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
+ggsave <- function(..., bg = "white") ggplot2::ggsave(..., width = 6, height = 6,bg = bg)
 for (her in heri) {
     groups_list <- list(phylo = phylomatching_groups, 
         random = random_groups)
