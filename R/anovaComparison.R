@@ -76,52 +76,9 @@ sigma2_phylo <- 1
 sigma2_measure <- 0.1
 risk_threshold <- 0.05
 
-compute_power_typeI <- function(df) {
-    df_plot <- df %>%
-        group_by(tested_method, group_type) %>%
-            summarise(
-                power = mean(has_selected_correctly[correct_hypothesis == "H1"]),
-                errortypeI = 1 - mean(has_selected_correctly[correct_hypothesis == "H0"]), 
-                .groups = "drop_last")
-    return(df_plot)
-}
-
-plot_method_comparison <- function(df_plot, title = "") {
-
-    error <- ggplot(df_plot) +
-    aes(x = group_type, y = errortypeI, fill = group_type) +
-    geom_bar(stat = "identity") +
-    scale_y_continuous(limits = c(0, 1)) +
-    ylab("Erreur type I") +
-    xlab("Type de groupe") +
-    labs(fill = "Type de groupe") +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    facet_wrap(vars(tested_method), nrow = 4) +
-    geom_text(aes(label = round(errortypeI, digits = 2)), 
-        vjust = -0.5, position = position_dodge(width = 0.9)) +
-    geom_hline(yintercept = 0.05)+
-    ggtitle("Erreur Type I")
-
-    power <- ggplot(df_plot) +
-        aes(x = group_type, y = power, fill = group_type) +
-        geom_bar(stat = "identity") +
-        scale_y_continuous(limits = c(0, 1)) +
-        ylab("Puissance") +
-        xlab("Type de groupe") +
-        labs(fill = "Type de groupe") +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-        facet_wrap(vars(tested_method), nrow = 4) +
-        geom_text(aes(label = round(power, digits = 2)), 
-        vjust = -0.5, position = position_dodge(width = 0.9))+
-        ggtitle("Puissance")
-
-    (error + power + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")) +
-        plot_annotation(title = title)
-}
-
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
-heri <- c(0.0, 0.25, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+heri <- c(0.0, 0.5, 0.75, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
 ## Try several parameter values

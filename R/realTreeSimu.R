@@ -4,6 +4,9 @@
 require("ape")
 require("phylolm")
 require("phytools")
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
 
 source("./R/utils.R")
 
@@ -25,7 +28,7 @@ plotTree(tree, ftype="i")
 
 # Mus et Rat vs le reste
 
-group_mus_rat_vs_other <- sapply(44:(43+nb_species), function(tip) {
+group_mus_rat_vs_other <- sapply(1:(nb_species), function(tip) {
     if (tip %in% getDescendants(tree = tree, 55)) {
         return(1)
     }
@@ -48,7 +51,7 @@ risk_threshold <- 0.05
 
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
-heri <- c(0.0, 0.25, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
 ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
@@ -59,6 +62,7 @@ for (her in heri) {
         base_values = c(0, snr * total_variance), 
         sigma2_phylo = her * total_variance,
         sigma2_measure = (1 - her) * total_variance,
+        REML = TRUE
     )
 
 

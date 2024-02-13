@@ -220,10 +220,13 @@ compute_trait_values <- function(
     trait <- rowSums(sapply(seq_along(base_values), function(i) base_values[i] * (groups == i)))
 
     # The phylogenetic induced value
-    trait_phylo <- rTrait(1, tree,
-        stoch_process,
-        parameters = list(sigma2 = sigma2_phylo)
-    )
+    # trait_phylo <- rTrait(1, tree,
+    #     stoch_process,
+    #     parameters = list(sigma2 = sigma2_phylo)
+    # )
+    trait_phylo <- rTraitCont(phy = tree,
+                              model = stoch_process,
+                              sigma = sqrt(sigma2_phylo))
 
     # The measure error
     trait_error <- rnorm(length(groups), mean = 0, sd = sqrt(sigma2_measure))
@@ -242,7 +245,8 @@ infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
     #  The fits
     fit_anova <- lm(y ~ groups)
     fit_phylolm <- phylolm(y ~ groups, phy = tree, model = stoch_process, measurement_error = TRUE)
-    return(list(anova = fit_anova, phyloanova = fit_phylolm))
+    fit_phylolm_reml <- phylolm(y ~ groups, phy = tree, model = stoch_process, measurement_error = TRUE, REML = TRUE)
+    return(list(anova = fit_anova, phyloanova = fit_phylolm, phyloanovareml = fit_phylolm_reml))
 }
 
 #' Function used to check if a value is considered invalid for the lrt test
@@ -349,9 +353,10 @@ compute_lrt_pvalue <- function(fit_phylolm, tree){
 pvalues_from_fits <- function(
     fit_anova,
     fit_phylolm,
+    fit_phylolm_reml,
     tree,
     tested_methods = c("anova", "vanilla", "satterthwaite", "lrt"),
-    REML = FALSE) {
+    REML = TRUE) {
 
     #  For sanity test
     rlang::arg_match(tested_methods, 
@@ -365,6 +370,12 @@ pvalues_from_fits <- function(
 
     res_df <- data.frame(matrix(ncol = 4, nrow = 0))
     colnames(res_df) <- c("tested_method", "pvalue", "df1", "df2")
+    
+    if (!REML) {
+      fitphylo <- fit_phylolm
+    } else {
+      fitphylo <- fit_phylolm_reml
+    }
 
     # Iterates over the methods to test
     for(method in tested_methods) {
@@ -382,14 +393,14 @@ pvalues_from_fits <- function(
                 )
             },
             "vanilla" = {
-                df2 <- nb_species - K
-                pvalue <- compute_vanilla_pvalue(fit_phylolm = fit_phylolm)
+              df2 <- nb_species - K
+              pvalue <- compute_vanilla_pvalue(fit_phylolm = fitphylo)
             },
             "satterthwaite" = {
-                df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, 
+                df2 <- ddf_satterthwaite_sum(fit_phylolm = fitphylo, 
                         phylo = tree, 
                         REML = REML)$ddf
-                pvalue <- compute_satterthwaite_pvalue(fit_phylolm = fit_phylolm, 
+                pvalue <- compute_satterthwaite_pvalue(fit_phylolm = fitphylo, 
                 tree = tree, 
                 REML = REML)
             },
@@ -439,7 +450,7 @@ simulate_all_methods <- function(
     groups_list,
     groups_names = names(groups_list),
     risk_threshold = 0.05,
-    REML = FALSE) {
+    REML = TRUE) {
 
     # Be sure to ignore base_values if testing H0
     if (correct_hypothesis == "H0") {
@@ -472,6 +483,7 @@ simulate_all_methods <- function(
         all_methods_df <- pvalues_from_fits(
             fit_anova = fits$anova,
             fit_phylolm = fits$phyloanova,
+            fit_phylolm_reml = fits$phyloanovareml,
             tree = tree, 
             REML = REML
         )
@@ -506,7 +518,8 @@ N_simulation_typeI_power <- function(N,
     base_values, 
     sigma2_phylo, 
     sigma2_measure, 
-    risk_threshold = 0.05) {
+    risk_threshold = 0.05,
+    REML = TRUE) {
     df <- do.call("rbind", lapply(1:N, function(id) {
         rbind(simulate_all_methods(
             sim_id = id,
@@ -515,7 +528,8 @@ N_simulation_typeI_power <- function(N,
             base_values = base_values,
             sigma2_phylo = sigma2_phylo,
             sigma2_measure = sigma2_measure,
-            risk_threshold = risk_threshold
+            risk_threshold = risk_threshold,
+            REML = REML
         ), simulate_all_methods(
             sim_id = id,
             groups_list = groups_list,
@@ -523,7 +537,51 @@ N_simulation_typeI_power <- function(N,
             base_values = base_values,
             sigma2_phylo = sigma2_phylo,
             sigma2_measure = sigma2_measure,
-            risk_threshold = risk_threshold
+            risk_threshold = risk_threshold,
+            REML = REML
         ))
     }))
+}
+
+compute_power_typeI <- function(df) {
+  df_plot <- df %>%
+    group_by(tested_method, group_type) %>%
+    summarise(
+      power = mean(has_selected_correctly[correct_hypothesis == "H1"]),
+      errortypeI = 1 - mean(has_selected_correctly[correct_hypothesis == "H0"]), 
+      .groups = "drop_last")
+  return(df_plot)
+}
+
+plot_method_comparison <- function(df_plot, title = "") {
+  
+  error <- ggplot(df_plot) +
+    aes(x = group_type, y = errortypeI, fill = group_type) +
+    geom_bar(stat = "identity") +
+    scale_y_continuous(limits = c(0, 1)) +
+    ylab("Erreur type I") +
+    xlab("Type de groupe") +
+    labs(fill = "Type de groupe") +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+    facet_wrap(vars(tested_method), nrow = 4) +
+    geom_text(aes(label = round(errortypeI, digits = 2)), 
+              vjust = -0.5, position = position_dodge(width = 0.9)) +
+    geom_hline(yintercept = 0.05)+
+    ggtitle("Erreur Type I")
+  
+  power <- ggplot(df_plot) +
+    aes(x = group_type, y = power, fill = group_type) +
+    geom_bar(stat = "identity") +
+    scale_y_continuous(limits = c(0, 1)) +
+    ylab("Puissance") +
+    xlab("Type de groupe") +
+    labs(fill = "Type de groupe") +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+    facet_wrap(vars(tested_method), nrow = 4) +
+    geom_text(aes(label = round(power, digits = 2)), 
+              vjust = -0.5, position = position_dodge(width = 0.9))+
+    ggtitle("Puissance")
+  
+  (error + power + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")) +
+    plot_annotation(title = title)
 }
