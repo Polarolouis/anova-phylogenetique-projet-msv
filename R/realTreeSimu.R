@@ -4,6 +4,9 @@
 require("ape")
 require("phylolm")
 require("phytools")
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
 
 source("./R/utils.R")
 
@@ -47,7 +50,7 @@ risk_threshold <- 0.05
 
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
-heri <- c(0, 0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
 ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
@@ -58,6 +61,7 @@ for (her in heri) {
         base_values = c(0, snr * total_variance), 
         sigma2_phylo = her * total_variance,
         sigma2_measure = (1 - her) * total_variance,
+        REML = TRUE
     )
 
 
