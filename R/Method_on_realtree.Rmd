@@ -48,7 +48,7 @@ data.norm <- data.norm * 1e6
 data.trans <- log2(data.norm)
 rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
 ```
-
+# Vanilla, Satterthwaite (REML), LRT
 ```{r calcul_pvaleurs, echo = FALSE}
 ### Pvalues computation
 pvalues_data = "chen2019pvalues.Rds"
@@ -141,55 +141,92 @@ upset(pvalues_dataframe_wide,
     sets.x.label = "Nombre de gènes sélectionnés")
 ```
 
+# EVEmodel
+
 ```{r , echo = FALSE}
-# TODO comparer avec le package evemodel, twothetatest
-# Comparer avec OU lrt
-# Arbre sans les replicats et les genes data
-# remotes::install_gitlab("sandve-lab/evemodel")
-# TODO Utiliser les infos de la ligne 83 du Rmd
+eve_data = "evechen2019pvalues.Rds"
+if (!file.exists(here("data", eve_data))){
 
-cdata <- readRDS(here("data", "data_TER", "data", "chen2019_rodents_cpd.rds"))
-is.valid <- compcodeR:::check_phyloCompData(cdata)
-if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
-tree_rep <- compcodeR:::getTree(cdata)
-tree_norep <- compcodeR:::getTreeEVE(cdata)
-theta_2_vec <- compcodeR:::getIsTheta2edge(cdata, tree_norep)
-#col_species <- tree_norep$tip.label[compcodeR:::sample.annotations(cdata)$id.species]
-col_species <- tree_norep$tip.label[cumsum(!duplicated(compcodeR:::sample.annotations(cdata)$id.species))]
+    # TODO comparer avec le package evemodel, twothetatest
+    # Comparer avec OU lrt
+    # Arbre sans les replicats et les genes data
+    # remotes::install_gitlab("sandve-lab/evemodel")
+    # TODO Utiliser les infos de la ligne 83 du Rmd
 
-# Normalisation
-nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
-lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
-data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
-data.norm <- data.norm * 1e6
+    cdataEVE <- readRDS(here("data", "data_TER", "data", "chen2019_rodents_cpd.rds"))
+    is.valid <- compcodeR:::check_phyloCompData(cdataEVE)
+    if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+    tree_rep <- compcodeR:::getTree(cdataEVE)
+    tree_norep <- compcodeR:::getTreeEVE(cdataEVE)
+    theta_2_vec <- compcodeR:::getIsTheta2edge(cdataEVE, tree_norep)
+    #col_species <- tree_norep$tip.label[compcodeR:::sample.annotations(cdataEVE)$id.species]
+    col_species <- tree_norep$tip.label[cumsum(!duplicated(compcodeR:::sample.annotations(cdataEVE)$id.species))]
 
-# Transformation
-data.trans <- log2(data.norm)
-rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
+    # Normalisation
+    nfEVE <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdataEVE) / compcodeR:::length.matrix(cdataEVE), method = 'TMM')
+    lib.sizeEVE <- colSums(compcodeR:::count.matrix(cdataEVE) / compcodeR:::length.matrix(cdataEVE)) * nfEVE
+    data.normEVE <- sweep((compcodeR:::count.matrix(cdataEVE) + 0.5) / compcodeR:::length.matrix(cdataEVE), 2, lib.sizeEVE + 1, '/')
+    data.normEVE <- data.normEVE * 1e6
 
-# Analysis with EVE
-evemodel.results_list <- evemodel::twoThetaTest(tree = tree_norep, gene.data = data.trans, isTheta2edge = theta_2_vec, colSpecies = col_species, upperBound  =  c(theta = Inf, sigma2 = Inf, alpha = log(2)/0.001/1))
+    # Transformation
+    data.transEVE <- log2(data.normEVE)
+    rownames(data.transEVE) <- rownames(compcodeR:::count.matrix(cdataEVE))
 
-result.table <- data.frame(pvalue = pchisq(evemodel.results_list$LRT, df = 1, lower.tail = FALSE), logFC = compcodeR:::getlogFCEVE(evemodel.results_list$twoThetaRes, theta_2_vec, tree_norep))
-result.table$score <- 1 - result.table$pvalue
-result.table$adjpvalue <- p.adjust(result.table$pvalue, 'BH')
+    # Analysis with EVE
+    evemodel.results_list <- evemodel::twoThetaTest(tree = tree_norep, gene.data = data.transEVE, isTheta2edge = theta_2_vec, colSpecies = col_species, upperBound  =  c(theta = Inf, sigma2 = Inf, alpha = log(2)/0.001/1))
 
-# Save the results
-rownames(result.table) <- rownames(compcodeR:::count.matrix(cdata))
-compcodeR:::result.table(cdata) <- result.table
-compcodeR:::package.version(cdata) <- paste('evemodel,', packageVersion('evemodel'))
-compcodeR:::package.version(cdata) <- paste('edgeR,', packageVersion('edgeR'))
-compcodeR:::analysis.date(cdata) <- date()
-compcodeR:::method.names(cdata) <- list('short.name' = 'evetwotheta', 'full.name' = 'evemodel0.0.0.9008.TMM.lengthNorm.TPM.dataTrans.log2.empNull.FALSE')
-is.valid <- compcodeR:::check_compData_results(cdata)
-if (!(is.valid == TRUE)) stop('Not a valid phyloCompData result object.')
+    result.table <- data.frame(pvalue = pchisq(evemodel.results_list$LRT, df = 1, lower.tail = FALSE), logFC = compcodeR:::getlogFCEVE(evemodel.results_list$twoThetaRes, theta_2_vec, tree_norep))
+    result.table$score <- 1 - result.table$pvalue
+    result.table$adjpvalue <- p.adjust(result.table$pvalue, 'BH')
 
-# TODO Afficher avec UpSetR les genes differentiellement exprimées et
-# voir les diagrammes de Venn
+    rownames(result.table) <- rownames(compcodeR:::count.matrix(cdataEVE))
+
+    evemodel_dataframe <- data.frame(gene = rep(rownames(result.table), 2), 
+        pvalue = c(result.table$pvalue, result.table$adjpvalue),
+        test_method = rep(c("EVE","EVEAdj"), each = nrow(result.table)))
+    save(evemodel_dataframe, file = eve_data)
+} else {
+    load(file = here("data", eve_data))
+}
+
+evegenesNA <- (evemodel_dataframe%>% filter(is.na(pvalue)))$gene
+
+evemodel_dataframe <- evemodel_dataframe %>% 
+    filter(!is.na(pvalue)) %>% 
+    mutate(selected = ifelse(pvalue < 0.05, 1, 0))
+
+evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
 
 
-# Appliquer notre méthode autant de fois que de gène et corriger les pvalues
-# obtenues par la correction pour obtenir
+cat(paste("Il y a eu des NAs pour les gènes : ", paste0(evegenesNA, collapse = ";")))
+```
 
-# Vérifier que la F stat = T stat ^ 2
+```{r eve_upset, echo = FALSE}
+evemodel_dataframe_wide <- evemodel_dataframe %>% 
+    pivot_wider(id_cols = gene, 
+    names_from = test_method, 
+    values_from = selected) %>%
+    data.frame()
+
+upset(evemodel_dataframe_wide, 
+    mainbar.y.label = "Nombre de gènes en commun",
+    sets.x.label = "Nombre de gènes sélectionnés")
+```
+
+# Toutes les méthodes
+
+```{r pvalue_eve_upset, echo = FALSE}
+pvalueseve_dataframe <- rbind(pvalues_dataframe, evemodel_dataframe)
+
+
+pvalueseve_dataframe_wide <- pvalueseve_dataframe  %>% 
+    pivot_wider(id_cols = gene,
+    names_from = test_method, 
+    values_from = selected, values_fill = 0) %>%
+    data.frame()
+
+upset(pvalueseve_dataframe_wide, 
+    nsets = 10,
+    mainbar.y.label = "Nombre de gènes en commun",
+    sets.x.label = "Nombre de gènes sélectionnés")
 ```
