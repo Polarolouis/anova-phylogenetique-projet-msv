@@ -3,10 +3,14 @@
 
 # Repartir du fichier d'analyse Rmd
 # Utiliser data.trans, ligne 883 voir RMD
-
+require(phylotools)
+require(phytools)
+require(phylolm)
 require(limma)
 require(edgeR)
 library(here)
+
+source("R/utils.R")
 
 cdata <- readRDS(here("data","data_TER","data", "chen2019_rodents_cpd.rds"))
 is.valid <- compcodeR:::check_phyloCompData(cdata)
@@ -31,7 +35,7 @@ rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
 # computing pvalues vec for all genes
 pvalue_vec_vanilla <- sapply(seq(1,nrow(data.trans)), function(row_id) {
     trait <- data.trans[row_id,]
-    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree)
+    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_vanilla_pvalue(fit_phylo)
 })
 
@@ -41,7 +45,7 @@ pvalue_vec_vanilla_adj <- p.adjust(pvalue_vec_vanilla, method = "BH")
 
 pvalue_vec_satterthwaite <- sapply(seq(1,nrow(data.trans)), function(row_id) {
     trait <- data.trans[row_id,]
-    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree)
+    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree)
 })
 
@@ -52,13 +56,56 @@ pvalue_vec_satterthwaite_adj <- p.adjust(pvalue_vec_satterthwaite, method = "BH"
 
 pvalue_vec_lrt <- sapply(seq(1,nrow(data.trans)), function(row_id) {
     trait <- data.trans[row_id,]
-    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree)
+    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_lrt_pvalue(fit_phylo, tree = cdata@tree)
 })
 
 pvalue_vec_lrt <- setNames(pvalue_vec_lrt, rownames(data.trans))
 pvalue_vec_lrt_adj <- p.adjust(pvalue_vec_lrt, method = "BH")
 
+# REML
+pvalue_vec_satterthwaite.REML <- sapply(seq(1,nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id,]
+    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
+    compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree, REML = TRUE)
+})
+
+pvalue_vec_satterthwaite.REML <- setNames(pvalue_vec_satterthwaite, rownames(data.trans))
+
+pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite, method = "BH")
+
+
+pvalue_vec_lrt <- sapply(seq(1,nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id,]
+    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
+    compute_lrt_pvalue(fit_phylo, tree = cdata@tree)
+})
+
+pvalue_vec_lrt <- setNames(pvalue_vec_lrt, rownames(data.trans))
+pvalue_vec_lrt_adj <- p.adjust(pvalue_vec_lrt, method = "BH")
+
+# TODO Histogramme des pvalues
+
+# TODO utiliser UpSetR pour diagramme de Venn
+
+# TODO comparer avec le package evemodel, twothetatest
+# Comparer avec OU lrt
+# Arbre sans les replicats et les genes data
+remotes::install_gitlab("sandve-lab/evemodel")
+
+
+# computing pvalues vec for all genes
+pvalue_vec_vanilla <- sapply(seq(1,nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id,]
+    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, 
+    measurement_error = TRUE, model = "OUfixedRoot")
+    compute_vanilla_pvalue(fit_phylo)
+})
+
+# TODO Utiliser les infos de la ligne 83 du Rmd
+
+# TODO Afficher avec UpSetR les genes differentiellement exprimées et 
+# voir les diagrammes de Venn
 
 
 # Appliquer notre méthode autant de fois que de gène et corriger les pvalues 

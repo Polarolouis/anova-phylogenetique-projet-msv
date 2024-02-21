@@ -21,11 +21,11 @@ tree <- read.tree("./R/chen2019.tree")
 taille_tree <- diag(vcv(tree))[1]
 tree$edge.length <- tree$edge.length / taille_tree
 
-plotTree(tree, ftype="i")
+plotTree(tree, ftype="i", node.numbers=TRUE)
 
 # Mus et Rat vs le reste
 
-group_mus_rat_vs_other <- sapply(44:(43+nb_species), function(tip) {
+group_mus_rat_vs_other <- sapply(1:nb_species, function(tip) {
     if (tip %in% getDescendants(tree = tree, 55)) {
         return(1)
     }
@@ -33,7 +33,6 @@ group_mus_rat_vs_other <- sapply(44:(43+nb_species), function(tip) {
 })
 
 random_groups <- sample(1:K, nb_species, replace = TRUE)
-
 
 plot_group_on_tree(tree, group = group_mus_rat_vs_other)
 plot_group_on_tree(tree, group = random_groups)
@@ -48,7 +47,7 @@ risk_threshold <- 0.05
 
 ## Standardized parameters
 total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
-heri <- c(0.0, 0.25, 0.5, 1.0) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+heri <- c(0, 0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 
 ggsave <- function(..., bg = "white") ggplot2::ggsave(..., bg = bg)
