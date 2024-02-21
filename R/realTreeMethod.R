@@ -110,7 +110,10 @@ ggplot(pvalues_dataframe) +
 
 # DONE utiliser UpSetR pour diagramme de Venn
 require(UpSetR)
-upset(pvalues_dataframe_wide, mainbar.y.label = "Nombre de gènes en commun")
+upset(pvalues_dataframe_wide, 
+    nsets = 8,
+    mainbar.y.label = "Nombre de gènes en commun",
+    sets.x.label = "Nombre de gènes sélectionnés")
 
 # TODO comparer avec le package evemodel, twothetatest
 # Comparer avec OU lrt
