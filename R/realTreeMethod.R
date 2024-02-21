@@ -37,9 +37,11 @@ data.norm <- data.norm * 1e6
 data.trans <- log2(data.norm)
 rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
 
-# computing pvalues vec for all genes
-pvalue_vec_vanilla <- sapply(seq(1,nrow(data.trans)), function(row_id) {
-    trait <- data.trans[row_id,]
+### Pvalues computation
+
+#  computing pvalues vec for all genes
+pvalue_vec_vanilla <- sapply(seq(1, nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id, ]
     fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_vanilla_pvalue(fit_phylo)
 })
@@ -48,8 +50,8 @@ pvalue_vec_vanilla <- setNames(pvalue_vec_vanilla, rownames(data.trans))
 
 pvalue_vec_vanilla_adj <- p.adjust(pvalue_vec_vanilla, method = "BH")
 
-pvalue_vec_satterthwaite <- sapply(seq(1,nrow(data.trans)), function(row_id) {
-    trait <- data.trans[row_id,]
+pvalue_vec_satterthwaite <- sapply(seq(1, nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id, ]
     fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree)
 })
@@ -59,8 +61,8 @@ pvalue_vec_satterthwaite <- setNames(pvalue_vec_satterthwaite, rownames(data.tra
 pvalue_vec_satterthwaite_adj <- p.adjust(pvalue_vec_satterthwaite, method = "BH")
 
 
-pvalue_vec_lrt <- sapply(seq(1,nrow(data.trans)), function(row_id) {
-    trait <- data.trans[row_id,]
+pvalue_vec_lrt <- sapply(seq(1, nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id, ]
     fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_lrt_pvalue(fit_phylo, tree = cdata@tree)
 })
@@ -69,25 +71,15 @@ pvalue_vec_lrt <- setNames(pvalue_vec_lrt, rownames(data.trans))
 pvalue_vec_lrt_adj <- p.adjust(pvalue_vec_lrt, method = "BH")
 
 # REML
-pvalue_vec_satterthwaite.REML <- sapply(seq(1,nrow(data.trans)), function(row_id) {
-    trait <- data.trans[row_id,]
+pvalue_vec_satterthwaite.REML <- sapply(seq(1, nrow(data.trans)), function(row_id) {
+    trait <- data.trans[row_id, ]
     fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
     compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree, REML = TRUE)
 })
 
-pvalue_vec_satterthwaite.REML <- setNames(pvalue_vec_satterthwaite, rownames(data.trans))
+pvalue_vec_satterthwaite.REML <- setNames(pvalue_vec_satterthwaite.REML, rownames(data.trans))
 
-pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite, method = "BH")
-
-
-pvalue_vec_lrt <- sapply(seq(1,nrow(data.trans)), function(row_id) {
-    trait <- data.trans[row_id,]
-    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
-    compute_lrt_pvalue(fit_phylo, tree = cdata@tree)
-})
-
-pvalue_vec_lrt <- setNames(pvalue_vec_lrt, rownames(data.trans))
-pvalue_vec_lrt_adj <- p.adjust(pvalue_vec_lrt, method = "BH")
+pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite.REML, method = "BH")
 
 # TODO Histogramme des pvalues
 
