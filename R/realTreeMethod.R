@@ -1,6 +1,7 @@
 # TODO appliquer Satterthwaite, et calcule les pvalues pour les 5000 genes
 # avec Correction Bonferroni et Benjamini-Hochberg (voir Livre Christophe Giraud)
 
+### Import et fonctions utiles
 # Repartir du fichier d'analyse Rmd
 # Utiliser data.trans, ligne 883 voir RMD
 require(phylotools)
@@ -8,24 +9,28 @@ require(phytools)
 require(phylolm)
 require(limma)
 require(edgeR)
-library(here)
+require(here)
+require(ggplot2)
+require(dplyr)
+require(tidyr)
 
 source("R/utils.R")
 
-cdata <- readRDS(here("data","data_TER","data", "chen2019_rodents_cpd.rds"))
+### Data import
+cdata <- readRDS(here("data", "data_TER", "data", "chen2019_rodents_cpd.rds"))
 is.valid <- compcodeR:::check_phyloCompData(cdata)
-if (!(is.valid == TRUE)) stop('Not a valid phyloCompData object.')
+if (!(is.valid == TRUE)) stop("Not a valid phyloCompData object.")
 
 # Design
-design_formula <- as.formula(~ condition)
-design_data <- compcodeR:::sample.annotations(cdata)[, 'condition', drop = FALSE]
+design_formula <- as.formula(~condition)
+design_data <- compcodeR:::sample.annotations(cdata)[, "condition", drop = FALSE]
 design_data$condition <- factor(design_data$condition)
 design <- model.matrix(design_formula, design_data)
 
 # Normalisation
-nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = 'TMM')
+nf <- edgeR::calcNormFactors(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata), method = "TMM")
 lib.size <- colSums(compcodeR:::count.matrix(cdata) / compcodeR:::length.matrix(cdata)) * nf
-data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, '/')
+data.norm <- sweep((compcodeR:::count.matrix(cdata) + 0.5) / compcodeR:::length.matrix(cdata), 2, lib.size + 1, "/")
 data.norm <- data.norm * 1e6
 
 # Transformation
