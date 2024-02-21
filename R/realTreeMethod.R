@@ -82,8 +82,35 @@ pvalue_vec_satterthwaite.REML <- setNames(pvalue_vec_satterthwaite.REML, rowname
 pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite.REML, method = "BH")
 
 # TODO Histogramme des pvalues
+## Préparation du dataframe
+pvalues_dataframe <- data.frame(
+    gene = rep(rownames(data.trans), 8),
+    pvalue = c(pvalue_vec_vanilla, pvalue_vec_vanilla_adj, 
+        pvalue_vec_satterthwaite, pvalue_vec_satterthwaite_adj, 
+        pvalue_vec_lrt, pvalue_vec_lrt_adj, pvalue_vec_satterthwaite.REML, 
+        pvalue_vec_satterthwaite_adj.REML),
+    test_method = rep(c("Vanilla", "VanillaAdj", "Satterthwaite", 
+    "SatterthwaiteAdj", "LRT", "LRTAdj", "SatterthwaiteREML", 
+    "SatterthwaiteAdjREML"), each = nrow(data.trans))
+)
+pvalues_dataframe$test_method <- as.factor(pvalues_dataframe$test_method)
+pvalues_dataframe <- pvalues_dataframe %>% mutate(selected = ifelse(pvalue < 0.05, 1, 0))
+
+pvalues_dataframe_wide <- pvalues_dataframe %>% 
+    pivot_wider(id_cols = gene, 
+    names_from = test_method, 
+    values_from = selected) %>%
+    data.frame()
+
+## Graphiques
+ggplot(pvalues_dataframe) +
+    aes(x = genes, y = pvalues, fill = test_method) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~test_method)
 
 # TODO utiliser UpSetR pour diagramme de Venn
+require(UpSetR)
+upset(pvalues_dataframe_wide)
 
 # TODO comparer avec le package evemodel, twothetatest
 # Comparer avec OU lrt
@@ -91,21 +118,14 @@ pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite.REML, met
 remotes::install_gitlab("sandve-lab/evemodel")
 
 
-# computing pvalues vec for all genes
-pvalue_vec_vanilla <- sapply(seq(1,nrow(data.trans)), function(row_id) {
-    trait <- data.trans[row_id,]
-    fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, 
-    measurement_error = TRUE, model = "OUfixedRoot")
-    compute_vanilla_pvalue(fit_phylo)
-})
 
 # TODO Utiliser les infos de la ligne 83 du Rmd
 
-# TODO Afficher avec UpSetR les genes differentiellement exprimées et 
+# TODO Afficher avec UpSetR les genes differentiellement exprimées et
 # voir les diagrammes de Venn
 
 
-# Appliquer notre méthode autant de fois que de gène et corriger les pvalues 
+# Appliquer notre méthode autant de fois que de gène et corriger les pvalues
 # obtenues par la correction pour obtenir
 
 # Vérifier que la F stat = T stat ^ 2
