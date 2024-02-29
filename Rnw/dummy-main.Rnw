@@ -1,0 +1,189 @@
+\documentclass[a4paper, 12pt]{report}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+
+%Images
+\usepackage{graphicx}
+\graphicspath{{img/}}
+
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsthm}
+\usepackage{cancel}
+
+\usepackage[style=authoryear-comp,backend=biber]{biblatex}
+%== use and define color ==%
+\AtEveryCite{\color{blue}}
+\addbibresource{references.bib}
+
+% Configurations
+\geometry{a4paper, margin=2.5cm}
+\graphicspath{ {img/} }
+
+% Macros utiles
+\newcommand{\Normal}{\mathcal{N}}
+
+
+% Titre du document
+\title{Rapport de Projet : ANOVA Phylogénétique}
+\author{Alizée Geffroy \and Louis Lacoste}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+<<include=FALSE>>=
+    knitr::opts_chunk$set(echo = FALSE)
+    require("knitr", quietly = TRUE)
+    options(knitr.table.format = "latex")
+@
+
+
+\chapter{Introduction}
+\label{chap:intro}
+% Introduction au projet, contexte, objectifs.
+Ici contexte biologique, les données de \cite{gomez-mestrePhylogeneticAnalysesReveal2012}, les données de Paul et Mélina etc.
+
+Avec l'avènement des données massives de génomiques, transcriptomiques, protéomiques etc, il y a besoin de techniques statistiques robustes et passant à l'échelle permettant de mener à bien l'analyse.
+
+\chapter{État de l'Art}
+\label{chap:etat_art}
+% Revue de la littérature sur l'ANOVA phylogénétique.
+Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La démonstration des limites de l'ANOVA phylogénétique par des simulations
+
+\section{L'ANOVA}
+
+L'ANOVA est un cas classique du modèle linéaire, nous utilisons ici les notations et le formalisme de \cite{belModeleLineaireSes}.
+
+Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative et une ou plusieurs variables qualitatives.
+
+La forme usuelle de l'ANOVA à 1 facteur est la suivante :
+
+\begin{align}
+Y_{ik} = \mu_i + E_{ik}, & &i = 1,\dots I, k = 1,\dots n_i, E_{ik} \sim \Normal (0, \sigma^2)
+\end{align}
+
+où dans cette équation, reprise du livre \parencite{belModeleLineaireSes}, $i$ représente le niveau du facteur et $k$ indique le numéro de l'observation dans ce niveau. $I$ est le nombre total de niveaux du facteur, $n_i$ le nombre d'observation du niveau $i$. 
+
+L'ANOVA se généralise à deux facteurs, plus facilement compréhensible avec cette forme, non identifiable :
+\begin{align}
+Y_{ijk} = \mu + \alpha_i + \beta_j + E_{ijk}, & &i = 1,\dots I, j = 1,\dots J, k = 1,\dots n_ij, E_{ijk} \sim \Normal (0, \sigma^2)
+\end{align}
+
+où $\mu$ représente un effet moyen de la population (\emph{intercept}), $\alpha_i$ l'effet du premier facteur de niveau $i$, $\beta_j$ l'effet du second facteur de niveau $j$.
+
+Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
+
+% ICI LES FORMULES
+
+% LIMITES de l'ANOVA classique sur les données phylo
+
+\section{L'ANOVA phylogénétique}
+
+\chapter{Méthodologie}
+\label{chap:metho}
+\section{Approximation de Satterthwaite}
+Pourquoi vouloir l'utiliser ? Réduire nbre de degrés de liberté utilisés dans la stat de test. 
+Le but est d'approximé le nbre de degré de Liberté. 
+On se basera sur la documentation du package lmer \cite{lmerPackage} pour ensuite implémenter une approximation de Satterthwaite. 
+\begin{equation}
+    Y = X\beta + u + \epsilon 
+\end{equation} 
+\[
+\text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
+\]
+\newline
+\[
+ \text{Alors} \quad Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \quad \text{et} \quad Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n
+\]
+De là on obtient:
+\begin{equation}
+    C(\theta) = (Cov(\beta_i , \beta_j))_{i,j} = (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1}
+\end{equation}
+
+Toujours en suivant la documentation \cite{lmerPackage} on obtient une expression pour les degrés de liberté $df$ ainsi qu'une approximation. Ce qui nous donne :
+\begin{equation}
+    df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta})]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
+\end{equation} 
+\[\text{où} \quad \hat{C} = C(\hat\theta) \quad \text{et} \quad f(\theta) = l^TC(\theta)l\]
+On va donc dans la suite calculer $\nabla f(\theta)$ puis l'appliquer en $\hat{\theta}$ et $A$ la matrice de variance-covariance de $\hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err})$ 
+\begin{proof}[Calcul du gradient]
+Nous voulons calculer les dérivées partielles $\partial_{\sigma^2_{phy}}f(\theta)$ et $\partial_{\sigma^2_{err}}f(\theta)$. Pour les premières étapes de calculs, on écrira seulement $\partial$ sans distinction car ce sont les mêmes expressions pour les 2 dérivées. 
+On utilisera dans la suite les formules de \cite{matrixcookbook2012} pour les dérivées de matrice
+\[
+\partial f(\theta)=l^T\partial C(\theta)l
+\]
+\[
+\partial C(\theta)=\partial (X^TV(\theta)^{-1}X)^{-1} = -C(\theta) \partial (X^TV(\theta)^{-1}X)C(\theta)
+\]
+
+\[
+    \partial (X^TV(\theta)^{-1}X) = \partial (X^TV(\theta)^{-1})X + \cancel{X^TV(\theta)^{-1})\partial(X)}
+\]
+
+% Commençons par utiliser la définition des fonctions trigonométriques :
+% \[
+% \sin(x) = \frac{e^{ix} - e^{-ix}}{2i} \quad \text{et} \quad \cos(x) = \frac{e^{ix} + e^{-ix}}{2}
+% \]
+
+% En substituant ces expressions dans l'identité, nous obtenons :
+% \begin{align*}
+% \sin^2(x) + \cos^2(x) &= \left(\frac{e^{ix} - e^{-ix}}{2i}\right)^2 + \left(\frac{e^{ix} + e^{-ix}}{2}\right)^2 \\
+% &= \frac{(e^{ix} - e^{-ix})^2}{4i^2} + \frac{(e^{ix} + e^{-ix})^2}{4} \\
+% &= \frac{(e^{ix} - e^{-ix})(e^{ix} - e^{-ix})}{-4} + \frac{(e^{ix} + e^{-ix})(e^{ix} + e^{-ix})}{4} \\
+% &= \frac{e^{2ix} - 2e^{ix}e^{-ix} + e^{-2ix}}{-4} + \frac{e^{2ix} + 2e^{ix}e^{-ix} + e^{-2ix}}{4} \\
+% &= \frac{e^{2ix} - 2 + e^{-2ix}}{-4} + \frac{e^{2ix} + 2 + e^{-2ix}}{4} \\
+% &= \frac{e^{2ix} + e^{-2ix}}{4} + \frac{e^{2ix} + e^{-2ix}}{4} - \frac{2}{4} + \frac{2}{4} \\
+% &= \frac{2(e^{2ix} + e^{-2ix})}{4} \\
+% &= \frac{2 \cdot 2\cos(2x)}{4} \quad \text{(par la formule d'Euler)} \\
+% &= \cos(2x)
+% \end{align*}
+
+% Ainsi, nous avons montré que $\sin^2(x) + \cos^2(x) = 1$.
+\end{proof}
+Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
+
+\section{Simulations}
+% On importe le fichier
+<<simulations-methodes, child='Rnw/simulations-methodes.Rnw'>>=
+@
+
+\chapter{Données}
+\label{chap:data}
+% Présentation des données utilisées.
+<<donnees-reelles, child='Rnw/donnees-reelles.Rnw'>>=
+@
+
+\chapter{Résultats}
+\label{chap:results}
+% Présentation des résultats obtenus.
+
+\chapter{Discussion}
+\label{chap:discuss}
+% Analyse critique des résultats, limites, perspectives.
+
+\chapter{Conclusion}
+\label{chap:conclu}
+% Résumé des principales conclusions du projet.
+
+% Bibliographie
+\printbibliography
+\nocite{*}
+
+\end{document}
