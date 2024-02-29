@@ -160,6 +160,7 @@ ddf_satterthwaite_sum <- function(fit_phylolm, phylo, REML = FALSE) {
     return(list(ddf = ddf, vcov = A))
 }
 
+# TODO Use phylolimma analytic hessian
 # Adapted from lmerTest
 # https://github.com/runehaubo/lmerTestR/blob/35dc5885205d709cdc395b369b08ca2b7273cb78/R/lmer.R#L173
 compute_hessian <- function(optpars, fun, grad_trans, tol = 1e-8, ...) {
@@ -262,7 +263,7 @@ is_invalid_value <- function(value) {
 #' @param fit_phylolm The phylolm fit for which to test
 #' 
 #' @return pvalue
-compute_vanilla_pvalue <- function(fit_phylolm){
+compute_vanilla_pvalue <- function(fit_phylolm, return_df = FALSE){
 
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
@@ -278,7 +279,12 @@ compute_vanilla_pvalue <- function(fit_phylolm){
         df2 = df2
     )
     pvalue <- 1 - pf(F_stat, df1, df2)
-    return(pvalue)
+    if (!return_df) {
+        return(pvalue)
+    } else {
+        return(list(pvalue = pvalue, df2 = df2))
+    }
+
 }
 
 #' Computes pvalue with Satterthwaite approximation for phylolm fit Fisher test
@@ -288,7 +294,7 @@ compute_vanilla_pvalue <- function(fit_phylolm){
 #' @param REML Use REML for computation
 #' 
 #' @return pvalue
-compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE){
+compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE, return_df = FALSE){
 
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
@@ -307,7 +313,13 @@ compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE){
         df2 = df2
     )
     pvalue <- 1 - pf(F_stat, df1, df2)
-    return(pvalue)
+
+    if (!return_df) {
+        return(pvalue)
+    } else {
+        return(list(pvalue = pvalue, df2 = df2))
+    }
+
 }
 
 #' Computes pvalue for phylolm fit likelihood ratio test

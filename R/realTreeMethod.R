@@ -53,8 +53,10 @@ pvalue_vec_vanilla_adj <- p.adjust(pvalue_vec_vanilla, method = "BH")
 pvalue_vec_satterthwaite <- sapply(seq(1, nrow(data.trans)), function(row_id) {
     trait <- data.trans[row_id, ]
     fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
-    compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree)
+    compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree, )
 })
+
+# TODO Analyser l'origine de la surestimation du nombre de df2 pour le gène 1. Vient pê de sigma2_error ~ 1e-11
 
 pvalue_vec_satterthwaite <- setNames(pvalue_vec_satterthwaite, rownames(data.trans))
 

@@ -64,6 +64,16 @@ if (!file.exists(here("data",pvalues_data))){
 
     pvalue_vec_vanilla_adj <- p.adjust(pvalue_vec_vanilla, method = "BH")
 
+    pvalue_vec_vanilla.REML <- sapply(seq(1, nrow(data.trans)), function(row_id) {
+        trait <- data.trans[row_id, ]
+        fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, REML = TRUE, measurement_error = TRUE)
+        compute_vanilla_pvalue(fit_phylo)
+    })
+
+    pvalue_vec_vanilla.REML <- setNames(pvalue_vec_vanilla.REML, rownames(data.trans))
+
+    pvalue_vec_vanilla_adj.REML <- p.adjust(pvalue_vec_vanilla.REML, method = "BH")
+
     pvalue_vec_satterthwaite <- sapply(seq(1, nrow(data.trans)), function(row_id) {
         trait <- data.trans[row_id, ]
         fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
@@ -87,7 +97,7 @@ if (!file.exists(here("data",pvalues_data))){
     # REML
     pvalue_vec_satterthwaite.REML <- sapply(seq(1, nrow(data.trans)), function(row_id) {
         trait <- data.trans[row_id, ]
-        fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, measurement_error = TRUE)
+        fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, REML = TRUE, measurement_error = TRUE)
         compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree, REML = TRUE)
     })
 
@@ -95,16 +105,18 @@ if (!file.exists(here("data",pvalues_data))){
 
     pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite.REML, method = "BH")
 
+# TODO Nettoyer le dataframe
 
 ## Préparation du dataframe
     pvalues_dataframe <- data.frame(
-    gene = rep(rownames(data.trans), 8),
-    pvalue = c(pvalue_vec_vanilla, pvalue_vec_vanilla_adj, 
-        pvalue_vec_satterthwaite, pvalue_vec_satterthwaite_adj, 
-        pvalue_vec_lrt, pvalue_vec_lrt_adj, pvalue_vec_satterthwaite.REML, 
+    gene = rep(rownames(data.trans), 5),
+    pvalue = c(pvalue_vec_vanilla_adj,
+        pvalue_vec_vanilla_adj.REML,
+        pvalue_vec_satterthwaite_adj, 
+        pvalue_vec_lrt_adj, 
         pvalue_vec_satterthwaite_adj.REML),
-    test_method = rep(c("Vanilla", "VanillaAdj", "Satterthwaite", 
-    "SatterthwaiteAdj", "LRT", "LRTAdj", "SatterthwaiteREML", 
+    test_method = rep(c( "VanillaAdj", "VanillaAdjREML",
+    "SatterthwaiteAdj", "LRTAdj",
     "SatterthwaiteAdjREML"), each = nrow(data.trans))
 )
     pvalues_dataframe$test_method <- as.factor(pvalues_dataframe$test_method)
@@ -113,12 +125,15 @@ if (!file.exists(here("data",pvalues_data))){
 } else {
     load(here("data", pvalues_data))
 }
+
+pvalues_dataframe$Adj <- grepl(pattern = "*Adj*", pvalues_dataframe$test_method)
 ```
 
 ```{r graphique_all_pvalues, echo = FALSE}
 ## Graphiques
-ggplot(pvalues_dataframe) +
-    aes(x = gene, y = pvalue, fill = test_method) +
+# TODO Faire les plots des pvalues dans l'ordre décroissant
+ggplot(pvalues_dataframe[pvalues_dataframe$Adj,]) +
+    aes(x = gene, y = sort(pvalue, decreasing = TRUE), fill = test_method) +
     geom_bar(stat = "identity", position = "dodge") +
     facet_wrap(~test_method) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
@@ -127,7 +142,7 @@ ggplot(pvalues_dataframe) +
 Ici on réalise un pivot_wider pour montrer les gènes sélectionnées par méthodes.
 
 ```{r wide_data, echo = FALSE}
-pvalues_dataframe_wide <- pvalues_dataframe %>% 
+pvalues_dataframe_wide <- pvalues_dataframe[pvalues_dataframe$Adj,] %>% 
     pivot_wider(id_cols = gene, 
     names_from = test_method, 
     values_from = selected) %>%
