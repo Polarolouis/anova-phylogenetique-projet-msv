@@ -4,17 +4,18 @@
 ### Import et fonctions utiles
 # Repartir du fichier d'analyse Rmd
 # Utiliser data.trans, ligne 883 voir RMD
-require(phylotools)
-require(phytools)
-require(phylolm)
-require(limma)
-require(edgeR)
-require(here)
-require(ggplot2)
-require(dplyr)
-require(tidyr)
+library(phylotools)
+library(phytools)
+library(phylolm)
+library(limma)
+library(edgeR)
+library(here)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
 
 source("R/utils.R")
+
 
 ### Data import
 cdata <- readRDS(here("data", "data_TER", "data", "chen2019_rodents_cpd.rds"))
@@ -111,7 +112,7 @@ ggplot(pvalues_dataframe) +
     facet_wrap(~test_method)
 
 # DONE utiliser UpSetR pour diagramme de Venn
-require(UpSetR)
+library(UpSetR)
 upset(pvalues_dataframe_wide, 
     nsets = 8,
     mainbar.y.label = "Nombre de gènes en commun",
