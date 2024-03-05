@@ -4,11 +4,12 @@
 require("ape")
 require("phylolm")
 require("phytools")
+require("here")
 library(tidyverse)
 library(ggplot2)
 library(patchwork)
 
-source("./R/utils.R")
+source(here("R","utils.R"))
 
 K <- 2
 
@@ -19,7 +20,7 @@ plot_group_on_tree <- function(tree, groups) {
     tiplabels(bg = groups, pch = 21)
 }
 
-tree <- read.tree("./R/chen2019.tree")
+tree <- read.tree(here("R","chen2019.tree"))
 # Normalising tree edge length
 taille_tree <- diag(vcv(tree))[1]
 tree$edge.length <- tree$edge.length / taille_tree
