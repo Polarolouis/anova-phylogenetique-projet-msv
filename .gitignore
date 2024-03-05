@@ -323,4 +323,7 @@ TSWLatexianTemp*
 # Rnw figures
 figure/
 
+# rapport.tex
+rapport.tex
+
 # Taken from github.com/github/gitignore/blob/master/TeX.gitignore
