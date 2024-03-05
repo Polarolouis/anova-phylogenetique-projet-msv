@@ -138,10 +138,11 @@ Pas possible de supposer iid, existe relations entre les individus et les groupe
 
 Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
 
-\section{État de l'Art}
-\label{chap:etat_art}
+\section{Méthodes}
+\label{sec:methode}
 % Revue de la littérature sur l'ANOVA phylogénétique.
 Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La démonstration des limites de l'ANOVA phylogénétique par des simulations
+Méthode: la partie maths anova, anova phylo, satterthwaite, 
 
 \subsection{L'ANOVA}
 
@@ -177,27 +178,10 @@ PUis de la matrice V ou K qui donne la structure phylogénétique
 
 Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
 
-\section{Méthodologie}
-\label{chap:metho}
-lrt 
-ANOVA normale 
-VANILLA = ANOVA phylo sans correction des degrés de liberté $df1 = K - 1, df2 = n-K$
-ANOVA phylo (avec REML)
 
-test sur arbre quelconque
-puis sur arbre avec petites branches ? 
-
-Ou faire une partie à part entière avec 
-1) ANOVA vs ANOVA phylo sans correction des degrés de liberté
- b) avec une sous partie sur le REML
-
-2) ANOVA phylo avec approximation de SAtterthwaite 
- a) prez
- a`) simulation et résultats 
- b) instabilités numériques -> correction avec la Hessienne ? 
- c) La hessienne analytique ? A voir si besoin d'une partie supplémentaire
- 
+% TODO Définir les tests stats
 \subsection{Approximation de Satterthwaite}
+
 Pourquoi vouloir l'utiliser ? Réduire nbre de degrés de liberté utilisés dans la stat de test. 
 Le but est d'approximé le nbre de degré de Liberté. 
 On se basera sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour ensuite implémenter une approximation de Satterthwaite. 
@@ -259,6 +243,28 @@ On utilisera dans la suite les formules de \cite{petersenMatrixCookbook2012} pou
 \end{proof}
 % Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
 
+
+\section{Méthodologie}
+\label{chap:metho}
+lrt 
+ANOVA normale 
+VANILLA = ANOVA phylo sans correction des degrés de liberté $df1 = K - 1, df2 = n-K$
+ANOVA phylo (avec REML)
+
+test sur arbre quelconque
+puis sur arbre avec petites branches ? 
+
+Ou faire une partie à part entière avec 
+1) ANOVA vs ANOVA phylo sans correction des degrés de liberté
+ b) avec une sous partie sur le REML
+
+2) ANOVA phylo avec approximation de SAtterthwaite 
+ a) prez
+ a`) simulation et résultats 
+ b) instabilités numériques -> correction avec la Hessienne ? 
+ c) La hessienne analytique ? A voir si besoin d'une partie supplémentaire
+ 
+
 3 parties :
 - théo
 - méthodo par simu
@@ -268,6 +274,11 @@ On utilisera dans la suite les formules de \cite{petersenMatrixCookbook2012} pou
 
 \subsection{Simulations}
 % On importe le fichier
+
+Simu: Plusieurs design, tailles etc
+On sait la vérité, on peut connaitre les vrais positifs etc 
+Qu'est ce qu'on prend en entrées qu'est ce qu'on veut en sortie
+
 
 
 Bien insister sur l'arbre d'entrée et l'objectif de la simu : quelle approche pour mieux détecter les gènes différentiellement exprimés.
@@ -279,7 +290,7 @@ Simulations :
 \end{itemize}
 
 \section{Données}
-\label{chap:data}
+\label{sec:data}
 % Présentation des données utilisées.
 
 
@@ -288,24 +299,18 @@ Revenir sur explication de gènes différentiellement exprimées etc.
 Applications aux données réelles de Chen mais ne pas perdre de temps à expliquer en détails EVEmodel (dire que c'est State of the art).
 
 \section{Résultats}
-\label{chap:results}
+\label{sec:results}
 % Présentation des résultats obtenus.
 
 % Présenter EVEmodel et son usage
 
 
-\section{Discussion}
-\label{chap:discuss}
+\section{Discussion et conclusion}
+\label{sec:discuss_conclusion}
 % Analyse critique des résultats, limites, perspectives.
 
-\section{Conclusion}
-\label{chap:conclu}
-% Résumé des principales conclusions du projet.
 Intro
-Méthode: la partie maths anova, anova phylo, satterthwaite, 
-Simu: Plusieurs design, tailles etc
-On sait la vérité, on peut connaitre les vrais positifs etc 
-Qu'est ce qu'on prend en entrées qu'est ce qu'on veut en sortie
+
 Application/Résultats: décrire les données, vite fait normalisation avec vrai aebre, on ne connait pas 
 Discussion/COnclusion ? Interprétation des résultats sinon la mettre dans les 
 
