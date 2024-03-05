@@ -317,4 +317,10 @@ TSWLatexianTemp*
 # standalone packages
 *.sta
 
+# biblatex
+*.bbl
+
+# Rnw figures
+figure/
+
 # Taken from github.com/github/gitignore/blob/master/TeX.gitignore
