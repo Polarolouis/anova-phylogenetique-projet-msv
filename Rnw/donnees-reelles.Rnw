@@ -4,7 +4,7 @@ Ici nous appliquons les méthodes implémentées sur l'arbre de \cite{chenQuanti
 
 << 'knitr_options', echo = FALSE>>=
 knitr::opts_knit$set(cache = TRUE, fig.pos = "HT", fig.width = 6, fig.height = 6,
-    fig.align = "center", echo = FALSE)
+    fig.align = "center", echo = FALSE, format = "latex")
 
 @
 
@@ -278,14 +278,19 @@ Dans l'article \cite{rohlfsPhylogeneticANOVAExpression2015}, les auteurs
 introduisent une méthode de détection des gènes différentiellement exprimés.
 Cette méthode est à l'heure actuelle très utilisée.
 
-\Sexpr{paste("Il y a eu des NAs pour les gènes : ", paste0(evegenesNA, collapse = ";"))}.
+\emph{Remarque :} La méthode a produit des \texttt{NA} pour certains gènes,
+d'après le message d'erreur, une optimisation n'a pas convergé. Ces gènes sont
+présentés dans le tableau~\ref{tab:na-evemodel}.
 
-\begin{table}
+\begin{table}[H]
+    \centering
     <<'table_nas'>>=
-    knitr::kable(evegenesNA, colnames = "Gènes ayant produits des NA")
+    knitr::kable(evegenesNA, col.names = "Gènes ayant produits des NA", 
+        align = "c", booktabs = TRUE, format = "latex", escape = TRUE)
     @
+    \caption{Table des gènes pour lesquels la méthode \texttt{EVEmodel} a produit des NA}
+    \label{tab:na-evemodel}
 \end{table}
-
 
 \subsection*{Toutes les méthodes}
 
