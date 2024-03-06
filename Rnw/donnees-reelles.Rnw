@@ -1,7 +1,11 @@
 Ici nous appliquons les méthodes implémentées sur l'arbre de \cite{chenQuantitativeFrameworkCharacterizing2019}.
 
+% TODO Décrire les données en détails
+
 << 'knitr_options', echo = FALSE>>=
-knitr::opts_knit$set(cache = TRUE)
+knitr::opts_knit$set(cache = TRUE, fig.pos = "HT", fig.width = 6, fig.height = 6,
+    fig.align = "center", echo = FALSE)
+
 @
 
 << import_modules, echo = FALSE, include=FALSE>>=
@@ -58,10 +62,11 @@ rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
 @
 
 \subsection*{Vanilla (ML et REML), Satterthwaite (ML et REML), LRT}
-<< calcul_pvaleurs, echo = FALSE>>=
+<< calcul_pvaleurs, echo = FALSE, warning = FALSE>>=
 ### Pvalues computation
 pvalues_data = "chen2019pvalues.Rds"
-if (!file.exists(here("data",pvalues_data))){
+pvalues_adj_data = "chen2019pvaluesadj.Rds"
+if (!file.exists(here("data",pvalues_data)) | !file.exists(here("data",pvalues_adj_data))){
 #  computing pvalues vec for all genes
     pvalue_vec_vanilla <- sapply(seq(1, nrow(data.trans)), function(row_id) {
         trait <- data.trans[row_id, ]
@@ -115,28 +120,54 @@ if (!file.exists(here("data",pvalues_data))){
     pvalue_vec_satterthwaite_adj.REML <- p.adjust(pvalue_vec_satterthwaite.REML, method = "BH")
 
 
-## Préparation du dataframe
+    ## Préparation du dataframe
+        pvalues_adj_dataframe <- data.frame(
+        gene = rep(rownames(data.trans), 5),
+        pvalue = c(pvalue_vec_vanilla_adj,
+            pvalue_vec_vanilla_adj.REML,
+            pvalue_vec_satterthwaite_adj, 
+            pvalue_vec_lrt_adj, 
+            pvalue_vec_satterthwaite_adj.REML),
+        test_method = rep(c( "VanillaAdj", "VanillaAdjREML",
+        "SatterthwaiteAdj", "LRTAdj",
+        "SatterthwaiteAdjREML"), each = nrow(data.trans))
+    )
+
     pvalues_dataframe <- data.frame(
-    gene = rep(rownames(data.trans), 5),
-    pvalue = c(pvalue_vec_vanilla_adj,
-        pvalue_vec_vanilla_adj.REML,
-        pvalue_vec_satterthwaite_adj, 
-        pvalue_vec_lrt_adj, 
-        pvalue_vec_satterthwaite_adj.REML),
-    test_method = rep(c( "VanillaAdj", "VanillaAdjREML",
-    "SatterthwaiteAdj", "LRTAdj",
-    "SatterthwaiteAdjREML"), each = nrow(data.trans))
-)
+        gene = rep(rownames(data.trans), 5),
+        pvalue = c(pvalue_vec_vanilla,
+            pvalue_vec_vanilla.REML,
+            pvalue_vec_satterthwaite, 
+            pvalue_vec_lrt, 
+            pvalue_vec_satterthwaite.REML),
+        test_method = rep(c( "Vanilla", "VanillaREML",
+        "Satterthwaite", "LRT",
+        "SatterthwaiteREML"), each = nrow(data.trans))
+    )
+
     pvalues_dataframe$test_method <- as.factor(pvalues_dataframe$test_method)
     pvalues_dataframe <- pvalues_dataframe %>% mutate(selected = ifelse(pvalue < 0.05, 1, 0))
+
+    pvalues_adj_dataframe$test_method <- as.factor(pvalues_adj_dataframe$test_method)
+    pvalues_adj_dataframe <- pvalues_adj_dataframe %>% mutate(selected = ifelse(pvalue < 0.05, 1, 0))
+
     save(pvalues_dataframe, file = here("data", pvalues_data))
+    save(pvalues_adj_dataframe, file = here("data", pvalues_adj_data))
 } else {
     load(here("data", pvalues_data))
+    load(here("data", pvalues_adj_data))
 }
-
 @
 
-\begin{figure}
+Nous appliquons les différentes méthodes que nous avons implémentés dans le 
+code.
+
+Ci-dessous la figure~\ref{fig:pval-methods} présente les p-values des 
+différentes méthodes. Il est important de noter que ce graphique présente les
+p-values \emph{non ajustées}.
+
+\begin{figure}[H]
+    \centering
     << graphique_all_pvalues, echo = FALSE>>=
     all_plots <- plot_spacer()
     for (test in unique(pvalues_dataframe$test_method)) {
@@ -154,26 +185,36 @@ if (!file.exists(here("data",pvalues_data))){
         axis_titles = "collect", tag_level = "new") + 
         plot_annotation(title = "Selected genes by tested methods")
     @
+    \caption{\emph{p-values} pour les différents tests}
+    \label{fig:pval-methods}
 \end{figure}
 
+Pour la suite de cette analyse, nous allons appliquer un ajustement des p-values
+pour les test multiples, nommément la correction de Benjamini-Hochberg.
 
-
-Ici on réalise un \texttt{pivot wider} pour montrer les gènes sélectionnées par méthodes.
 
 << wide_data, echo = FALSE>>=
-pvalues_dataframe_wide <- pvalues_dataframe[pvalues_dataframe$Adj,] %>% 
-    pivot_wider(id_cols = gene, 
-    names_from = test_method, 
-    values_from = selected) %>%
-    data.frame()
+pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>% 
+        pivot_wider(id_cols = gene, 
+        names_from = test_method, 
+        values_from = selected) %>%
+        data.frame()
 @
-\begin{figure}
+
+Une fois ces corrections appliquées, nous allons comparer les gènes sélectionnés,
+c'est-à-dire différentiellement exprimés. % TODO Développer ce que veut dire différentiellement exprimé
+
+Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods})
+
+\begin{figure}[H]
     << upset_selection, echo = FALSE>>=
-    upset(pvalues_dataframe_wide, 
+    upset(pvalues_adj_dataframe_wide, 
         nsets = 5,
         mainbar.y.label = "Nombre de gènes en commun",
         sets.x.label = "Nombre de gènes sélectionnés")
-    @    
+    @
+    \caption{Diagramme de Venn comparant les gènes sélectionnés selon les méthodes}
+    \label{fig:venn-all-methods}
 \end{figure}
 
 \subsection*{EVEmodel}
@@ -232,24 +273,44 @@ evemodel_dataframe <- evemodel_dataframe %>%
 
 evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
 @
-<<'na-genes', result = 'asis'>>=
-cat(paste("Il y a eu des NAs pour les gènes : ", paste0(evegenesNA, collapse = ";")))
-@
 
-\subsection{Toutes les méthodes}
+Dans l'article \cite{rohlfsPhylogeneticANOVAExpression2015}, les auteurs 
+introduisent une méthode de détection des gènes différentiellement exprimés.
+Cette méthode est à l'heure actuelle très utilisée.
+
+\Sexpr{paste("Il y a eu des NAs pour les gènes : ", paste0(evegenesNA, collapse = ";"))}.
+
+\begin{table}
+    <<'table_nas'>>=
+    knitr::kable(evegenesNA, colnames = "Gènes ayant produits des NA")
+    @
+\end{table}
+
+
+\subsection*{Toutes les méthodes}
+
+Nous allons ici comparer toutes les méthodes dans un diagramme de Venn (figure~\ref{fig:venn-all-methods-eve}) afin de 
+voir les gènes sélectionnés en commun et les éventuelles différences entre les 
+méthodes.
 
 << pvalue_eve_upset, echo = FALSE>>=
-pvalueseve_dataframe <- rbind(pvalues_dataframe, evemodel_dataframe)
-
+pvalueseve_dataframe <- rbind(pvalues_adj_dataframe, evemodel_dataframe)
 
 pvalueseve_dataframe_wide <- pvalueseve_dataframe  %>% 
     pivot_wider(id_cols = gene,
     names_from = test_method, 
     values_from = selected, values_fill = 0) %>%
     data.frame()
-
-upset(pvalueseve_dataframe_wide, 
-    nsets = 10,
-    mainbar.y.label = "Nombre de gènes en commun",
-    sets.x.label = "Nombre de gènes sélectionnés")
 @
+
+\begin{figure}[H]
+    << full_plot, echo = FALSE>>=
+    upset(pvalueseve_dataframe_wide, 
+        nsets = 10,
+        mainbar.y.label = "Nombre de gènes en commun",
+        sets.x.label = "Nombre de gènes sélectionnés")
+    @
+    \caption{Diagramme de Venn de toutes les méthodes en incluant la méthode EVE}
+    \label{fig:venn-all-methods-eve}
+\end{figure}
+

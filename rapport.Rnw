@@ -9,6 +9,7 @@
 %Images
 \usepackage{graphicx}
 \graphicspath{{img/}}
+\usepackage{float}
 
 \usepackage{caption}
 \usepackage{subcaption}
