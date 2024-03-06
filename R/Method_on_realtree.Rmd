@@ -10,20 +10,33 @@ knitr::opts_knit$set(cache = TRUE)
 ```
 
 ```{r import_modules, echo = FALSE, include=FALSE}
-# Utiliser data.trans, ligne 883 voir RMD
-require(phylotools)
-require(phytools)
-require(phylolm)
-require(limma)
-require(edgeR)
-require(here)
-require(ggplot2)
-require(dplyr)
-require(tidyr)
-require(UpSetR)
-require(evemodel)
+necessary_packages <- c("phylotools", "phytools", "phylolm", "limma", "edgeR", 
+    "here", "ggplot2", "patchwork", "dplyr", "tidyr", "UpSetR", "evemodel", 
+    "compcodeR", "mvSLOUCH")
 
-source("utils.R")
+if (!all(necessary_packages %in% installed.packages())) {
+    install.packages(necessary_packages)
+    install.packages("remotes")
+    remotes::install_gitlab("sandve-lab/evemodel")
+    remotes::install_github("pbastide/compcodeR", ref = "phylolimma")
+} else {
+    require(phylotools)
+    require(phytools)
+    require(phylolm)
+    require(limma)
+    require(edgeR)
+    require(here)
+    require(ggplot2)
+    require(dplyr)
+    require(tidyr)
+    require(UpSetR)
+    require(evemodel)
+    require(compcodeR)
+    require(mvSLOUCH)
+    require(patchwork)
+}
+
+source(here("R","utils.R"))
 ```
 
 ```{r import_donnees, echo = FALSE}
@@ -126,23 +139,34 @@ if (!file.exists(here("data",pvalues_data))){
     load(here("data", pvalues_data))
 }
 
-pvalues_dataframe$Adj <- grepl(pattern = "*Adj*", pvalues_dataframe$test_method)
 ```
 
 ```{r graphique_all_pvalues, echo = FALSE}
-## Graphiques
-# TODO Faire les plots des pvalues dans l'ordre décroissant
-ggplot(pvalues_dataframe[pvalues_dataframe$Adj,]) +
-    aes(x = gene, y = sort(pvalue, decreasing = TRUE), fill = test_method) +
-    geom_bar(stat = "identity", position = "dodge") +
-    facet_wrap(~test_method) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+# TODO Plot les pvalues NON-AJUSTE
+
+all_plots <- plot_spacer()
+
+for (test in unique(pvalues_dataframe$test_method)) {
+    all_plots <- all_plots + ggplot(pvalues_dataframe %>% filter(test_method == test)) +
+        aes(x = reorder(gene, -pvalue), 
+            y = pvalue, color = as.factor(selected)) +
+        labs(color = "Selected", x = "Genes", y = "P-values")+
+        # geom_bar(stat = "identity", position = "dodge") +
+        geom_point()+
+        geom_hline(yintercept = 0.05) +
+        facet_grid(cols = vars(test_method)) +
+        theme(axis.text.x=element_blank(), axis.ticks.x = element_blank())
+}
+all_plots + patchwork::plot_layout(guides = "collect", 
+    axis_titles = "collect", tag_level = "new") + 
+    plot_annotation(title = "Selected genes by tested methods")
 ```
 
 Ici on réalise un pivot_wider pour montrer les gènes sélectionnées par méthodes.
 
 ```{r wide_data, echo = FALSE}
-pvalues_dataframe_wide <- pvalues_dataframe[pvalues_dataframe$Adj,] %>% 
+pvalues_dataframe_wide <- pvalues_dataframe %>% 
     pivot_wider(id_cols = gene, 
     names_from = test_method, 
     values_from = selected) %>%
@@ -151,7 +175,6 @@ pvalues_dataframe_wide <- pvalues_dataframe[pvalues_dataframe$Adj,] %>%
 
 ```{r upset_selection, echo = FALSE}
 upset(pvalues_dataframe_wide, 
-    nsets = 8,
     mainbar.y.label = "Nombre de gènes en commun",
     sets.x.label = "Nombre de gènes sélectionnés")
 ```
@@ -196,10 +219,10 @@ if (!file.exists(here("data", eve_data))){
 
     rownames(result.table) <- rownames(compcodeR:::count.matrix(cdataEVE))
 
-    evemodel_dataframe <- data.frame(gene = rep(rownames(result.table), 2), 
-        pvalue = c(result.table$pvalue, result.table$adjpvalue),
-        test_method = rep(c("EVE","EVEAdj"), each = nrow(result.table)))
-    save(evemodel_dataframe, file = eve_data)
+    evemodel_dataframe <- data.frame(gene = rep(rownames(result.table)), 
+        pvalue = c(result.table$adjpvalue),
+        test_method = rep("EVEAdj", each = nrow(result.table)))
+    save(evemodel_dataframe, file = here("data", eve_data))
 } else {
     load(file = here("data", eve_data))
 }
@@ -211,21 +234,10 @@ evemodel_dataframe <- evemodel_dataframe %>%
     mutate(selected = ifelse(pvalue < 0.05, 1, 0))
 
 evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
-
-
-cat(paste("Il y a eu des NAs pour les gènes : ", paste0(evegenesNA, collapse = ";")))
 ```
 
-```{r eve_upset, echo = FALSE}
-evemodel_dataframe_wide <- evemodel_dataframe %>% 
-    pivot_wider(id_cols = gene, 
-    names_from = test_method, 
-    values_from = selected) %>%
-    data.frame()
-
-upset(evemodel_dataframe_wide, 
-    mainbar.y.label = "Nombre de gènes en commun",
-    sets.x.label = "Nombre de gènes sélectionnés")
+```{r, results = 'asis', echo = FALSE}
+cat(paste("Il y a eu des NAs pour les gènes : ", paste0(evegenesNA, collapse = ";")))
 ```
 
 # Toutes les méthodes
