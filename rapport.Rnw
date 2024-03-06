@@ -1,0 +1,291 @@
+\documentclass[a4paper, 12pt]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+
+%Images
+\usepackage{graphicx}
+\graphicspath{{img/}}
+
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsthm}
+\usepackage{cancel}
+
+\usepackage[style=authoryear-comp,backend=biber]{biblatex}
+%== use and define color ==%
+\AtEveryCite{\color{blue}}
+\addbibresource{references.bib}
+
+% Configurations
+\geometry{a4paper, margin=2.5cm}
+\graphicspath{ {img/} }
+
+% Macros utiles
+\newcommand{\Normal}{\mathcal{N}}
+
+
+% Titre du document
+\title{Rapport de Projet : ANOVA Phylogénétique}
+\author{Alizée Geffroy \and Louis Lacoste}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+<<'init', include=FALSE>>=
+    knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+    require("knitr", quietly = TRUE)
+    options(knitr.table.format = "latex")
+@
+
+<<'libraries', include=FALSE>>=
+necessary_packages <- c("phytools", "here")
+install.packages(necessary_packages)
+
+require(phytools)
+require(phylotools)
+require(here)
+source(here("R","utils.R"))
+@
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+\label{chap:intro}
+% Introduction au projet, contexte, objectifs.
+Ici contexte biologique, les données de \cite{gomez-mestrePhylogeneticAnalysesReveal2012}, les données de Paul et Mélina etc.
+
+Avec l'avènement des données massives de génomiques, transcriptomiques, protéomiques etc, il y a besoin de techniques statistiques robustes et passant à l'échelle permettant de mener à bien l'anal
+Format des données : arbres phylogénétiques, données génétiques 
+Arbres avec des petitites branche: plusieurs individus par espèces avec chacun leurs données 
+--> problème biologique 
+
+Deux sujets différents écologie et transcriptomique mais une même méthode.
+
+Pour données \cite{chenQuantitativeFrameworkCharacterizing2019} la figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
+
+\begin{figure}[!h]
+    \centering
+<<'plot-arbre-chen'>>=
+    tree <- read.tree(here("R","chen2019.tree"))
+    # Normalising tree edge length
+    taille_tree <- diag(vcv(tree))[1]
+    tree$edge.length <- tree$edge.length / taille_tree
+
+    phytools::plotTree(tree, ftype="i")
+@
+    \caption{Arbre phylogénétique de \cite{chenQuantitativeFrameworkCharacterizing2019}}
+    \label{fig:arbre-chen2019}
+\end{figure}
+
+
+Transition, c'est pourquoi on va tester la méthode d'ANOVA phylogénétique avec cette forme de données. 
+But ? Etudier cette méthode et les résultats 
+
+Un gène, comparer les moyennes d'expression d'un gène 
+On connait les groupes
+exemple individus malade/sain
+
+Comparaison non pas sur individus malades/pas malades mais sur espèces différentes.
+Pas possible de supposer iid, existe relations entre les individus et les groupes que l'on compare donc besoin de les prendre en compte.
+
+Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
+
+\section{Méthodes}
+\label{sec:methode}
+% Revue de la littérature sur l'ANOVA phylogénétique.
+Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La démonstration des limites de l'ANOVA phylogénétique par des simulations
+Méthode: la partie maths anova, anova phylo, satterthwaite, 
+
+\subsection{L'ANOVA}
+
+L'ANOVA est un cas classique du modèle linéaire, nous utilisons ici les notations et le formalisme de \cite{belModeleLineaireSes}.
+
+Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative et une ou plusieurs variables qualitatives.
+
+La forme usuelle de l'ANOVA à 1 facteur est la suivante :
+
+\begin{align}
+Y_{ik} = \mu_i + E_{ik}, & &i = 1,\dots I, k = 1,\dots n_i, E_{ik} \sim \Normal (0, \sigma^2)
+\end{align}
+
+où dans cette équation, reprise du livre \parencite{belModeleLineaireSes}, $i$ représente le niveau du facteur et $k$ indique le numéro de l'observation dans ce niveau. $I$ est le nombre total de niveaux du facteur, $n_i$ le nombre d'observation du niveau $i$. 
+
+L'ANOVA se généralise à deux facteurs, plus facilement compréhensible avec cette forme, non identifiable :
+\begin{align}
+Y_{ijk} = \mu + \alpha_i + \beta_j + E_{ijk}, & &i = 1,\dots I, j = 1,\dots J, k = 1,\dots n_ij, E_{ijk} \sim \Normal (0, \sigma^2)
+\end{align}
+
+où $\mu$ représente un effet moyen de la population (\emph{intercept}), $\alpha_i$ l'effet du premier facteur de niveau $i$, $\beta_j$ l'effet du second facteur de niveau $j$.
+
+Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
+
+% ICI LES FORMULES
+
+% LIMITES de l'ANOVA classique sur les données phylo
+
+\subsection{L'ANOVA phylogénétique}
+
+parler du BM ? 
+PUis de la matrice V ou K qui donne la structure phylogénétique 
+
+Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
+
+
+% TODO Définir les tests stats
+\subsection{Approximation de Satterthwaite}
+
+Pourquoi vouloir l'utiliser ? Réduire nbre de degrés de liberté utilisés dans la stat de test. 
+Le but est d'approximé le nbre de degré de Liberté. 
+On se basera sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour ensuite implémenter une approximation de Satterthwaite. 
+\begin{equation}
+    Y = X\beta + u + \epsilon 
+\end{equation} 
+\[
+\text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
+\]
+\newline
+\[
+ \text{Alors} \quad Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \quad \text{et} \quad Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n
+\]
+De là on obtient:
+\begin{equation}
+    C(\theta) = (Cov(\beta_i , \beta_j))_{i,j} = (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1}
+\end{equation}
+
+Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} on obtient une expression pour les degrés de liberté $df$ ainsi qu'une approximation. Ce qui nous donne :
+\begin{equation}
+    df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta})]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
+\end{equation} 
+\[\text{où} \quad \hat{C} = C(\hat\theta) \quad \text{et} \quad f(\theta) = l^TC(\theta)l\]
+On va donc dans la suite calculer $\nabla f(\theta)$ puis l'appliquer en $\hat{\theta}$ et $A$ la matrice de variance-covariance de $\hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err})$ 
+
+\begin{proof}[Calcul du gradient]
+Nous voulons calculer les dérivées partielles $\partial_{\sigma^2_{phy}}f(\theta)$ et $\partial_{\sigma^2_{err}}f(\theta)$. Pour les premières étapes de calculs, on écrira seulement $\partial$ sans distinction car ce sont les mêmes expressions pour les 2 dérivées. 
+On utilisera dans la suite les formules de \cite{petersenMatrixCookbook2012} pour les dérivées de matrice
+\[
+\partial f(\theta)=l^T\partial C(\theta)l
+\]
+\[
+\partial C(\theta)=\partial (X^TV(\theta)^{-1}X)^{-1} = -C(\theta) \partial (X^TV(\theta)^{-1}X)C(\theta)
+\]
+
+\[
+    \partial (X^TV(\theta)^{-1}X) = \partial (X^TV(\theta)^{-1})X + \cancel{X^TV(\theta)^{-1})\partial(X)} \quad (\partial_{\sigma^2_{phy}}(X)\text{ et } \partial_{\sigma^2_{err}}(X) \text{ sont nulles})
+\]
+
+% Commençons par utiliser la définition des fonctions trigonométriques :
+% \[
+% \sin(x) = \frac{e^{ix} - e^{-ix}}{2i} \quad \text{et} \quad \cos(x) = \frac{e^{ix} + e^{-ix}}{2}
+% \]
+
+% En substituant ces expressions dans l'identité, nous obtenons :
+% \begin{align*}
+% \sin^2(x) + \cos^2(x) &= \left(\frac{e^{ix} - e^{-ix}}{2i}\right)^2 + \left(\frac{e^{ix} + e^{-ix}}{2}\right)^2 \\
+% &= \frac{(e^{ix} - e^{-ix})^2}{4i^2} + \frac{(e^{ix} + e^{-ix})^2}{4} \\
+% &= \frac{(e^{ix} - e^{-ix})(e^{ix} - e^{-ix})}{-4} + \frac{(e^{ix} + e^{-ix})(e^{ix} + e^{-ix})}{4} \\
+% &= \frac{e^{2ix} - 2e^{ix}e^{-ix} + e^{-2ix}}{-4} + \frac{e^{2ix} + 2e^{ix}e^{-ix} + e^{-2ix}}{4} \\
+% &= \frac{e^{2ix} - 2 + e^{-2ix}}{-4} + \frac{e^{2ix} + 2 + e^{-2ix}}{4} \\
+% &= \frac{e^{2ix} + e^{-2ix}}{4} + \frac{e^{2ix} + e^{-2ix}}{4} - \frac{2}{4} + \frac{2}{4} \\
+% &= \frac{2(e^{2ix} + e^{-2ix})}{4} \\
+% &= \frac{2 \cdot 2\cos(2x)}{4} \quad \text{(par la formule d'Euler)} \\
+% &= \cos(2x)
+% \end{align*}
+
+% Ainsi, nous avons montré que $\sin^2(x) + \cos^2(x) = 1$.
+\end{proof}
+% Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
+
+
+\section{Méthodologie}
+\label{chap:metho}
+lrt 
+ANOVA normale 
+VANILLA = ANOVA phylo sans correction des degrés de liberté $df1 = K - 1, df2 = n-K$
+ANOVA phylo (avec REML)
+
+test sur arbre quelconque
+puis sur arbre avec petites branches ? 
+
+Ou faire une partie à part entière avec 
+1) ANOVA vs ANOVA phylo sans correction des degrés de liberté
+ b) avec une sous partie sur le REML
+
+2) ANOVA phylo avec approximation de SAtterthwaite 
+ a) prez
+ a`) simulation et résultats 
+ b) instabilités numériques -> correction avec la Hessienne ? 
+ c) La hessienne analytique ? A voir si besoin d'une partie supplémentaire
+ 
+
+3 parties :
+- théo
+- méthodo par simu
+- appli aux données réelles
+
+
+
+\subsection{Simulations}
+% On importe le fichier
+
+Simu: Plusieurs design, tailles etc
+On sait la vérité, on peut connaitre les vrais positifs etc 
+Qu'est ce qu'on prend en entrées qu'est ce qu'on veut en sortie
+
+<<simulations-methodes, child='Rnw/simulations-methodes.Rnw'>>=
+@
+
+Bien insister sur l'arbre d'entrée et l'objectif de la simu : quelle approche pour mieux détecter les gènes différentiellement exprimés.
+
+Simulations :
+\begin{itemize}
+    \item soit selon l'arbre des données
+    \item soit partir sur regarder l'impact de la taille de l'arbre etc.
+\end{itemize}
+
+\section{Données}
+\label{sec:data}
+% Présentation des données utilisées.
+<<donnees-reelles, child='Rnw/donnees-reelles.Rnw'>>=
+@
+
+Revenir sur explication de gènes différentiellement exprimées etc.
+
+Applications aux données réelles de Chen mais ne pas perdre de temps à expliquer en détails EVEmodel (dire que c'est State of the art).
+
+\section{Résultats}
+\label{sec:results}
+% Présentation des résultats obtenus.
+
+% Présenter EVEmodel et son usage
+
+
+\section{Discussion et conclusion}
+\label{sec:discuss_conclusion}
+% Analyse critique des résultats, limites, perspectives.
+
+Intro
+
+Application/Résultats: décrire les données, vite fait normalisation avec vrai aebre, on ne connait pas 
+Discussion/COnclusion ? Interprétation des résultats sinon la mettre dans les 
+
+% Bibliographie
+\printbibliography
+\nocite{*}
+
+% TODO Ici éventuellement une partie annexe discussion de l'impact des tailles d'abres
+
+\end{document}
