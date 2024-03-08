@@ -148,6 +148,8 @@ Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du
 \subsection{L'ANOVA phylogénétique}
 
 parler du BM ? 
+% Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
+% figure avec le Brownien sur l'arbre à reprendre dans le chapitre de livre
 PUis de la matrice V ou K qui donne la structure phylogénétique 
 
 Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
@@ -217,6 +219,14 @@ On utilisera dans la suite les formules de \cite{petersenMatrixCookbook2012} pou
 \end{proof}
 % Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
 
+% TODO REML voir sujet d'exam corrigée
+% Quand estimateur classique on divise par n-p au lieu de diviser par n donc on 
+% fait sans le dire un REML.
+% Au lieu de maximiser la vraisemblance on maximise la vraisemblance restreinte
+% Gaussien : effet fixe les betas, pour estimer al variance on projette sur 
+% l'orthogonal et on estime sigma sur l'orthogonal.
+
+% Si bayésien on met un prior impropre sur les betas et on intègre apr rapport aux 
 
 \section{Méthodologie}
 \label{chap:metho}
