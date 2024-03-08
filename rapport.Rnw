@@ -54,12 +54,16 @@
 @
 
 <<'libraries', include=FALSE>>=
-necessary_packages <- c("phytools", "here")
-install.packages(necessary_packages)
+necessary_packages <- c("phytools", "phylotools", "here")
+if (any(!(necessary_packages %in% installed.packages()))) {
+    install.packages(necessary_packages)
+}
 
 require(phytools)
 require(phylotools)
 require(here)
+
+
 source(here("R","utils.R"))
 @
 
