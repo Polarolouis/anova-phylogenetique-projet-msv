@@ -1,0 +1,135 @@
+<< 'knitr_options-simu', echo = FALSE>>=
+knitr::opts_knit$set(cache = TRUE, fig.pos = "HT", fig.width = 6, fig.height = 6,
+    fig.align = "center", warnings = FALSE, echo = FALSE, format = "latex")
+
+@
+Simu: Plusieurs design, tailles etc
+On sait la vérité, on peut connaitre les vrais positifs etc 
+Qu'est ce qu'on prend en entrées qu'est ce qu'on veut en sortie
+
+Bien insister sur l'arbre d'entrée et l'objectif de la simu : quelle approche pour mieux détecter les gènes différentiellement exprimés.
+
+Simulations :
+\begin{itemize}
+    \item soit selon l'arbre des données
+    \item soit partir sur regarder l'impact de la taille de l'arbre etc.
+\end{itemize}
+
+
+\subsubsection*{ANOVA vs ANOVA Phylogénétique}
+
+Dans cette partie nous souhaitons comparer les résultats de l'ANOVA et de 
+l'ANOVA phylogénétique. 
+Pour cela nous allons simuler des données selon plusieurs modalités et évaluer
+l'\emph{erreur de première espèce} et la \emph{puissance} obtenue.
+
+\begin{itemize}
+    \item Des données réparties en deux groupes indépendants de la 
+    phylogénie.
+    \item Des données réparties en deux groupes cohérents avec la phylogénie.
+\end{itemize}
+
+
+Pour les simulations qui ne se font pas selon la phylogénie, nous nous attendons
+à ce que l'ANOVA classique obtienne de bons résultats puisque c'est une 
+situation correspondant à l'application du modèle.
+
+Pour les simulations qui se font selon l'information de l'arbre phylogénétique,
+nous nous attendons à ce que l'ANOVA phylogénétique parvienne à mieux prendre en
+compte l'information apportée par la phylogénie et à démêler son effet.\\
+
+<<'modules-simulations', include = FALSE>>=
+require("ape")
+require("phylolm")
+require("phytools")
+require("here")
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+source(here("R","utils.R"))
+@
+
+<<'Import-arbre'>>=
+K <- 2
+
+nb_species <- 43
+
+plot_group_on_tree <- function(tree, groups, ...) {
+    plot(tree, ...)
+    tiplabels(bg = groups, pch = 21)
+}
+tree <- read.tree(here("R","chen2019.tree"))
+# Normalising tree edge length
+taille_tree <- diag(vcv(tree))[1]
+tree$edge.length <- tree$edge.length / taille_tree
+@
+
+<<'simus-groupes'>>=
+seed <- 1234
+set.seed(seed)
+# Mus et Rat vs le reste
+group_mus_rat_vs_other <- sapply(1:nb_species, function(tip) {
+    if (tip %in% getDescendants(tree = tree, 55)) {
+        return(1)
+    }
+    return(2)
+})
+
+# TODO Demander à Paul et Mélina si mieux de mettre groupes équilibrés 0.5 0.5
+# Ou groupes comparables 16, 27
+random_groups <- sample(1:K, nb_species,
+    replace = TRUE, prob = c(16, 27))
+@
+
+Pour faire nos simulations dans un contexte proche du cas réel nous allons 
+utiliser l'arbre présenté sur la figure~\ref{fig:arbre-chen2019}.
+
+Nous choisissons de diviser les espèces en deux groupes. 
+Pour le groupe respectant la phylogénie, on a d'un côté les espèces
+du genre \emph{Mus} avec les rats et les autres espèces dans un autre groupe
+(voir la figure~\ref{fig:simu-groupes-mus}). 
+
+
+Et pour le groupe ne respectant pas la phylogénie on attribue aléatoirement les
+individus à l'un des deux groupes en respectant les proportions du groupe défini
+avant afin de rendre les résultats comparables (voir la 
+figure~\ref{fig:simu-groupes-alea-prop}). 
+Enfin pour que notre analyse soit reproductible nous fixons la graine à 
+\Sexpr{seed}.
+
+
+\begin{figure}[H]
+    \centering
+    <<'plot-groupes-mus'>>=
+    plot_group_on_tree(tree, group = group_mus_rat_vs_other)
+    @
+    \caption{Groupes \emph{Mus} et rats contre les autres}
+    \label{fig:simu-groupes-mus} 
+\end{figure}
+\begin{figure}[H]
+    \centering
+    <<'plot-groupes-random'>>=
+    plot_group_on_tree(tree, group = random_groups)
+    @
+    \caption{Groupes aléatoires respectant les proportions}
+    \label{fig:simu-groupes-alea-prop} 
+\end{figure}
+
+<<'param-simulation'>>=
+# Generate data for rat&mus vs the rest
+N <- 500
+base_values <- c(0, 1)
+sigma2_phylo <- 1
+sigma2_measure <- 0.1
+risk_threshold <- 0.05
+
+## Standardized parameters
+total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
+heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+snr <- 1 # signal to noise ratio snr = size_effect / total_variance
+@
+
+Pour les paramètres de la simulation nous allons faire prendre à $h$, défini comme
+l'héritabilité, les valeurs $h \in (\Sexpr{heri})$. 
+
+\subsubsection*{Avec Satterthwaite et le \emph{Likelihood Ratio Test} (LRT)}

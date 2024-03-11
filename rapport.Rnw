@@ -10,6 +10,7 @@
 \usepackage{graphicx}
 \graphicspath{{img/}}
 \usepackage{float}
+\usepackage{subcaption} %  for subfigures environments 
 
 % Booktabs
 \usepackage{booktabs}
@@ -296,20 +297,8 @@ puis sur arbre avec petites branches ?
 \subsection{Simulations}
 % On importe le fichier
 
-Simu: Plusieurs design, tailles etc
-On sait la vérité, on peut connaitre les vrais positifs etc 
-Qu'est ce qu'on prend en entrées qu'est ce qu'on veut en sortie
-
 <<simulations-methodes, child='Rnw/simulations-methodes.Rnw'>>=
 @
-
-Bien insister sur l'arbre d'entrée et l'objectif de la simu : quelle approche pour mieux détecter les gènes différentiellement exprimés.
-
-Simulations :
-\begin{itemize}
-    \item soit selon l'arbre des données
-    \item soit partir sur regarder l'impact de la taille de l'arbre etc.
-\end{itemize}
 
 \section{Données}
 \label{sec:data}
@@ -336,11 +325,39 @@ Intro
 
 Application/Résultats: décrire les données, vite fait normalisation avec vrai aebre, on ne connait pas 
 Discussion/COnclusion ? Interprétation des résultats sinon la mettre dans les 
-
+f-cicd: CI/CD to build Latex PDF ...
+CI/CD to build Latex pdf and create a release in with GitHub Actions. The workflow triggers on push to the repository. Integrates with Overleaf.
 % Bibliographie
 \printbibliography
 \nocite{*}
 
 % TODO Ici éventuellement une partie annexe discussion de l'impact des tailles d'abres
+\appendix
+\section{Application aux données réelles}
+
+Comme nous l'avons remarqué dans la section~\ref{sec:data} l'application de la
+méthode EVEmodel a produit des valeurs manquantes pour les gènes présentés dans
+le tableau suivant.
+
+\begin{table}[H]
+    \centering
+    <<'table_nas'>>=
+    knitr::kable(evegenesNA, col.names = "Gènes ayant produits des NA", 
+        align = "c", booktabs = TRUE, format = "latex", escape = TRUE)
+    @
+    \caption{Table des gènes pour lesquels la méthode \texttt{EVEmodel} a produit des NA}
+    \label{tab:na-evemodel}
+\end{table}
+
+\section*{Code du projet}
+
+Tout le code produit est disponible sur le dépôt GitHub suivant 
+\url{https://github.com/Polarolouis/anova-phylogenetique-projet-msv/}.
+Ce dépôt contient le code pour implémenter la méthode, faire les 
+simulations et compiler le rapport.
+
+
+Nous avons au maximum indiqué le code qui n'a pas été écrit par nous, la plupart
+du temps dans les commentaires du code.
 
 \end{document}

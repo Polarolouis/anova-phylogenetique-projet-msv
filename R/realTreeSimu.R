@@ -25,7 +25,7 @@ tree <- read.tree(here("R","chen2019.tree"))
 taille_tree <- diag(vcv(tree))[1]
 tree$edge.length <- tree$edge.length / taille_tree
 
-plotTree(tree, ftype="i", node.numbers=TRUE)
+plotTree(tree, ftype="i", node.numbers = TRUE)
 
 # Mus et Rat vs le reste
 

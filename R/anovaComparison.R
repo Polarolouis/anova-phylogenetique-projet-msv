@@ -54,7 +54,6 @@ random_groups <- sample(1:K, nb_species, replace = TRUE)
 plot_group_on_tree <- function(tree, groups) {
     plot(tree, show.tip.label = FALSE)
     tiplabels(bg = groups, pch = 21)
-    text(x = 10, y = 0, label = "This tree will be normalised.")
 }
 
 # Saving trees

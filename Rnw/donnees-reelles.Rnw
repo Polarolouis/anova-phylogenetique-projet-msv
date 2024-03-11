@@ -282,16 +282,6 @@ Cette méthode est à l'heure actuelle très utilisée.
 d'après le message d'erreur, une optimisation n'a pas convergé. Ces gènes sont
 présentés dans le tableau~\ref{tab:na-evemodel}.
 
-\begin{table}[H]
-    \centering
-    <<'table_nas'>>=
-    knitr::kable(evegenesNA, col.names = "Gènes ayant produits des NA", 
-        align = "c", booktabs = TRUE, format = "latex", escape = TRUE)
-    @
-    \caption{Table des gènes pour lesquels la méthode \texttt{EVEmodel} a produit des NA}
-    \label{tab:na-evemodel}
-\end{table}
-
 \subsection*{Toutes les méthodes}
 
 Nous allons ici comparer toutes les méthodes dans un diagramme de Venn (figure~\ref{fig:venn-all-methods-eve}) afin de 
