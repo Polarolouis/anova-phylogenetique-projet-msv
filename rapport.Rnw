@@ -165,7 +165,7 @@ Etre assez concis sur l'histoire de la projection et le modèle et les différen
 
 Pourquoi vouloir l'utiliser ? Réduire nbre de degrés de liberté utilisés dans la stat de test. 
 Le but est d'approximé le nbre de degré de Liberté. 
-On se basera sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour ensuite implémenter une approximation de Satterthwaite. 
+On se basera sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation  dans notre cadre et ensuite implémenter l'implémenter.. 
 \begin{equation}
     Y = X\beta + u + \epsilon 
 \end{equation} 
@@ -181,12 +181,12 @@ De là on obtient:
     C(\theta) = (Cov(\beta_i , \beta_j))_{i,j} = (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1}
 \end{equation}
 
-Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} on obtient une expression pour les degrés de liberté $df$ ainsi qu'une approximation. Ce qui nous donne :
+Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} on part de l'expression pour les degrés de liberté $df$ et de l'approximation. Ce qui nous donne :
 \begin{equation}
-    df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta})]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
+    df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta}))]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
 \end{equation} 
 \[\text{où} \quad \hat{C} = C(\hat\theta) \quad \text{et} \quad f(\theta) = l^TC(\theta)l\]
-On va donc dans la suite calculer $\nabla f(\theta)$ puis l'appliquer en $\hat{\theta}$ et $A$ la matrice de variance-covariance de $\hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err})$ 
+A partir de cette expression, on calcule $\nabla f(\theta)$ qu'on appliquera en $\hat{\theta}$ et $A$ la matrice de variance-covariance de $\hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err})$ 
 
 \begin{proof}[Calcul du gradient]
 Nous voulons calculer les dérivées partielles $\partial_{\sigma^2_{phy}}f(\theta)$ et $\partial_{\sigma^2_{err}}f(\theta)$. Pour les premières étapes de calculs, on écrira seulement $\partial$ sans distinction car ce sont les mêmes expressions pour les 2 dérivées. 
@@ -199,29 +199,61 @@ On utilisera dans la suite les formules de \cite{petersenMatrixCookbook2012} pou
 \]
 
 \[
-    \partial (X^TV(\theta)^{-1}X) = \partial (X^TV(\theta)^{-1})X + \cancel{X^TV(\theta)^{-1})\partial(X)} \quad (\partial_{\sigma^2_{phy}}(X)\text{ et } \partial_{\sigma^2_{err}}(X) \text{ sont nulles})
+    \partial (X^TV(\theta)^{-1}X) = \partial (X^TV(\theta)^{-1})X + \cancel{X^TV(\theta)^{-1}\partial(X)} \quad (\partial_{\sigma^2_{phy}}(X)\text{ et } \partial_{\sigma^2_{err}}(X) \text{ sont nulles})
 \]
-
-% Commençons par utiliser la définition des fonctions trigonométriques :
-% \[
-% \sin(x) = \frac{e^{ix} - e^{-ix}}{2i} \quad \text{et} \quad \cos(x) = \frac{e^{ix} + e^{-ix}}{2}
-% \]
-
-% En substituant ces expressions dans l'identité, nous obtenons :
-% \begin{align*}
-% \sin^2(x) + \cos^2(x) &= \left(\frac{e^{ix} - e^{-ix}}{2i}\right)^2 + \left(\frac{e^{ix} + e^{-ix}}{2}\right)^2 \\
-% &= \frac{(e^{ix} - e^{-ix})^2}{4i^2} + \frac{(e^{ix} + e^{-ix})^2}{4} \\
-% &= \frac{(e^{ix} - e^{-ix})(e^{ix} - e^{-ix})}{-4} + \frac{(e^{ix} + e^{-ix})(e^{ix} + e^{-ix})}{4} \\
-% &= \frac{e^{2ix} - 2e^{ix}e^{-ix} + e^{-2ix}}{-4} + \frac{e^{2ix} + 2e^{ix}e^{-ix} + e^{-2ix}}{4} \\
-% &= \frac{e^{2ix} - 2 + e^{-2ix}}{-4} + \frac{e^{2ix} + 2 + e^{-2ix}}{4} \\
-% &= \frac{e^{2ix} + e^{-2ix}}{4} + \frac{e^{2ix} + e^{-2ix}}{4} - \frac{2}{4} + \frac{2}{4} \\
-% &= \frac{2(e^{2ix} + e^{-2ix})}{4} \\
-% &= \frac{2 \cdot 2\cos(2x)}{4} \quad \text{(par la formule d'Euler)} \\
-% &= \cos(2x)
-% \end{align*}
-
-% Ainsi, nous avons montré que $\sin^2(x) + \cos^2(x) = 1$.
+\[\partial (X^TV(\theta)^{-1}) = \partial(X^T)V(\theta)^{-1} + X^T\partial(V(\theta)^{-1}) = \cancel{\partial(X)^TV(\theta)^{-1}} + X^T\partial(V(\theta)^{-1})
+\]
+\[\partial (V(\theta)^{-1}) = -V(\theta)^{-1}\partial(V(\theta))V(\theta)^{-1}
+\]
+\[\partial (V(\theta)) = \partial(\sigma^2_{phy}K + \sigma^2_{err}I_n)
+\]
+Ce qui donne :
+\[\partial_{\sigma^2_{phy}}(V(\theta)) = K, \quad \text{et} \quad \partial_{\sigma^2_{err}}(V(\theta)) = I_n
+\]
+De là en remettant les formules explicite les unes dans les autres, on obtient :
+\[[\nabla f(\hat{\theta})] = \begin{bmatrix} \partial_{\sigma^2_{phy}}f(\hat{\theta}) \\ \partial_{\sigma^2_{err}}f(\hat{\theta}) \end{bmatrix}=\begin{bmatrix} l^TC(\hat{\theta})X^TV(\hat{\theta})^{-1}KV(\hat{\theta})^{-1}XC(\hat{\theta})l \\ l^TC(\hat{\theta})X^TV(\hat{\theta})^{-1}I_nV(\hat{\theta})^{-1}XC(\hat{\theta})l\end{bmatrix}
+\]
 \end{proof}
+
+\begin{proof}[Calcul de A]
+    A est la matrice variance-covariance de $\hat{\theta}$, c'est à dire l'inverse de la Hessienne $H$ de la vraissemblance de $\hat{\theta}$.
+    \[A=H^{-1}\]
+    Dans ce cadre on peut obtenir une formule explicite de la Hessienne, même si dans la plupart des cas il est plus simple d'estimer cette matrice par des méthodes numériques.
+    On va d'abord calculer la log-vraissemblance du vecteur Y défini précédemment:
+\begin{align*}
+    \mathcal{L} (\bf{Y}, \theta)&= \log (\frac{1}{(2\pi)^{n/2}|V(\theta)|^{1/2}} \exp\left( -\frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \right)) \\
+    &= - \frac{n}{2} \log(2\pi) -\frac{1}{2} \log(|V(\theta)|) - \frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \\
+\end{align*}
+On calcule les dérivées premières de la log-vraissemblance
+\begin{align*}
+    \partial_{\sigma^2_{phy}} \mathcal{L}  &= -\frac{1}{2} \partial_{\sigma^2_{phy}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{phy}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
+    &= -\frac{1}{2} \frac{K}{|V(\theta)|} - \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta)\\
+\end{align*}
+\begin{align*}
+    \partial_{\sigma^2_{err}} \mathcal{L}  &= -\frac{1}{2} \partial_{\sigma^2_{err}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{err}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
+    &= -\frac{1}{2} \frac{I_n}{|V(\theta)|} - \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} I_n V(\theta)^{-1}(Y - X\beta)\\
+\end{align*}
+Puis les dérivées secondes:
+\begin{align*}
+    \bf{\partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L}} &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( \frac{K}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
+    &= \frac{1}{2}  \frac{K^2}{V(\theta)^2} + (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}KV(\theta)^{-1} (Y - X\beta)\\
+\end{align*}
+car \[\partial \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right) = (Y - X\beta)^T \partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right)(Y - X\beta)\]
+et \[\partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1} K V(\theta)^{-1} - V(\theta)^{-1} K V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1}\]
+ce qui donne \[\partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -2V(\theta)^{-1} K V(\theta)^{-1} K V(\theta)^{-1}\]
+\begin{align*}
+    &{\bf\partial_{\sigma^2_{err}\sigma^2_{phylo}}\mathcal{L}} = \bf{\partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L}} \\
+    &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( \frac{K}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
+    &= \frac{1}{2}  \frac{K}{V(\theta)^2} + \frac{1}{2}(Y - X\beta)^T (V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1}) (Y - X\beta)\\
+\end{align*}
+car \[\partial_{\sigma^2_{phy}\sigma^2_{err}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1}\]
+\begin{align*}
+    \bf{\partial_{\sigma^2_{err}\sigma^2_{err}} \mathcal{L}}  &= -\frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( \frac{I_n}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} V(\theta)^{-1}(Y - X\beta) \right)\\
+    &=\frac{1}{2}\frac{I_n}{V(\theta)^2} + (Y - X\beta)^T V(\theta)^{-1}V(\theta)^{-1}V(\theta)^{-1}(Y - X\beta)
+\end{align*}
+
+\end{proof}
+\[\]
 % Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
 
 % TODO REML voir sujet d'exam corrigée
@@ -243,15 +275,15 @@ ANOVA phylo (avec REML)
 test sur arbre quelconque
 puis sur arbre avec petites branches ? 
 
-Ou faire une partie à part entière avec 
-1) ANOVA vs ANOVA phylo sans correction des degrés de liberté
- b) avec une sous partie sur le REML
+% Ou faire une partie à part entière avec 
+% 1) ANOVA vs ANOVA phylo sans correction des degrés de liberté
+%  b) avec une sous partie sur le REML
 
-2) ANOVA phylo avec approximation de SAtterthwaite 
- a) prez
- a`) simulation et résultats 
- b) instabilités numériques -> correction avec la Hessienne ? 
- c) La hessienne analytique ? A voir si besoin d'une partie supplémentaire
+% 2) ANOVA phylo avec approximation de SAtterthwaite 
+%  a) prez
+%  a`) simulation et résultats 
+%  b) instabilités numériques -> correction avec la Hessienne ? 
+%  c) La hessienne analytique ? A voir si besoin d'une partie supplémentaire
  
 
 3 parties :
