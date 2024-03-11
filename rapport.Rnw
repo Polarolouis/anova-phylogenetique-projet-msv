@@ -14,6 +14,9 @@
 % Booktabs
 \usepackage{booktabs}
 
+% Citation
+\usepackage{csquotes}
+
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{amsmath}
@@ -54,13 +57,15 @@
 @
 
 <<'libraries', include=FALSE>>=
-necessary_packages <- c("phytools", "phylotools", "here")
+# "phytools", "phylotools"
+necessary_packages <- c("ape", "here")
 if (any(!(necessary_packages %in% installed.packages()))) {
     install.packages(necessary_packages)
 }
 
-require(phytools)
-require(phylotools)
+# require(phytools)
+# require(phylotools)
+require(ape)
 require(here)
 
 
@@ -74,11 +79,11 @@ source(here("R","utils.R"))
 \section{Introduction}
 \label{chap:intro}
 % Introduction au projet, contexte, objectifs.
-Ici contexte biologique, les données de \cite{gomez-mestrePhylogeneticAnalysesReveal2012}, les données de Paul et Mélina etc.
+Ici contexte biologique, les données de \cite{gomez-mestrePhylogeneticAnalysesReveal2012}, les données de Paul et Mélina, etc.
 
 Avec l'avènement des données massives de génomiques, transcriptomiques, protéomiques etc, il y a besoin de techniques statistiques robustes et passant à l'échelle permettant de mener à bien l'anal
 Format des données : arbres phylogénétiques, données génétiques 
-Arbres avec des petitites branche: plusieurs individus par espèces avec chacun leurs données 
+Arbres avec des petites branche: plusieurs individus par espèces avec chacun leurs données 
 --> problème biologique 
 
 Deux sujets différents écologie et transcriptomique mais une même méthode.
