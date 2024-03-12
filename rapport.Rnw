@@ -251,14 +251,18 @@ Puis les dérivées secondes:
 \end{align*}
 \[\text{car} \quad \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -(V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})\]
 \begin{align*}
-    \bf{\partial_{\sigma^2_{err}\sigma^2_{err}} \mathcal{L}}  &= -\frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( \frac{I_n}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} V(\theta)^{-1}(Y - X\beta) \right)\\
-    &=\frac{1}{2}\frac{I_n}{V(\theta)^2} + (Y - X\beta)^T V(\theta)^{-1}V(\theta)^{-1}V(\theta)^{-1}(Y - X\beta)
+    \bf{\partial_{\sigma^2_{err}\sigma^2_{err}} \mathcal{L}}  &= -\frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} (Tr(V(\theta)^{-1})) + \frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} V(\theta)^{-1}(Y - X\beta) \right)\\
+    &=\frac{1}{2}Tr(V(\theta)^{-1}V(\theta)^{-1}) - (Y - X\beta)^T V(\theta)^{-1}V(\theta)^{-1}V(\theta)^{-1}(Y - X\beta)
 \end{align*}
 
+De là on obtient la Hessienne $\begin{pmatrix}
+    \partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L} & \partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L} \\
+    \partial_{\sigma^2_{err}\sigma^2_{phy}}\mathcal{L} & \partial_{\sigma^2_{err}\sigma^2_{err}}\mathcal{L} \\
+\end{pmatrix}$ puis A en l'inversant, ce qui peut se faire par des méthodes numériques.
+
 \end{proof}
-TODO: déterminznt | log déterminant on a la formule --> à reprendre 
-TODO: Vérifier avec le code qu'on a les mêmes 
-\[\]
+TODO: trouver erreur de signe 
+% \[\]
 % Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
 
 % TODO REML voir sujet d'exam corrigée
