@@ -225,9 +225,11 @@ compute_trait_values <- function(
     #     stoch_process,
     #     parameters = list(sigma2 = sigma2_phylo)
     # )
-    trait_phylo <- rTraitCont(phy = tree,
-                              model = stoch_process,
-                              sigma = sqrt(sigma2_phylo))
+    trait_phylo <- ape::rTraitCont(
+        phy = tree,
+        model = stoch_process,
+        sigma = sqrt(sigma2_phylo)
+    )
 
     # The measure error
     trait_error <- rnorm(length(groups), mean = 0, sd = sqrt(sigma2_measure))
@@ -245,8 +247,14 @@ compute_trait_values <- function(
 infere_anova_phyloanova <- function(y, groups, tree, stoch_process = "BM") {
     #  The fits
     fit_anova <- lm(y ~ groups)
-    fit_phylolm <- phylolm(y ~ groups, phy = tree, model = stoch_process, measurement_error = TRUE)
-    fit_phylolm_reml <- phylolm(y ~ groups, phy = tree, model = stoch_process, measurement_error = TRUE, REML = TRUE)
+    fit_phylolm <- phylolm::phylolm(y ~ groups,
+        phy = tree,
+        model = stoch_process, measurement_error = TRUE
+    )
+    fit_phylolm_reml <- phylolm::phylolm(y ~ groups,
+        phy = tree, model = stoch_process,
+        measurement_error = TRUE, REML = TRUE
+    )
     return(list(anova = fit_anova, phyloanova = fit_phylolm, phyloanovareml = fit_phylolm_reml))
 }
 
@@ -259,17 +267,16 @@ is_invalid_value <- function(value) {
 }
 
 #' Computes vanilla pvalue for phylolm fit Fisher test
-#' 
+#'
 #' @param fit_phylolm The phylolm fit for which to test
-#' 
+#'
 #' @return pvalue
-compute_vanilla_pvalue <- function(fit_phylolm, return_df = FALSE){
-
+compute_vanilla_pvalue <- function(fit_phylolm, return_df = FALSE) {
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
-    K <- length(unique(fit_phylolm$X[,2]))
+    K <- length(unique(fit_phylolm$X[, 2]))
 
-    # Compute degrees of freedom
+    #  Compute degrees of freedom
     df1 <- K - 1
     df2 <- nb_species - K
 
@@ -284,28 +291,28 @@ compute_vanilla_pvalue <- function(fit_phylolm, return_df = FALSE){
     } else {
         return(list(pvalue = pvalue, df2 = df2))
     }
-
 }
 
 #' Computes pvalue with Satterthwaite approximation for phylolm fit Fisher test
-#' 
+#'
 #' @param fit_phylolm The phylolm fit for which to test
 #' @param tree the phylotree
 #' @param REML Use REML for computation
-#' 
+#'
 #' @return pvalue
-compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE, return_df = FALSE){
-
+compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE, return_df = FALSE) {
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
-    K <- length(unique(fit_phylolm$X[,2]))
+    K <- length(unique(fit_phylolm$X[, 2]))
 
-    # Compute degrees of freedom
+    #  Compute degrees of freedom
     df1 <- K - 1
     # Satterthwaite approximation
-    df2 <- ddf_satterthwaite_sum(fit_phylolm = fit_phylolm, 
-        phylo = tree, 
-        REML = REML)$ddf
+    df2 <- ddf_satterthwaite_sum(
+        fit_phylolm = fit_phylolm,
+        phylo = tree,
+        REML = REML
+    )$ddf
 
     F_stat <- compute_F_statistic(
         r_squared = fit_phylolm$r.squared,
@@ -319,22 +326,20 @@ compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE, return
     } else {
         return(list(pvalue = pvalue, df2 = df2))
     }
-
 }
 
 #' Computes pvalue for phylolm fit likelihood ratio test
-#' 
+#'
 #' @param fit_phylolm The phylolm fit for which to test
 #' @param tree the phylotree
-#' 
+#'
 #' @return pvalue
-compute_lrt_pvalue <- function(fit_phylolm, tree){
-
+compute_lrt_pvalue <- function(fit_phylolm, tree) {
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
-    K <- length(unique(fit_phylolm$X[,2]))
+    K <- length(unique(fit_phylolm$X[, 2]))
 
-    # Compute degrees of freedom
+    #  Compute degrees of freedom
     df1 <- K - 1
     h0_phylolm <- phylolm(fit_phylolm$y ~ 1,
         phy = tree,
@@ -359,8 +364,8 @@ compute_lrt_pvalue <- function(fit_phylolm, tree){
 #' @param tested_methods the methods to test should be one of : "vanilla",
 #' "satterthwaite", "lrt"
 #' @param REML use REML for computation
-#' 
-#' @details If you set REML to true please note that lrt will continue using 
+#'
+#' @details If you set REML to true please note that lrt will continue using
 #' likelihood
 pvalues_from_fits <- function(
     fit_anova,
@@ -369,11 +374,11 @@ pvalues_from_fits <- function(
     tree,
     tested_methods = c("anova", "vanilla", "satterthwaite", "lrt"),
     REML = TRUE) {
-
     #  For sanity test
-    rlang::arg_match(tested_methods, 
-        values = c("anova", "vanilla", "satterthwaite", "lrt"), 
-        multiple = TRUE)
+    rlang::arg_match(tested_methods,
+        values = c("anova", "vanilla", "satterthwaite", "lrt"),
+        multiple = TRUE
+    )
 
     # Extracting values
     nb_species <- nrow(model.frame(fit_anova))
@@ -382,21 +387,20 @@ pvalues_from_fits <- function(
 
     res_df <- data.frame(matrix(ncol = 4, nrow = 0))
     colnames(res_df) <- c("tested_method", "pvalue", "df1", "df2")
-    
-    if (!REML) {
-      fitphylo <- fit_phylolm
+
+    if (REML) {
+        fitphylo <- fit_phylolm_reml
     } else {
-      fitphylo <- fit_phylolm_reml
+        fitphylo <- fit_phylolm
     }
 
     # Iterates over the methods to test
-    for(method in tested_methods) {
-
+    for (method in tested_methods) {
         #  The default value for the df2
         df1 <- K - 1
 
         switch(method,
-            "anova" = {             
+            "anova" = {
                 anova_F_stat <- summary(fit_anova)$fstatistic[1]
                 df1 <- summary(fit_anova)$fstatistic[2]
                 df2 <- summary(fit_anova)$fstatistic[3]
@@ -405,25 +409,32 @@ pvalues_from_fits <- function(
                 )
             },
             "vanilla" = {
-              df2 <- nb_species - K
-              pvalue <- compute_vanilla_pvalue(fit_phylolm = fitphylo)
+                df2 <- nb_species - K
+                pvalue <- compute_vanilla_pvalue(fit_phylolm = fitphylo)
             },
             "satterthwaite" = {
-                df2 <- ddf_satterthwaite_sum(fit_phylolm = fitphylo, 
-                        phylo = tree, 
-                        REML = REML)$ddf
-                pvalue <- compute_satterthwaite_pvalue(fit_phylolm = fitphylo, 
-                tree = tree, 
-                REML = REML)
+                df2 <- ddf_satterthwaite_sum(
+                    fit_phylolm = fitphylo,
+                    phylo = tree,
+                    REML = REML
+                )$ddf
+                pvalue <- compute_satterthwaite_pvalue(
+                    fit_phylolm = fitphylo,
+                    tree = tree,
+                    REML = REML
+                )
             },
             "lrt" = {
                 df2 <- NA
-                pvalue <- compute_lrt_pvalue(fit_phylolm = fit_phylolm,
-                tree = tree)
-            })
+                pvalue <- compute_lrt_pvalue(
+                    fit_phylolm = fit_phylolm,
+                    tree = tree
+                )
+            }
+        )
 
-            # Append the result
-            res_df[nrow(res_df)+1, ] <- c(method, pvalue, df1, df2)
+        #  Append the result
+        res_df[nrow(res_df) + 1, ] <- c(method, pvalue, df1, df2)
     }
 
     return(res_df)
@@ -435,12 +446,12 @@ pvalues_from_fits <- function(
 #' @param pvalue the pvalue to test for
 #' @param risk_threshold the type I error risk threshold (default: 0.05)
 test_selected_correctly <- function(
-    correct_hypothesis = c("H0","H1"),
+    correct_hypothesis = c("H0", "H1"),
     pvalue,
     risk_threshold = 0.05) {
     # Sanity check
     match.arg(correct_hypothesis)
-    
+
     switch(correct_hypothesis,
         "H0" = {
             has_selected_correctly <- (pvalue >= risk_threshold)
@@ -454,8 +465,9 @@ test_selected_correctly <- function(
 
 #' Simulates sets of data for each group in groups_list
 simulate_all_methods <- function(
-    sim_id, 
-    correct_hypothesis = c("H0", "H1"), 
+    sim_id,
+    correct_hypothesis = c("H0", "H1"),
+    tree,
     base_values,
     sigma2_phylo,
     sigma2_measure,
@@ -463,20 +475,19 @@ simulate_all_methods <- function(
     groups_names = names(groups_list),
     risk_threshold = 0.05,
     REML = TRUE) {
-
     # Be sure to ignore base_values if testing H0
     if (correct_hypothesis == "H0") {
         base_values <- rep(0, length(base_values))
     }
 
-    # Setting names
-    if(is.null(groups_names)){
+    #  Setting names
+    if (is.null(groups_names)) {
         groups_names <- seq(groups_list)
     }
 
     data_all_methods_df <- data.frame()
 
-    for(idx in seq(length(groups_list))){
+    for (idx in seq(length(groups_list))) {
         # Traits
         trait <- compute_trait_values(
             groups = groups_list[[idx]],
@@ -485,10 +496,10 @@ simulate_all_methods <- function(
             sigma2_measure = sigma2_measure
         )
 
-        # Compute fits
+        #  Compute fits
         fits <- infere_anova_phyloanova(
-        y = trait,
-        groups = groups_list[[idx]], tree = tree
+            y = trait,
+            groups = groups_list[[idx]], tree = tree
         )
 
         # Computing the dataframe
@@ -496,15 +507,14 @@ simulate_all_methods <- function(
             fit_anova = fits$anova,
             fit_phylolm = fits$phyloanova,
             fit_phylolm_reml = fits$phyloanovareml,
-            tree = tree, 
+            tree = tree,
             REML = REML
         )
 
-        # Adding the group name
+        #  Adding the group name
         all_methods_df$group_type <- groups_names[idx]
 
         data_all_methods_df <- rbind(data_all_methods_df, all_methods_df)
-
     }
 
     # Adding the correct_hypothesis column
@@ -528,11 +538,13 @@ simulate_all_methods <- function(
 # TODO Ajouter au jeu de données avec et sans REML ne pas oublier de mettre dans le fit_phylolm
 # TODO Investiguer pourquoi les puissances et type I sont à 0 (fixer lower bound sigma2_err en augmentant la valeur de borne > 10e-16)
 # Tenter avec sqrt(Machine.double_eps)
-N_simulation_typeI_power <- function(N, 
+N_simulation_typeI_power <- function(
+    N,
     groups_list,
-    base_values, 
-    sigma2_phylo, 
-    sigma2_measure, 
+    tree = tree,
+    base_values,
+    sigma2_phylo,
+    sigma2_measure,
     risk_threshold = 0.05,
     REML = TRUE) {
     df <- do.call("rbind", lapply(1:N, function(id) {
@@ -540,6 +552,7 @@ N_simulation_typeI_power <- function(N,
             sim_id = id,
             groups_list = groups_list,
             correct_hypothesis = "H0",
+            tree = tree,
             base_values = base_values,
             sigma2_phylo = sigma2_phylo,
             sigma2_measure = sigma2_measure,
@@ -549,6 +562,7 @@ N_simulation_typeI_power <- function(N,
             sim_id = id,
             groups_list = groups_list,
             correct_hypothesis = "H1",
+            tree = tree,
             base_values = base_values,
             sigma2_phylo = sigma2_phylo,
             sigma2_measure = sigma2_measure,
@@ -559,44 +573,46 @@ N_simulation_typeI_power <- function(N,
 }
 
 compute_power_typeI <- function(df) {
-  df_plot <- df %>%
-    group_by(tested_method, group_type) %>%
-    summarise(
-      power = mean(has_selected_correctly[correct_hypothesis == "H1"]),
-      errortypeI = 1 - mean(has_selected_correctly[correct_hypothesis == "H0"]), 
-      .groups = "drop_last")
-  return(df_plot)
+    df_plot <- df %>%
+        group_by(tested_method, group_type) %>%
+        summarise(
+            power = mean(has_selected_correctly[correct_hypothesis == "H1"]),
+            errortypeI = 1 - mean(has_selected_correctly[correct_hypothesis == "H0"]),
+            .groups = "drop_last"
+        )
+    return(df_plot)
 }
 
 plot_method_comparison <- function(df_plot, title = "") {
-  
-  error <- ggplot(df_plot) +
-    aes(x = group_type, y = errortypeI, fill = group_type) +
-    geom_bar(stat = "identity") +
-    scale_y_continuous(limits = c(0, 1)) +
-    ylab("Erreur type I") +
-    xlab("Type de groupe") +
-    labs(fill = "Type de groupe") +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    facet_wrap(vars(tested_method), nrow = 4) +
-    geom_text(aes(label = round(errortypeI, digits = 2)), 
-              vjust = -0.5, position = position_dodge(width = 0.9)) +
-    geom_hline(yintercept = 0.05)+
-    ggtitle("Erreur Type I")
-  
-  power <- ggplot(df_plot) +
-    aes(x = group_type, y = power, fill = group_type) +
-    geom_bar(stat = "identity") +
-    scale_y_continuous(limits = c(0, 1)) +
-    ylab("Puissance") +
-    xlab("Type de groupe") +
-    labs(fill = "Type de groupe") +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    facet_wrap(vars(tested_method), nrow = 4) +
-    geom_text(aes(label = round(power, digits = 2)), 
-              vjust = -0.5, position = position_dodge(width = 0.9))+
-    ggtitle("Puissance")
-  
-  (error + power + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")) +
-    plot_annotation(title = title)
+    error <- ggplot(df_plot) +
+        aes(x = group_type, y = errortypeI, fill = group_type) +
+        geom_bar(stat = "identity") +
+        scale_y_continuous(limits = c(0, 1)) +
+        ylab("Erreur type I") +
+        xlab("Type de groupe") +
+        labs(fill = "Type de groupe") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        facet_wrap(vars(tested_method), nrow = 4) +
+        geom_text(aes(label = round(errortypeI, digits = 2)),
+            vjust = -0.5, position = position_dodge(width = 0.9)
+        ) +
+        geom_hline(yintercept = 0.05) +
+        ggtitle("Erreur Type I")
+
+    power <- ggplot(df_plot) +
+        aes(x = group_type, y = power, fill = group_type) +
+        geom_bar(stat = "identity") +
+        scale_y_continuous(limits = c(0, 1)) +
+        ylab("Puissance") +
+        xlab("Type de groupe") +
+        labs(fill = "Type de groupe") +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+        facet_wrap(vars(tested_method), nrow = 4) +
+        geom_text(aes(label = round(power, digits = 2)),
+            vjust = -0.5, position = position_dodge(width = 0.9)
+        ) +
+        ggtitle("Puissance")
+
+    (error + power + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")) +
+        plot_annotation(title = title)
 }
