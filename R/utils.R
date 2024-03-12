@@ -308,11 +308,13 @@ compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE, return
     #  Compute degrees of freedom
     df1 <- K - 1
     # Satterthwaite approximation
-    df2 <- ddf_satterthwaite_sum(
-        fit_phylolm = fit_phylolm,
-        phylo = tree,
-        REML = REML
-    )$ddf
+    # df2 <- ddf_satterthwaite_sum(
+    #     fit_phylolm = fit_phylolm,
+    #     phylo = tree,
+    #     REML = REML
+    # )$ddf
+    df2 <- phylolimma:::ddf_satterthwaite_BM_error(fit_phylolm = fit_phylolm, 
+        phylo = tree)$ddf
 
     F_stat <- compute_F_statistic(
         r_squared = fit_phylolm$r.squared,
