@@ -217,8 +217,7 @@ De là en remettant les formules explicite les unes dans les autres, on obtient 
 \end{proof}
 
 \begin{proof}[Calcul de A]
-    A est la matrice variance-covariance de $\hat{\theta}$, c'est à dire l'inverse de la Hessienne $H$ de la vraissemblance de $\hat{\theta}$.
-    \[A=H^{-1}\]
+    A est la matrice variance-covariance de $\hat{\theta}$, c'est à dire l'inverse de la Hessienne $H$ de la vraissemblance de $\hat{\theta}$: $A=H^{-1}$
     Dans ce cadre on peut obtenir une formule explicite de la Hessienne, même si dans la plupart des cas il est plus simple d'estimer cette matrice par des méthodes numériques.
     On va d'abord calculer la log-vraissemblance du vecteur Y défini précédemment:
 \begin{align*}
@@ -228,32 +227,37 @@ De là en remettant les formules explicite les unes dans les autres, on obtient 
 On calcule les dérivées premières de la log-vraissemblance
 \begin{align*}
     \partial_{\sigma^2_{phy}} \mathcal{L}  &= -\frac{1}{2} \partial_{\sigma^2_{phy}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{phy}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
-    &= -\frac{1}{2} \frac{K}{|V(\theta)|} - \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta)\\
+    &= -\frac{1}{2} Tr(V(\theta)^{-1}\partial_{\sigma^2_{phy}}(V(\theta))) - \frac{1}{2} (Y - X\beta)^T \partial_{\sigma^2_{phy}}(V(\theta)^{-1})(Y - X\beta)\\
+    &= -\frac{1}{2} Tr(V(\theta)^{-1}K) + \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta)\\
 \end{align*}
 \begin{align*}
     \partial_{\sigma^2_{err}} \mathcal{L}  &= -\frac{1}{2} \partial_{\sigma^2_{err}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{err}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
-    &= -\frac{1}{2} \frac{I_n}{|V(\theta)|} - \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} I_n V(\theta)^{-1}(Y - X\beta)\\
+    &= -\frac{1}{2} Tr(V(\theta)^{-1}\partial_{\sigma^2_{err}}(V(\theta))) - \frac{1}{2} (Y - X\beta)^T \partial_{\sigma^2_{err}}(V(\theta)^{-1})(Y - X\beta)\\
+    &= -\frac{1}{2} Tr(V(\theta)^{-1}I_n) + \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} I_n V(\theta)^{-1}(Y - X\beta)\\
 \end{align*}
 Puis les dérivées secondes:
 \begin{align*}
-    \bf{\partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L}} &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( \frac{K}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
-    &= \frac{1}{2}  \frac{K^2}{V(\theta)^2} + (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}KV(\theta)^{-1} (Y - X\beta)\\
+    \bf{\partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L}} &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} (Tr(V(\theta)^{-1}K)) + \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
+    &= -\frac{1}{2} Tr(\partial_{\sigma^2_{phy}\sigma^2_{phy}} (V(\theta)^{-1})K) + \frac{1}{2}  (Y - X\beta)^T \partial_{\sigma^2_{phy}\sigma^2_{phy}}(V(\theta)^{-1} K V(\theta)^{-1})(Y - X\beta) \\
+    &= \frac{1}{2} Tr(V(\theta)^{-1}KV(\theta)^{-1}K) -  (Y - X\beta)^T V(\theta)^{-1}KV(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \\
 \end{align*}
-car \[\partial \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right) = (Y - X\beta)^T \partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right)(Y - X\beta)\]
-et \[\partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1} K V(\theta)^{-1} - V(\theta)^{-1} K V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1}\]
-ce qui donne \[\partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -2V(\theta)^{-1} K V(\theta)^{-1} K V(\theta)^{-1}\]
+\[\text{car} \quad \partial ((Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta)) = (Y - X\beta)^T \partial ( V(\theta)^{-1} K V(\theta)^{-1})(Y - X\beta)\]
+\[\text{et} \quad \partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1} K V(\theta)^{-1} - V(\theta)^{-1} K V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1}\]
+\[\text{ce qui donne} \quad\partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -2V(\theta)^{-1} K V(\theta)^{-1} K V(\theta)^{-1}\]
 \begin{align*}
     &{\bf\partial_{\sigma^2_{err}\sigma^2_{phylo}}\mathcal{L}} = \bf{\partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L}} \\
-    &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( \frac{K}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
-    &= \frac{1}{2}  \frac{K}{V(\theta)^2} + \frac{1}{2}(Y - X\beta)^T (V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1}) (Y - X\beta)\\
+    &= -\frac{1}{2} Tr(\partial_{\sigma^2_{phy}\sigma^2_{err}} (V(\theta)^{-1})K) + \frac{1}{2}  (Y - X\beta)^T \partial_{\sigma^2_{phy}\sigma^2_{err}}(V(\theta)^{-1} K V(\theta)^{-1})(Y - X\beta) \\
+    &= \frac{1}{2} Tr(V(\theta)^{-1}I_nV(\theta)^{-1}K) - \frac{1}{2} (Y - X\beta)^T (V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})(Y - X\beta) \\
 \end{align*}
-car \[\partial_{\sigma^2_{phy}\sigma^2_{err}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1}\]
+\[\text{car} \quad \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -(V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})\]
 \begin{align*}
     \bf{\partial_{\sigma^2_{err}\sigma^2_{err}} \mathcal{L}}  &= -\frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( \frac{I_n}{|V(\theta)|} \right) - \frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} V(\theta)^{-1}(Y - X\beta) \right)\\
     &=\frac{1}{2}\frac{I_n}{V(\theta)^2} + (Y - X\beta)^T V(\theta)^{-1}V(\theta)^{-1}V(\theta)^{-1}(Y - X\beta)
 \end{align*}
 
 \end{proof}
+TODO: déterminznt | log déterminant on a la formule --> à reprendre 
+TODO: Vérifier avec le code qu'on a les mêmes 
 \[\]
 % Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
 
