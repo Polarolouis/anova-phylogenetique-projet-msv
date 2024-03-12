@@ -2,6 +2,14 @@ Ici nous appliquons les méthodes implémentées sur l'arbre de \cite{chenQuanti
 
 % TODO Décrire les données en détails
 
+Les données compilées par \cite{chenQuantitativeFrameworkCharacterizing2019} 
+sont des données de RNA-seq, c'est-à-dire des données quantifiant l'expression 
+des gènes, par le biais du transcriptome, parmi les différentes espèces du bout 
+de l'arbre.
+
+Le but est alors d'identifier les gènes différentiellement exprimés, au sens de
+nombre d'ARN par gène différent entre les espèces. 
+
 << 'knitr_options', echo = FALSE>>=
 knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
     fig.align = "center", echo = FALSE, format = "latex")
@@ -191,7 +199,6 @@ p-values \emph{non ajustées}.
 
 Pour la suite de cette analyse, nous allons appliquer un ajustement des p-values
 pour les test multiples, nommément la correction de Benjamini-Hochberg.
-
 
 << wide_data, echo = FALSE>>=
 pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>% 
