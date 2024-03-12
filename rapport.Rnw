@@ -153,6 +153,16 @@ Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du
 
 \subsection{L'ANOVA phylogénétique}
 
+L'arbre phylogénétique pour être intégré à l'ANOVA doit être représenté dans le 
+modèle.
+
+Pour cela, les données d'arbre sont supposées être le résultat d'un processus
+stochastique. Le processus classique est le mouvement brownien, par exemple
+
+<<''>>=
+
+@
+
 parler du BM ? 
 % Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
 % figure avec le Brownien sur l'arbre à reprendre dans le chapitre de livre
@@ -160,6 +170,7 @@ PUis de la matrice V ou K qui donne la structure phylogénétique
 
 Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
 
+\subsection{ANOVA phylogénétique avec erreur de mesure}
 
 % TODO Définir les tests stats
 \subsection{Approximation de Satterthwaite}
