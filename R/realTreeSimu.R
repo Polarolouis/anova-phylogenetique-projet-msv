@@ -59,10 +59,11 @@ for (her in heri) {
     sim <- N_simulation_typeI_power(N,
         groups_list = list(ratmus_vs_other =  group_mus_rat_vs_other, 
         random = random_groups),
+        tree = tree,
         base_values = c(0, snr * total_variance), 
         sigma2_phylo = her * total_variance,
         sigma2_measure = (1 - her) * total_variance,
-        REML = TRUE
+        # REML = TRUE
     )
 
 

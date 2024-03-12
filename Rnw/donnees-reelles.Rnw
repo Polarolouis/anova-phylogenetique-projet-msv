@@ -3,7 +3,7 @@ Ici nous appliquons les méthodes implémentées sur l'arbre de \cite{chenQuanti
 % TODO Décrire les données en détails
 
 << 'knitr_options', echo = FALSE>>=
-knitr::opts_knit$set(cache = TRUE, fig.pos = "HT", fig.width = 6, fig.height = 6,
+knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
     fig.align = "center", echo = FALSE, format = "latex")
 
 @
@@ -172,7 +172,7 @@ p-values \emph{non ajustées}.
     all_plots <- plot_spacer()
     for (test in unique(pvalues_dataframe$test_method)) {
         all_plots <- all_plots + ggplot(pvalues_dataframe %>% filter(test_method == test)) +
-            aes(x = reorder(gene, -pvalue), 
+            aes(x = reorder(gene, pvalue), 
                 y = pvalue, color = as.factor(selected)) +
             labs(color = "Selected", x = "Genes", y = "P-values")+
             # geom_bar(stat = "identity", position = "dodge") +
@@ -202,9 +202,17 @@ pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>%
 @
 
 Une fois ces corrections appliquées, nous allons comparer les gènes sélectionnés,
-c'est-à-dire différentiellement exprimés. % TODO Développer ce que veut dire différentiellement exprimé
+c'est-à-dire différentiellement exprimés. 
 
-Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods})
+% TODO Développer ce que veut dire différentiellement exprimé
+
+Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods}).
+
+On peut voir que la méthode de Satterthwaite sans REML a sélectionné énormément
+de gènes, 
+$\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "SatterthwaiteAdj",]$selected)}$ 
+comme étant différentiellement exprimés. 
+% TODO Comprendre la sur-sélection de Satterthwaite et pas de SatterthwaiteREML
 
 \begin{figure}[H]
     << upset_selection, echo = FALSE>>=
@@ -219,7 +227,7 @@ Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-
 
 \subsection*{EVEmodel}
 
-<<'evemodel', echo = FALSE>>=
+<<'evemodel', echo = FALSE, warning = FALSE, include = FALSE>>=
 eve_data = "evechen2019pvalues.Rds"
 if (!file.exists(here("data", eve_data))){
 
