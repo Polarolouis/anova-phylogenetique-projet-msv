@@ -1,5 +1,5 @@
 << 'knitr_options-simu', echo = FALSE>>=
-knitr::opts_knit$set(cache = TRUE, fig.pos = "HT", fig.width = 6, fig.height = 6,
+knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
     fig.align = "center", warnings = FALSE, echo = FALSE, format = "latex")
 
 @
@@ -19,7 +19,8 @@ Simulations :
 \subsubsection*{ANOVA vs ANOVA Phylogénétique}
 
 Dans cette partie nous souhaitons comparer les résultats de l'ANOVA et de 
-l'ANOVA phylogénétique. 
+l'ANOVA phylogénétique classique, avec approximation de Satterthwaite et avec le
+\emph{Likelihood ratio test}. 
 Pour cela nous allons simuler des données selon plusieurs modalités et évaluer
 l'\emph{erreur de première espèce} et la \emph{puissance} obtenue.
 
@@ -38,14 +39,21 @@ Pour les simulations qui se font selon l'information de l'arbre phylogénétique
 nous nous attendons à ce que l'ANOVA phylogénétique parvienne à mieux prendre en
 compte l'information apportée par la phylogénie et à démêler son effet.\\
 
-<<'modules-simulations', include = FALSE>>=
-require("ape")
-require("phylolm")
-require("phytools")
-require("here")
-library(tidyverse)
-library(ggplot2)
-library(patchwork)
+<<'modules-simulations', include = FALSE, eval=TRUE>>=
+necessary_simu <- c("ape", "remotes", "phylolm", "phytools", "here")
+
+if (any(!(necessary_simu %in% installed.packages()))){
+    install.packages(necessary_simu)
+    remotes::install_github("lamho86/phylolm", quiet = TRUE)
+}
+
+library("ape")
+library("phylolm")
+library("phytools")
+library("here")
+library("tidyverse")
+library("ggplot2")
+library("patchwork")
 source(here("R","utils.R"))
 @
 
@@ -129,7 +137,52 @@ heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 @
 
-Pour les paramètres de la simulation nous allons faire prendre à $h$, défini comme
-l'héritabilité, les valeurs $h \in (\Sexpr{heri})$. 
+Nous re-paramétrisons le modèle, $variance\text{ }totale = \sigma^2_{phylo} + 
+\sigma^2_{measure} = \Sexpr{total_variance} $.
+Nous allons faire prendre à $h$, défini comme l'héritabilité, les valeurs $h 
+\in (\Sexpr{heri})$. L'héritabilité est liée à $\sigma^2_{phylo}$ et $\sigma^2_{phylo} = h\times 
+variance\text{ }totale$. Et alors $\sigma^2_{measure} = (1-h) \times 
+variance\text{ }totale$.
 
-\subsubsection*{Avec Satterthwaite et le \emph{Likelihood Ratio Test} (LRT)}
+Pour chaque valeur d'héritabilité, nous allons générer $\Sexpr{N}$ jeux de données 
+différents sur lesquels les méthodes sont utilisées.
+
+<<'simus-results', cache = TRUE, warning = FALSE>>=
+for (her in heri) {
+    filename <- here("data", "simus", 
+        paste0("real_her_", her, "_seed_", seed, ".Rds"))
+        if (!file.exists(filename)) {
+            sim <- N_simulation_typeI_power(N,
+                groups_list = list(ratmus_vs_other =  group_mus_rat_vs_other, 
+                random = random_groups),
+                tree = tree,
+                base_values = c(0, snr * total_variance), 
+                sigma2_phylo = her * total_variance,
+                sigma2_measure = (1 - her) * total_variance#,
+                # REML = TRUE
+            )
+            df_sim_plot <- compute_power_typeI(df = sim)
+            saveRDS(df_sim_plot, filename)
+        } else {
+            load(filename)
+        }
+        res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("Rat&Mus héritabilité ", her))
+        print(res_sim_plot)
+        # saveRDS(sim, filename)
+    
+}
+@
+
+% <<'simus-plot'>>=
+% for (her in heri) {
+%     filename <- here("data", "simus", 
+%         paste0("real_her_", her, "_seed_", seed, ".Rds"))
+%     load(filename)
+%     df_sim_plot <- compute_power_typeI(df = sim)
+
+%     res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("Rat&Mus héritabilité ", her))
+%     print(res_sim_plot)
+% }
+% @
+
+\subsubsection*{\emph{REML} contre \emph{Maximum Likelihood}}

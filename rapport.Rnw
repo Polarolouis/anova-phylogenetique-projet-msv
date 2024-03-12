@@ -52,7 +52,7 @@
 \maketitle
 
 <<'init', include=FALSE>>=
-    knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+    knitr::opts_chunk$set(echo = FALSE)
     require("knitr", quietly = TRUE)
     options(knitr.table.format = "latex")
 @

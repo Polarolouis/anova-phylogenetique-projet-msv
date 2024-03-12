@@ -3,7 +3,7 @@ Ici nous appliquons les méthodes implémentées sur l'arbre de \cite{chenQuanti
 % TODO Décrire les données en détails
 
 << 'knitr_options', echo = FALSE>>=
-knitr::opts_knit$set(cache = TRUE, fig.pos = "HT", fig.width = 6, fig.height = 6,
+knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
     fig.align = "center", echo = FALSE, format = "latex")
 
 @
@@ -172,7 +172,7 @@ p-values \emph{non ajustées}.
     all_plots <- plot_spacer()
     for (test in unique(pvalues_dataframe$test_method)) {
         all_plots <- all_plots + ggplot(pvalues_dataframe %>% filter(test_method == test)) +
-            aes(x = reorder(gene, -pvalue), 
+            aes(x = reorder(gene, pvalue), 
                 y = pvalue, color = as.factor(selected)) +
             labs(color = "Selected", x = "Genes", y = "P-values")+
             # geom_bar(stat = "identity", position = "dodge") +
