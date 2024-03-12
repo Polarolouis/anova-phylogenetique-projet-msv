@@ -202,9 +202,17 @@ pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>%
 @
 
 Une fois ces corrections appliquées, nous allons comparer les gènes sélectionnés,
-c'est-à-dire différentiellement exprimés. % TODO Développer ce que veut dire différentiellement exprimé
+c'est-à-dire différentiellement exprimés. 
 
-Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods})
+% TODO Développer ce que veut dire différentiellement exprimé
+
+Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods}).
+
+On peut voir que la méthode de Satterthwaite sans REML a sélectionné énormément
+de gènes, 
+$\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "SatterthwaiteAdj",]$selected)}$ 
+comme étant différentiellement exprimés. 
+% TODO Comprendre la sur-sélection de Satterthwaite et pas de SatterthwaiteREML
 
 \begin{figure}[H]
     << upset_selection, echo = FALSE>>=
@@ -219,7 +227,7 @@ Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-
 
 \subsection*{EVEmodel}
 
-<<'evemodel', echo = FALSE>>=
+<<'evemodel', echo = FALSE, warning = FALSE, include = FALSE>>=
 eve_data = "evechen2019pvalues.Rds"
 if (!file.exists(here("data", eve_data))){
 

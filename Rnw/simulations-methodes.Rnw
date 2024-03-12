@@ -40,11 +40,12 @@ nous nous attendons à ce que l'ANOVA phylogénétique parvienne à mieux prendr
 compte l'information apportée par la phylogénie et à démêler son effet.\\
 
 <<'modules-simulations', include = FALSE, eval=TRUE>>=
-necessary_simu <- c("ape", "remotes", "phylolm", "phytools", "here")
+necessary_simu <- c("ape", "remotes", "phylolm", "phylolimma", "phytools", "here")
 
 if (any(!(necessary_simu %in% installed.packages()))){
     install.packages(necessary_simu)
     remotes::install_github("lamho86/phylolm", quiet = TRUE)
+    remotes::install_github("pbastide/phylolimma", quiet = TRUE)
 }
 
 library("ape")
@@ -83,10 +84,13 @@ group_mus_rat_vs_other <- sapply(1:nb_species, function(tip) {
     return(2)
 })
 
-# TODO Demander à Paul et Mélina si mieux de mettre groupes équilibrés 0.5 0.5
-# Ou groupes comparables 16, 27
-random_groups <- sample(1:K, nb_species,
-    replace = TRUE, prob = c(16, 27))
+rng_species <- c("chimp", "bonobo", "human", "orangutan", "marmoset", 
+    "musMusculus", "rat", "dog", "ferret", "cow", "opossum")
+random_groups <- rowSums(sapply(rng_species, 
+    function(spec) grepl(spec, tree$tip.label)))
+random_groups[random_groups == 0] <- 2
+
+#sample(1:K, nb_species, replace = TRUE, prob = c(16, 27))
 @
 
 Pour faire nos simulations dans un contexte proche du cas réel nous allons 
@@ -97,11 +101,12 @@ Pour le groupe respectant la phylogénie, on a d'un côté les espèces
 du genre \emph{Mus} avec les rats et les autres espèces dans un autre groupe
 (voir la figure~\ref{fig:simu-groupes-mus}). 
 
-
-Et pour le groupe ne respectant pas la phylogénie on attribue aléatoirement les
-individus à l'un des deux groupes en respectant les proportions du groupe défini
+% DONE Choisir les espèces à la main et mettre les réplicats dans le même groupe
+% on attribue aléatoirement les individus à l'un des deux groupes
+Et pour le groupe ne respectant pas la phylogénie, nous avons sélectionnés les 
+espèces en respectant les proportions des groupes définis
 avant afin de rendre les résultats comparables (voir la 
-figure~\ref{fig:simu-groupes-alea-prop}). 
+figure~\ref{fig:simu-groupes-alea-prop}).
 Enfin pour que notre analyse soit reproductible nous fixons la graine à 
 \Sexpr{seed}.
 
@@ -147,11 +152,11 @@ variance\text{ }totale$.
 Pour chaque valeur d'héritabilité, nous allons générer $\Sexpr{N}$ jeux de données 
 différents sur lesquels les méthodes sont utilisées.
 
-<<'simus-results', cache = TRUE, warning = FALSE>>=
+<<'simus-results', cache = TRUE, warning = FALSE, fig.cap = "Simulations">>=
 for (her in heri) {
     filename <- here("data", "simus", 
         paste0("real_her_", her, "_seed_", seed, ".Rds"))
-        if (!file.exists(filename)) {
+        # if (!file.exists(filename)) {
             sim <- N_simulation_typeI_power(N,
                 groups_list = list(ratmus_vs_other =  group_mus_rat_vs_other, 
                 random = random_groups),
@@ -162,12 +167,12 @@ for (her in heri) {
                 # REML = TRUE
             )
             df_sim_plot <- compute_power_typeI(df = sim)
-            saveRDS(df_sim_plot, filename)
-        } else {
-            load(filename)
-        }
+        #     saveRDS(df_sim_plot, filename)
+        # } else {
+        #     load(filename)
+        # }
         res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("Rat&Mus héritabilité ", her))
-        print(res_sim_plot)
+        knitr::knit_print(res_sim_plot)
         # saveRDS(sim, filename)
     
 }
