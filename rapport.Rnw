@@ -105,10 +105,12 @@ Pour données \cite{chenQuantitativeFrameworkCharacterizing2019} la figure~\ref{
     \label{fig:arbre-chen2019}
 \end{figure}
 
-
-Transition, c'est pourquoi on va tester la méthode d'ANOVA phylogénétique avec cette forme de données. 
-But ? Etudier cette méthode et les résultats 
-
+Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode d'ANOVA phylogénétique. 
+Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés pour affiner la fiabilité du test dans une première partie. 
+Viendra ensuite une partie de simulation destinée à comparer et étudier la méthode d'ANOVA phylogénétique sur des données d'arbre simulés. 
+Enfin, on tester sur des données réelles. 
+\newline
+\newline
 Un gène, comparer les moyennes d'expression d'un gène 
 On connait les groupes
 exemple individus malade/sain
@@ -157,36 +159,62 @@ L'arbre phylogénétique pour être intégré à l'ANOVA doit être représenté
 modèle.
 
 Pour cela, les données d'arbre sont supposées être le résultat d'un processus
-stochastique. Le processus classique est le mouvement brownien, par exemple
+stochastique. Le processus classique est le mouvement brownien, par exemple.
+\begin{equation}
+    Y = X\beta + u 
+\end{equation} 
+\[
+    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_2} \end{bmatrix}=\begin{bmatrix} 1 & 0 \\ \vdots & \vdots\\1 & 0 \\ 0 & 1\\ \vdots & \vdots\\0 & 1 \end{bmatrix},  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K)
+\]
 
+Ici la matrice K porte l'information phylogénétique de l'arbre.
+TODO: parler du BM + structure de la matrice K
 <<''>>=
 
 @
 
-parler du BM ? 
 % Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
 % figure avec le Brownien sur l'arbre à reprendre dans le chapitre de livre
-PUis de la matrice V ou K qui donne la structure phylogénétique 
 
 Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
 
 \subsection{ANOVA phylogénétique avec erreur de mesure}
-
-% TODO Définir les tests stats
-\subsection{Approximation de Satterthwaite}
-
-Pourquoi vouloir l'utiliser ? Réduire nbre de degrés de liberté utilisés dans la stat de test. 
-Le but est d'approximé le nbre de degré de Liberté. 
-On se basera sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation  dans notre cadre et ensuite implémenter l'implémenter.. 
+La réalité du modèle nous donne cette nouvelle équation où l'on peut voir 2 erreurs. 
+L'une en lien avec le mouvement brownien sur l'arbre et liée à l'information phylogénétique portée par celui ci (modélisée par la matrice $K$) génétique et l'autre à une erreur de mesure. 
 \begin{equation}
-    Y = X\beta + u + \epsilon 
+    Y = X\beta + u + \epsilon \quad \text{et} \quad \theta=(\sigma^2_{phy}, \sigma^2_{err})
+\label{eq:eq2err}
 \end{equation} 
 \[
-\text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
+\text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{\beta} = \begin{bmatrix} \mu_1 \\ \mu_2  \end{bmatrix} \text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
 \]
+
+\subsection{Le test statistique}
+Pour le test statistique d'ANOVA phylogénétique, on se met dans le cadre d'une ANOVA à un facteur et à 2 groupes. 
+Chacun de ces groupes ayant une moyenne qui lui est propre: $\mu_1$ et $\mu_2$. 
+On testera alors les hypothèses suivantes :
+\[ H_0 : \mu_1 = \mu_2 \]
+\[ H_1 : \mu_1 \neq \mu_2 \]
+
+TODO: Statistique de test
+
+\subsection{Approximation de Satterthwaite}
+
+
+Dans la statistique de test précédente, on peut voir des degrés de liberté. De manière standard on va dans notre cas avoir $n-2$ degrés de liberté. 
+. Le test de Fisher, également appelé analyse de la variance (ANOVA), suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
+
+Cependant, lorsque cette condition n'est pas satisfaite, l'approximation de Satterthwaite peut être utilisée pour tenir compte des variances inégales entre les groupes. Elle est particulièrement utile dans le cas des ANOVA à un facteur, mais peut également être appliquée à des ANOVA à plusieurs facteurs.
+
+L'approximation de Satterthwaite ajuste les degrés de liberté pour tenir compte de ces différences dans les variances.
 \newline
+Cela permet d'obtenir des résultats plus fiables lorsque les conditions d'homoscédasticité ne sont pas respectées. 
+\newline
+\newline
+On s'est basé sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre et ensuite les implémenter et voir si cela améliore la fiabilité de la statistique de test.
+A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
 \[
- \text{Alors} \quad Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \quad \text{et} \quad Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n
+ Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \quad \text{et} \quad Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
 \]
 De là on obtient:
 \begin{equation}
@@ -284,7 +312,12 @@ TODO: trouver erreur de signe
 % l'orthogonal et on estime sigma sur l'orthogonal.
 
 % Si bayésien on met un prior impropre sur les betas et on intègre apr rapport aux 
-
+\subsection{REML}
+REML, ou Maximum de Vraisemblance Restreint (Restricted Maximum Likelihood en anglais), est une méthode statistique utilisée dans l'estimation des paramètres de modèles linéaires mixtes (ou modèles à effets mixtes) et dans l'analyse de la variance (ANOVA). Il s'agit d'une approche alternative à la méthode de maximum de vraisemblance (ML) standard, notamment lorsque l'on travaille avec des modèles à effets aléatoires.
+\newline
+\newline
+TODO: formule pour montrer la différence ? 
+TODO: Pourquoi l'utiliser pour Satterthwaite ? 
 \section{Méthodologie}
 \label{chap:metho}
 lrt 
