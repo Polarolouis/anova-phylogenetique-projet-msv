@@ -207,7 +207,9 @@ On testera alors les hypothèses suivantes :
 \[ H_0 : \mu_1 = \mu_2 \]
 \[ H_1 : \mu_1 \neq \mu_2 \]
 
-TODO: Statistique de test
+On a pour un ce test de Fisher la statistique de test suivante dasn le caddre où l'on a $p$ groupes: 
+\[F=\frac{||\hat{Y} - \bar{Y}||_{K^{-1}}(n-p)}{(p-1)||Y - \hat{Y}||_{K^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (p-1, n-p)\] 
+TODO: Améliorer les notations
 
 \subsection{Approximation de Satterthwaite}
 
