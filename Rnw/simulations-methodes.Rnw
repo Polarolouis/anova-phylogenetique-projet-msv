@@ -112,7 +112,7 @@ figure~\ref{fig:simu-groupes-prop}).
 Enfin pour que notre analyse soit reproductible nous fixons la graine à 
 \Sexpr{seed}.
 
-\begin{figure}
+\begin{figure}[H]
     \begin{subfigure}[H]{0.45\textwidth}
         \centering
         <<'plot-groupes-mus'>>=
@@ -136,9 +136,6 @@ Enfin pour que notre analyse soit reproductible nous fixons la graine à
 <<'param-simulation'>>=
 # Generate data for rat&mus vs the rest
 N <- 500
-base_values <- c(0, 1)
-sigma2_phylo <- 1
-sigma2_measure <- 0.1
 risk_threshold <- 0.05
 
 ## Standardized parameters
@@ -147,16 +144,27 @@ heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 @
 
-Nous re-paramétrisons le modèle, la variance totale $v_{tot}$ suit la relation 
+Afin d'avoir un paramètre unique à faire varier, nous re-paramétrisons le
+modèle, la variance totale $v_{tot}$ suit la relation 
 $v_{tot} = \sigma^2_{phylo} + 
 \sigma^2_{measure} = \Sexpr{total_variance} $.
 Nous allons faire prendre à $h$, défini comme l'héritabilité, les valeurs $h 
 \in (\Sexpr{heri})$. L'héritabilité est liée à $\sigma^2_{phylo}$ et $\sigma^2_{phylo} = h\times 
 v_{tot}$. Et alors $\sigma^2_{measure} = (1-h) \times 
-v_{tot}$.
+v_{tot}$. Ainsi, $h = 0$ signifie qu'il y a seulement du bruit, et $h = 1$ 
+seulement de l'information phylogénétique.
+
+Pour les valeurs quantitatives des 2 groupes, nous avons 2 valeurs différentes :
+\begin{align}
+    \mu_1 = 0, & & \mu_2 = snr \times v_{tot} = \frac{taille\text{ }d'effet}{\cancel{v_{tot}}} \times \cancel{v_{tot}} = \Sexpr{snr} \label{eq:simus-base-values}
+\end{align}
+
+\emph{Note :} \emph{snr} signifie \emph{signal noise ratio} et comme indiqué est
+donc le rapport entre la taille d'effet et la variance totale.
 
 Pour chaque valeur d'héritabilité, nous allons générer $\Sexpr{N}$ jeux de données 
-différents sur lesquels les méthodes sont utilisées.
+différents sur lesquels les méthodes sont utilisées avec les valeurs définies
+dans l'équation~\ref{eq:simus-base-values}.
 
 <<'simus-results', warning = FALSE, fig.pos = "H", fig.cap = "Simulations pour différente valeurs d'héritabilité", fig.subcap = paste0("$h = ", heri, "$"), fig.ncol = 2, out.width='.49\\linewidth'>>=
 
@@ -195,3 +203,5 @@ présentent les puissances des mêmes méthodes.
 
 TODO Ajouter les commentaires sur les simulations
 
+\paragraph*{REML vs Maximum Likelihood (ML)} En comparant les méthodes selon 
+l'utilisation du critère REML ou du ML nous pouvons voir que la méthode 
