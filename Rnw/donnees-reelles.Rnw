@@ -198,7 +198,7 @@ p-values \emph{non ajustées}.
 \end{figure}
 
 Pour la suite de cette analyse, nous allons appliquer un ajustement des p-values
-pour les test multiples, nommément la correction de Benjamini-Hochberg.
+pour les test multiples, nommément la correction de \cite{benjaminiControllingFalseDiscovery1995}.
 
 << wide_data, echo = FALSE>>=
 pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>% 
