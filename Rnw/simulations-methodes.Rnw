@@ -40,7 +40,8 @@ nous nous attendons à ce que l'ANOVA phylogénétique parvienne à mieux prendr
 compte l'information apportée par la phylogénie et à démêler son effet.\\
 
 <<'modules-simulations', include = FALSE, eval=TRUE>>=
-necessary_simu <- c("ape", "remotes", "phylolm", "phylolimma", "phytools", "here")
+necessary_simu <- c("ape", "remotes", "phylolm", "phylolimma", "phytools", 
+    "latex2exp", "here")
 
 if (any(!(necessary_simu %in% installed.packages()))){
     install.packages(necessary_simu)
@@ -55,6 +56,7 @@ library("here")
 library("tidyverse")
 library("ggplot2")
 library("patchwork")
+library("latex2exp")
 source(here("R","utils.R"))
 @
 
@@ -106,26 +108,29 @@ du genre \emph{Mus} avec les rats et les autres espèces dans un autre groupe
 Et pour le groupe ne respectant pas la phylogénie, nous avons sélectionnés les 
 espèces en respectant les proportions des groupes définis
 avant afin de rendre les résultats comparables (voir la 
-figure~\ref{fig:simu-groupes-alea-prop}).
+figure~\ref{fig:simu-groupes-prop}).
 Enfin pour que notre analyse soit reproductible nous fixons la graine à 
 \Sexpr{seed}.
 
-
-\begin{figure}[H]
-    \centering
-    <<'plot-groupes-mus'>>=
-    plot_group_on_tree(tree, group = group_mus_rat_vs_other)
-    @
-    \caption{Groupes \emph{Mus} et rats contre les autres}
-    \label{fig:simu-groupes-mus} 
-\end{figure}
-\begin{figure}[H]
-    \centering
-    <<'plot-groupes-random'>>=
-    plot_group_on_tree(tree, group = random_groups)
-    @
-    \caption{Groupes aléatoires respectant les proportions}
-    \label{fig:simu-groupes-alea-prop} 
+\begin{figure}
+    \begin{subfigure}[H]{0.45\textwidth}
+        \centering
+        <<'plot-groupes-mus'>>=
+        plot_group_on_tree(tree, group = group_mus_rat_vs_other)
+        @
+        \caption{Groupes \emph{Mus} et rats contre les autres}
+        \label{fig:simu-groupes-mus} 
+    \end{subfigure}
+    \begin{subfigure}[H]{0.45\textwidth}
+        \centering
+        <<'plot-groupes-random'>>=
+        plot_group_on_tree(tree, group = random_groups)
+        @
+        \caption{Groupes respectant les proportions}
+        \label{fig:simu-groupes-prop} 
+    \end{subfigure}
+    \caption{Arbre et groupes pour les simulations}
+    \label{fig:arbres-groupes}
 \end{figure}
 
 <<'param-simulation'>>=
@@ -142,52 +147,51 @@ heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance
 snr <- 1 # signal to noise ratio snr = size_effect / total_variance
 @
 
-Nous re-paramétrisons le modèle, $variance\text{ }totale = \sigma^2_{phylo} + 
+Nous re-paramétrisons le modèle, la variance totale $v_{tot}$ suit la relation 
+$v_{tot} = \sigma^2_{phylo} + 
 \sigma^2_{measure} = \Sexpr{total_variance} $.
 Nous allons faire prendre à $h$, défini comme l'héritabilité, les valeurs $h 
 \in (\Sexpr{heri})$. L'héritabilité est liée à $\sigma^2_{phylo}$ et $\sigma^2_{phylo} = h\times 
-variance\text{ }totale$. Et alors $\sigma^2_{measure} = (1-h) \times 
-variance\text{ }totale$.
+v_{tot}$. Et alors $\sigma^2_{measure} = (1-h) \times 
+v_{tot}$.
 
 Pour chaque valeur d'héritabilité, nous allons générer $\Sexpr{N}$ jeux de données 
 différents sur lesquels les méthodes sont utilisées.
 
-<<'simus-results', cache = TRUE, warning = FALSE, fig.cap = "Simulations">>=
-for (her in heri) {
+<<'simus-results', warning = FALSE, fig.pos = "H", fig.cap = "Simulations pour différente valeurs d'héritabilité", fig.subcap = paste0("$h = ", heri, "$"), fig.ncol = 2, out.width='.49\\linewidth'>>=
+
+plot_list <- lapply(seq_len(length(heri)), function(idx) 
+    {
+    her <- heri[idx]
     filename <- here("data", "simus", 
-        paste0("real_her_", her, "_seed_", seed, ".Rds"))
-        # if (!file.exists(filename)) {
-            sim <- N_simulation_typeI_power(N,
-                groups_list = list(ratmus_vs_other =  group_mus_rat_vs_other, 
-                random = random_groups),
-                tree = tree,
-                base_values = c(0, snr * total_variance), 
-                sigma2_phylo = her * total_variance,
-                sigma2_measure = (1 - her) * total_variance#,
-                # REML = TRUE
-            )
-            df_sim_plot <- compute_power_typeI(df = sim)
-        #     saveRDS(df_sim_plot, filename)
-        # } else {
-        #     load(filename)
-        # }
-        res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("Rat&Mus héritabilité ", her))
-        knitr::knit_print(res_sim_plot)
-        # saveRDS(sim, filename)
-    
+    paste0("real_her_", her, "_seed_", seed, ".Rds"))
+    if (!file.exists(filename)) {
+        sim <- N_simulation_typeI_power(N,
+            groups_list = list(RatMus =  group_mus_rat_vs_other, 
+            Proportions = random_groups),
+            tree = tree,
+            base_values = c(0, snr * total_variance), 
+            sigma2_phylo = her * total_variance,
+            sigma2_measure = (1 - her) * total_variance#,
+            # REML = TRUE
+        )
+        saveRDS(sim, filename)
+    }
+
+    sim <- readRDS(filename)
+
+    df_sim_plot <- compute_power_typeI(df = sim)
+    res_sim_plot <- plot_method_comparison(df_sim_plot)
+    res_sim_plot
+})
+for(plot in plot_list) {
+    print(plot)
 }
 @
 
-% <<'simus-plot'>>=
-% for (her in heri) {
-%     filename <- here("data", "simus", 
-%         paste0("real_her_", her, "_seed_", seed, ".Rds"))
-%     load(filename)
-%     df_sim_plot <- compute_power_typeI(df = sim)
+Sur toutes les sous-figures de la figure~\ref{fig:simus-results}, les étiquettes
+A présentent les erreurs de type I commises par les méthodes et les étiquettes B
+présentent les puissances des mêmes méthodes.
 
-%     res_sim_plot <- plot_method_comparison(df_sim_plot, title = paste("Rat&Mus héritabilité ", her))
-%     print(res_sim_plot)
-% }
-% @
+TODO Ajouter les commentaires sur les simulations
 
-\subsubsection*{\emph{REML} contre \emph{Maximum Likelihood}}

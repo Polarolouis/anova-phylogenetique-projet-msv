@@ -300,19 +300,14 @@ compute_vanilla_pvalue <- function(fit_phylolm, return_df = FALSE) {
 #' @param REML Use REML for computation
 #'
 #' @return pvalue
-compute_satterthwaite_pvalue <- function(fit_phylolm, tree, REML = FALSE, return_df = FALSE) {
+compute_satterthwaite_pvalue <- function(fit_phylolm, tree, return_df = FALSE) {
     # Extract parameters
     nb_species <- nrow(fit_phylolm$X)
     K <- length(unique(fit_phylolm$X[, 2]))
 
     #  Compute degrees of freedom
     df1 <- K - 1
-    # Satterthwaite approximation
-    # df2 <- ddf_satterthwaite_sum(
-    #     fit_phylolm = fit_phylolm,
-    #     phylo = tree,
-    #     REML = REML
-    # )$ddf
+
     df2 <- phylolimma:::ddf_satterthwaite_BM_error(fit_phylolm = fit_phylolm, 
         phylo = tree)$ddf
 
@@ -374,11 +369,14 @@ pvalues_from_fits <- function(
     fit_phylolm,
     fit_phylolm_reml,
     tree,
-    tested_methods = c("anova", "vanilla", "satterthwaite", "lrt"),
+    tested_methods = c("ANOVA", "ANOVA Phylo", "ANOVA Phylo REML",
+        "ANOVA Phylo Satterthwaite", "ANOVA Phylo Satterthwaite REML", "LRT"),
     REML = TRUE) {
     #  For sanity test
     rlang::arg_match(tested_methods,
-        values = c("anova", "vanilla", "satterthwaite", "lrt"),
+        values = c("ANOVA", "ANOVA Phylo", "ANOVA Phylo REML", 
+            "ANOVA Phylo Satterthwaite", "ANOVA Phylo Satterthwaite REML",
+            "LRT"),
         multiple = TRUE
     )
 
@@ -390,19 +388,13 @@ pvalues_from_fits <- function(
     res_df <- data.frame(matrix(ncol = 4, nrow = 0))
     colnames(res_df) <- c("tested_method", "pvalue", "df1", "df2")
 
-    if (REML) {
-        fitphylo <- fit_phylolm_reml
-    } else {
-        fitphylo <- fit_phylolm
-    }
-
     # Iterates over the methods to test
     for (method in tested_methods) {
         #  The default value for the df2
         df1 <- K - 1
 
         switch(method,
-            "anova" = {
+            "ANOVA" = {
                 anova_F_stat <- summary(fit_anova)$fstatistic[1]
                 df1 <- summary(fit_anova)$fstatistic[2]
                 df2 <- summary(fit_anova)$fstatistic[3]
@@ -410,23 +402,31 @@ pvalues_from_fits <- function(
                     df1 = df1, df2 = df2
                 )
             },
-            "vanilla" = {
+            "ANOVA Phylo" = {
                 df2 <- nb_species - K
-                pvalue <- compute_vanilla_pvalue(fit_phylolm = fitphylo)
+                pvalue <- compute_vanilla_pvalue(fit_phylolm = fit_phylolm)
             },
-            "satterthwaite" = {
-                df2 <- ddf_satterthwaite_sum(
-                    fit_phylolm = fitphylo,
-                    phylo = tree,
-                    REML = REML
-                )$ddf
+            "ANOVA Phylo REML" = {
+                df2 <- nb_species - K
+                pvalue <- compute_vanilla_pvalue(fit_phylolm = fit_phylolm_reml)
+            },
+            "ANOVA Phylo Satterthwaite" = {
+                df2 <- phylolimma:::ddf_satterthwaite_BM_error(
+                    fit_phylolm = fit_phylolm,
+                    phylo = tree)$ddf
                 pvalue <- compute_satterthwaite_pvalue(
-                    fit_phylolm = fitphylo,
-                    tree = tree,
-                    REML = REML
-                )
+                    fit_phylolm = fit_phylolm,
+                    tree = tree)
             },
-            "lrt" = {
+            "ANOVA Phylo Satterthwaite REML" = {
+                df2 <- phylolimma:::ddf_satterthwaite_BM_error(
+                    fit_phylolm = fit_phylolm_reml,
+                    phylo = tree)$ddf
+                pvalue <- compute_satterthwaite_pvalue(
+                    fit_phylolm = fit_phylolm_reml,
+                    tree = tree)
+            },
+            "LRT" = {
                 df2 <- NA
                 pvalue <- compute_lrt_pvalue(
                     fit_phylolm = fit_phylolm,
@@ -592,14 +592,16 @@ plot_method_comparison <- function(df_plot, title = "") {
         scale_y_continuous(limits = c(0, 1)) +
         ylab("Erreur type I") +
         xlab("Type de groupe") +
-        labs(fill = "Type de groupe") +
+        # labs(fill = "Type de groupe") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-        facet_wrap(vars(tested_method), nrow = 4) +
+        facet_wrap(vars(tested_method), ncol = 1) +
         geom_text(aes(label = round(errortypeI, digits = 2)),
             vjust = -0.5, position = position_dodge(width = 0.9)
         ) +
         geom_hline(yintercept = 0.05) +
-        ggtitle("Erreur Type I")
+        guides(fill="none") +
+        ggtitle("Erreur Type I") + 
+        theme_minimal()
 
     power <- ggplot(df_plot) +
         aes(x = group_type, y = power, fill = group_type) +
@@ -607,14 +609,16 @@ plot_method_comparison <- function(df_plot, title = "") {
         scale_y_continuous(limits = c(0, 1)) +
         ylab("Puissance") +
         xlab("Type de groupe") +
-        labs(fill = "Type de groupe") +
+        # labs(fill = "Type de groupe") +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-        facet_wrap(vars(tested_method), nrow = 4) +
+        facet_wrap(vars(tested_method), ncol = 1) +
         geom_text(aes(label = round(power, digits = 2)),
             vjust = -0.5, position = position_dodge(width = 0.9)
         ) +
-        ggtitle("Puissance")
+        guides(fill="none") +
+        ggtitle("Puissance") + 
+        theme_minimal()
 
     (error + power + plot_layout(guides = "collect", axes = "collect", axis_titles = "collect")) +
-        plot_annotation(title = title)
+        plot_annotation(title = title, tag_levels = 'A')
 }
