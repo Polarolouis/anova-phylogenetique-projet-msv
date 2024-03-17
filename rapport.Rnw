@@ -179,14 +179,27 @@ On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuou
     \includegraphics[width=0.7\textwidth]{matrix_K.png}
 \end{center}
 
-<<''>>=
+<<'plot-MB', warnings = FALSE, message = FALSE, fig.cap = "Exemple d'un arbre phylogénétique généré selon un Mouvement Brownien", out.width = "75%", fig.height = 3.5, fig.align = "center", fig.pos = "H">>=
+source(here("simulations","mouvement_brownien.R"))
+set.seed(12)
+df <- generate_phylo_tree(5,100, 0.1)
+df$id_branche <- as.factor(df$id_branche)
+
+ggplot(df) +
+    aes(x = time, y = traj, color = as.factor(id_branche))+
+    geom_line() +
+    geom_vline(data = df[df$is_spec_time,], aes(xintercept = time, color = .data$id_branche), linetype = "dashed")+
+    geom_point(data = df[df$is_spec_time,], aes(x = time, y = .data$traj, color = .data$id_branche), size = 4)+
+    labs(color = "Espèce", x = "Temps", y = "Trait") +
+    coord_fixed(ratio=0.75) +
+    theme_minimal()
 
 @
 
 % Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
 % figure avec le Brownien sur l'arbre à reprendre dans le chapitre de livre
 
-Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
+TODO Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
 
 \subsection{ANOVA phylogénétique avec erreur de mesure}
 TODO transition

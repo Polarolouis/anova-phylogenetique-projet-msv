@@ -211,9 +211,9 @@ pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>%
 Une fois ces corrections appliquées, nous allons comparer les gènes sélectionnés,
 c'est-à-dire différentiellement exprimés. 
 
-% TODO Développer ce que veut dire différentiellement exprimé
 
 Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods}).
+
 
 On peut voir que la méthode de Satterthwaite sans REML a sélectionné énormément
 de gènes, 
