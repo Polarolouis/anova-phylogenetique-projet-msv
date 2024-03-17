@@ -326,4 +326,6 @@ figure/
 # rapport.tex
 rapport.tex
 
+ignored/
+
 # Taken from github.com/github/gitignore/blob/master/TeX.gitignore
