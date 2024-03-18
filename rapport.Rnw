@@ -141,13 +141,6 @@ Y_{ik} = \mu_i + E_{ik}, & &i = 1,\dots I, k = 1,\dots n_i, E_{ik} \sim \Normal 
 
 où dans cette équation, reprise du livre \parencite{belModeleLineaireSes}, $i$ représente le niveau du facteur et $k$ indique le numéro de l'observation dans ce niveau. $I$ est le nombre total de niveaux du facteur, $n_i$ le nombre d'observation du niveau $i$. 
 
-L'ANOVA se généralise à deux facteurs, plus facilement compréhensible avec cette forme, non identifiable :
-\begin{align}
-Y_{ijk} = \mu + \alpha_i + \beta_j + E_{ijk}, & &i = 1,\dots I, j = 1,\dots J, k = 1,\dots n_ij, E_{ijk} \sim \Normal (0, \sigma^2)
-\end{align}
-
-où $\mu$ représente un effet moyen de la population (\emph{intercept}), $\alpha_i$ l'effet du premier facteur de niveau $i$, $\beta_j$ l'effet du second facteur de niveau $j$.
-
 Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
 
 % ICI LES FORMULES
@@ -155,6 +148,7 @@ Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du
 % LIMITES de l'ANOVA classique sur les données phylo
 
 \subsection{L'ANOVA phylogénétique}
+\label{subsec:anova-phylogenetique}
 Dans la méthode d'ANOVA classique l'information portée par l'arbre phylogénétique n'est pas prise en compte. 
 Le but de cette nouvelle est de ne plus mettre cette information de côté et peut être obtenir de meilleurs résultats. 
 En effet on peut imaginer, en considérant des traits évolutifs ou des séquences d'ADN, que des individus d'une même espèce ou bien d'espèces proche phylogénétiquement, pourraient avoir des valeurs proches.  
@@ -179,7 +173,7 @@ On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuou
     \includegraphics[width=0.7\textwidth]{matrix_K.png}
 \end{center}
 
-<<'plot-MB', warnings = FALSE, message = FALSE, fig.cap = "Exemple d'un arbre phylogénétique généré selon un Mouvement Brownien", out.width = "75%", fig.height = 3.5, fig.align = "center", fig.pos = "H">>=
+<<'plot-MB', warnings = FALSE, message = FALSE, fig.cap = "Exemple d'un arbre phylogénétique dont le trait est généré selon un Mouvement Brownien", out.width = "75%", fig.height = 3.5, fig.align = "center", fig.pos = "H">>=
 source(here("simulations","mouvement_brownien.R"))
 set.seed(12)
 df <- generate_phylo_tree(5,100, 0.1)
@@ -188,12 +182,11 @@ df$id_branche <- as.factor(df$id_branche)
 ggplot(df) +
     aes(x = time, y = traj, color = as.factor(id_branche))+
     geom_line() +
-    geom_vline(data = df[df$is_spec_time,], aes(xintercept = time, color = .data$id_branche), linetype = "dashed")+
-    geom_point(data = df[df$is_spec_time,], aes(x = time, y = .data$traj, color = .data$id_branche), size = 4)+
+    # geom_vline(data = df[df$is_spec_time,], aes(xintercept = time, color = .data$id_branche), linetype = "dashed")+
+    geom_point(data = df[df$is_spec_time,], aes(x = time, y = .data$traj), color = df[df$is_spec_time,]$id_branche, size = 4)+
     labs(color = "Espèce", x = "Temps", y = "Trait") +
     coord_fixed(ratio=0.75) +
     theme_minimal()
-
 @
 
 % Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
@@ -204,7 +197,10 @@ TODO Etre assez concis sur l'histoire de la projection et le modèle et les diff
 \subsection{ANOVA phylogénétique avec erreur de mesure}
 TODO transition
 La réalité du modèle nous donne cette nouvelle équation où l'on peut voir 2 erreurs. 
-L'une en lien avec le mouvement brownien sur l'arbre et liée à l'information phylogénétique portée par celui ci (modélisée par la matrice $K$) génétique et l'autre à une erreur de mesure. 
+L'une en lien avec le mouvement brownien sur l'arbre et liée à l'information 
+phylogénétique portée par celui ci (modélisée par la matrice $K$) génétique et 
+l'autre à une erreur de mesure, ou de la variation intraspécifique.
+
 \begin{equation}
     Y = X\beta + u + \epsilon \quad \text{et} \quad \theta=(\sigma^2_{phy}, \sigma^2_{err})
 \label{eq:eq2err}
@@ -228,7 +224,7 @@ TODO: Améliorer les notations
 
 
 Dans la statistique de test précédente, on peut voir des degrés de liberté. De manière standard on va dans notre cas avoir $n-2$ degrés de liberté. 
-. L'ANOVA, suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
+L'ANOVA, suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
 
 Cependant, lorsque cette condition n'est pas satisfaite, l'approximation de Satterthwaite peut être utilisée pour tenir compte des variances inégales entre les groupes. Elle est particulièrement utile dans le cas des ANOVA à un facteur, mais peut également être appliquée à des ANOVA à plusieurs facteurs.
 

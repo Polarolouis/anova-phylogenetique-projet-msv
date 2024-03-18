@@ -160,7 +160,10 @@ Pour les valeurs quantitatives des 2 groupes, nous avons 2 valeurs différentes 
 \end{align}
 
 \emph{Note :} \emph{snr} signifie \emph{signal noise ratio} et comme indiqué est
-donc le rapport entre la taille d'effet et la variance totale.
+donc le rapport entre la taille d'effet et la variance totale. Et dans
+l'équation~\ref{eq:simus-base-values}, $\mu_1$ et $\mu_2$ 
+correspondent aux $\beta_1$ et $\beta_2$ définis dans la 
+sous-section~\ref{subsec:anova-phylogenetique}.
 
 Pour chaque valeur d'héritabilité, nous allons générer $\Sexpr{N}$ jeux de données 
 différents sur lesquels les méthodes sont utilisées avec les valeurs définies
