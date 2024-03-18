@@ -195,19 +195,18 @@ ggplot(df) +
 TODO Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
 
 \subsection{ANOVA phylogénétique avec erreur de mesure}
-TODO transition
-La réalité du modèle nous donne cette nouvelle équation où l'on peut voir 2 erreurs. 
-L'une en lien avec le mouvement brownien sur l'arbre et liée à l'information 
-phylogénétique portée par celui ci (modélisée par la matrice $K$) génétique et 
-l'autre à une erreur de mesure, ou de la variation intraspécifique.
-
+Dans la section précedente, on a supposé que la seule source de variabilité provenait du mouvement brownien sur l'arbre.
+On rajoute dans cette section une autre variabilité specifiée par $\sigma^2_{err}$ qui à partir de la formule précédente \eqref{eq:ANOVAphylo}, nous donne:
 \begin{equation}
-    Y = X\beta + u + \epsilon \quad \text{et} \quad \theta=(\sigma^2_{phy}, \sigma^2_{err})
+    Y = X\beta + u + \epsilon \text{, } \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
 \label{eq:eq2err}
 \end{equation} 
-\[
-\text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{\beta} = \begin{bmatrix} \mu_1 \\ \mu_2  \end{bmatrix} \text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
-\]
+L'ajout de cette variance résiduelle dans notre modèle est crucial pour mieux représenter la complexité des données que nous traitons.
+En effet, supposer que la seule source de variation entre les observations est le processus stochastique sur l'arbre phylogénétique (specifiée par $\sigma^2_{phy}K$) est souvent peu réaliste, surtout dans des contextes où les données sont hétérogènes ou comme on le verra plus tard, nous avons les données de plusieurs individus d'une même espèce.
+C'est d'ailleurs pour ça qu'on peut parler de intraspécifique.
+Cette hypothèse simplificatrice peut introduire des biais significatifs dans nos analyses, compromettant ainsi la validité des résultats obtenus.
+En intégrant la variance résiduelle, qui capture l'effet indépendant de l'environnement sur chaque mesure, notre modèle devient plus flexible et mieux adapté pour tenir compte de la variabilité observée dans les données. 
+Le modèle mixte phylogénétique résultant, combinant à la fois la variance phylogénétique et la variance résiduelle, nous permet de distinguer les effets héritables des effets non héritables, offrant ainsi une approche plus nuancée et réaliste de l'analyse comparative des données évolutives.
 
 \subsection{Le test statistique}
 Pour le test statistique d'ANOVA phylogénétique, on se met dans le cadre d'une ANOVA à un facteur et à 2 groupes. 
@@ -236,7 +235,7 @@ Cela permet d'obtenir des résultats plus fiables lorsque les conditions d'homos
 On s'est basé sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre et ensuite les implémenter et voir si cela améliore la fiabilité de la statistique de test.
 A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
 \[
- Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \quad \text{et} \quad Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
+ Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \text{, }\theta=(\sigma^2_{phy}, \sigma^2_{err}) \text{ et } Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
 \]
 De là on obtient:
 \begin{equation}
