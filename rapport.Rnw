@@ -235,14 +235,17 @@ On testera alors les hypothèses suivantes :
 \begin{equation}
     F=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}(n-2)}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
 \end{equation}
+\begin{align*}
+&\text{Où }||Y - \hat{Y}||^2_{V_\lambda^{-1}} = ||Y - X\hat{\beta}||^2_{V_\lambda^{-1}}= Proj_X^{V_\lambda}Y= (Y-\hat{Y})^TV^{-1}_\lambda(Y-\hat{Y})\\
+&\text{et }||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}=(\hat{Y} - \bar{Y})^TV^{-1}_\lambda(\hat{Y}- \bar{Y})
+\end{align*}
 
-TODO: Rajouter def norme
+
 
 \subsection{Approximation de Satterthwaite}
 
 On va dans notre cas avoir $n-2$ degrés de liberté.
 L'ANOVA, suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
-
 Cependant, lorsque cette condition n'est pas satisfaite, l'approximation de Satterthwaite peut être utilisée pour tenir compte des variances inégales entre les groupes. Elle est particulièrement utile dans le cas des ANOVA à un facteur, mais peut également être appliquée à des ANOVA à plusieurs facteurs.
 
 L'approximation de Satterthwaite ajuste les degrés de liberté pour tenir compte de ces différences dans les variances.
@@ -250,16 +253,19 @@ L'approximation de Satterthwaite ajuste les degrés de liberté pour tenir compt
 Cela permet d'obtenir des résultats plus fiables lorsque les conditions d'homoscédasticité ne sont pas respectées. 
 \newline
 \newline
-On s'est basé sur la documentation du package lmerTest \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre et ensuite les implémenter et voir si cela améliore la fiabilité de la statistique de test.
+On s'est basé sur la documentation du package lmerTest \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre.
+En effet il existe des formules explicite dans le cadre du modèle mixte. 
+Cela nous permettra ensuite de les implémenter et voir si cela améliore la fiabilité de la statistique de test.
 A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
 \[
  Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \text{, }\theta=(\sigma^2_{phy}, \sigma^2_{err}) \text{ et } Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
 \]
-De là on obtient:
+
+De la documentation on obtient alors la covariance suivante:
 \begin{equation}
     C(\theta) = (Cov(\beta_i , \beta_j))_{i,j} = (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1}
 \end{equation}
-
+TODO: Préciser df degré de liberté de quoi !
 Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} on part de l'expression pour les degrés de liberté $df$ et de l'approximation. Ce qui nous donne :
 \begin{equation}
     df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta}))]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
@@ -339,9 +345,6 @@ De là on obtient la Hessienne $\begin{pmatrix}
 \end{pmatrix}$ puis A en l'inversant, ce qui peut se faire par des méthodes numériques.
 
 \end{proof}
-TODO: trouver erreur de signe 
-% \[\]
-% Supposons que nous avons une expression $x^2 - 2x + \cancel{3} - 3$. Comme la partie $\cancel{3}$ est nulle, nous pouvons la barrer.
 
 % TODO REML voir sujet d'exam corrigée
 % Quand estimateur classique on divise par n-p au lieu de diviser par n donc on 
