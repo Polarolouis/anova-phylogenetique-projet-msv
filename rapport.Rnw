@@ -128,22 +128,22 @@ Méthode: la partie maths anova, anova phylo, satterthwaite,
 
 \subsection{L'ANOVA}
 
-L'ANOVA est un cas classique du modèle linéaire, nous utilisons ici les notations et le formalisme de \cite{belModeleLineaireSes}.
+L'ANOVA est un cas classique du modèle linéaire, nous utilison ici une forme matricielle.
 
 Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative et une ou plusieurs variables qualitatives.
 
-La forme usuelle de l'ANOVA à 1 facteur est la suivante :
+La forme matricielle usuelle de l'ANOVA à 1 facteur est la suivante :
 
-\begin{align}
-Y_{ik} = \mu_i + E_{ik}, & &i = 1,\dots I, k = 1,\dots n_i, E_{ik} \sim \Normal (0, \sigma^2)
-\label{eq:anova}
-\end{align}
+\begin{equation}
+    Y = X\beta + u 
+\end{equation} 
+\[
+    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_1n_1 \\ Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}, \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix},  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2I_n), n=n_1+n_2
+\]
 
-où dans cette équation, reprise du livre \parencite{belModeleLineaireSes}, $i$ représente le niveau du facteur et $k$ indique le numéro de l'observation dans ce niveau. $I$ est le nombre total de niveaux du facteur, $n_i$ le nombre d'observation du niveau $i$. 
+Les paramètres $(\beta_1, \beta_2, \sigma^2)$ de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
 
-Les paramètres de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
-
-% ICI LES FORMULES
+% ICI LES FORMULES: est ce que vraiment besoin des formules ? 
 
 % LIMITES de l'ANOVA classique sur les données phylo
 
