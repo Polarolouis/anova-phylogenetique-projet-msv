@@ -31,13 +31,14 @@ l'\emph{erreur de première espèce} et la \emph{puissance} obtenue.
 \end{itemize}
 
 
-Pour les simulations qui ne se font pas selon la phylogénie, nous nous attendons
-à ce que l'ANOVA classique obtienne de bons résultats puisque c'est une 
-situation correspondant à l'application du modèle.
+En sélectionnant des espèces de manière aléatoire, nous cassons la structure 
+induite par la phylogénie. Nous nous attendons donc à ce que l'ANOVA réalise de
+meilleurs résultats en ne prenant pas en compte l'information phylogénétique.
 
-Pour les simulations qui se font selon l'information de l'arbre phylogénétique,
-nous nous attendons à ce que l'ANOVA phylogénétique parvienne à mieux prendre en
-compte l'information apportée par la phylogénie et à démêler son effet.\\
+Pour les simulations avec des groupes respectant la structure de l'arbre 
+phylogénétique, nous nous attendons à ce que l'ANOVA phylogénétique 
+parvienne à mieux prendre en compte l'information apportée par la phylogénie et
+à démêler son effet.\\
 
 <<'modules-simulations', include = FALSE, eval=TRUE>>=
 necessary_simu <- c("ape", "remotes", "phylolm", "phylolimma", "phytools", 
@@ -67,7 +68,7 @@ nb_species <- 43
 
 plot_group_on_tree <- function(tree, groups, ...) {
     plot(tree, ...)
-    tiplabels(bg = groups, pch = 21)
+    tiplabels(bg = groups, pch = 21, cex = 1.5)
 }
 tree <- read.tree(here("R","chen2019.tree"))
 # Normalising tree edge length
@@ -113,7 +114,7 @@ Enfin pour que notre analyse soit reproductible nous fixons la graine à
 \Sexpr{seed}.
 
 \begin{figure}[H]
-    \begin{subfigure}[H]{0.45\textwidth}
+    \begin{subfigure}[H]{0.49\textwidth}
         \centering
         <<'plot-groupes-mus'>>=
         plot_group_on_tree(tree, group = group_mus_rat_vs_other)
@@ -121,12 +122,12 @@ Enfin pour que notre analyse soit reproductible nous fixons la graine à
         \caption{Groupes \emph{Mus} et rats contre les autres}
         \label{fig:simu-groupes-mus} 
     \end{subfigure}
-    \begin{subfigure}[H]{0.45\textwidth}
+    \begin{subfigure}[H]{0.49\textwidth}
         \centering
         <<'plot-groupes-random'>>=
         plot_group_on_tree(tree, group = random_groups)
         @
-        \caption{Groupes respectant les proportions}
+        \caption{Groupes sélectionnés sans respect de la phylogénie.}
         \label{fig:simu-groupes-prop} 
     \end{subfigure}
     \caption{Arbre et groupes pour les simulations}
@@ -179,7 +180,7 @@ plot_list <- lapply(seq_len(length(heri)), function(idx)
     if (!file.exists(filename)) {
         sim <- N_simulation_typeI_power(N,
             groups_list = list(RatMus =  group_mus_rat_vs_other, 
-            Proportions = random_groups),
+            Sélectionnés = random_groups),
             tree = tree,
             base_values = c(0, snr * total_variance), 
             sigma2_phylo = her * total_variance,
@@ -203,6 +204,14 @@ for(plot in plot_list) {
 Sur toutes les sous-figures de la figure~\ref{fig:simus-results}, les étiquettes
 A présentent les erreurs de type I commises par les méthodes et les étiquettes B
 présentent les puissances des mêmes méthodes.
+
+L'erreur de type I est particulièrement importante à contrôler, en effet elle
+indique le nombre de faux positifs et l'on veut pouvoir en déterminer le seuil
+$\alpha$ avec comme seuil classique $0.05$.
+
+D'après nos simulations, les méthodes utilisant le REML contrôle toujours mieux
+l'erreur de première espèce que les méthodes utilisant le maximum de 
+vraisemblance.
 
 TODO Ajouter les commentaires sur les simulations
 

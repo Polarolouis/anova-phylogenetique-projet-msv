@@ -26,22 +26,23 @@ if (!all(necessary_packages %in% installed.packages())) {
     install.packages("remotes")
     remotes::install_gitlab("sandve-lab/evemodel")
     remotes::install_github("pbastide/compcodeR", ref = "phylolimma")
-} else {
-    require(phylotools)
-    require(phytools)
-    require(phylolm)
-    require(limma)
-    require(edgeR)
-    require(here)
-    require(ggplot2)
-    require(dplyr)
-    require(tidyr)
-    require(UpSetR)
-    require(evemodel)
-    require(compcodeR)
-    require(mvSLOUCH)
-    require(patchwork)
 }
+
+require(phylotools)
+require(phytools)
+require(phylolm)
+require(limma)
+require(edgeR)
+require(here)
+require(ggplot2)
+require(dplyr)
+require(tidyr)
+require(UpSetR)
+require(evemodel)
+require(compcodeR)
+require(mvSLOUCH)
+require(patchwork)
+
 
 source(here("R","utils.R"))
 @
@@ -120,7 +121,7 @@ if (!file.exists(here("data",pvalues_data)) | !file.exists(here("data",pvalues_a
     pvalue_vec_satterthwaite.REML <- sapply(seq(1, nrow(data.trans)), function(row_id) {
         trait <- data.trans[row_id, ]
         fit_phylo <- phylolm(trait ~ design_data$condition, phy = cdata@tree, REML = TRUE, measurement_error = TRUE)
-        compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree, REML = TRUE)
+        compute_satterthwaite_pvalue(fit_phylo, tree = cdata@tree)
     })
 
     pvalue_vec_satterthwaite.REML <- setNames(pvalue_vec_satterthwaite.REML, rownames(data.trans))
@@ -136,9 +137,9 @@ if (!file.exists(here("data",pvalues_data)) | !file.exists(here("data",pvalues_a
             pvalue_vec_satterthwaite_adj, 
             pvalue_vec_lrt_adj, 
             pvalue_vec_satterthwaite_adj.REML),
-        test_method = rep(c( "VanillaAdj", "VanillaAdjREML",
-        "SatterthwaiteAdj", "LRTAdj",
-        "SatterthwaiteAdjREML"), each = nrow(data.trans))
+        test_method = rep(c( "ANOVA Phylo Ajustée", "ANOVA Phylo REML Ajustée",
+        "ANOVA Phylo Satterthwaite Ajustée", "LRT Ajusté",
+        "ANOVA Phylo Satterthwaite REML Ajustée"), each = nrow(data.trans))
     )
 
     pvalues_dataframe <- data.frame(
@@ -148,9 +149,9 @@ if (!file.exists(here("data",pvalues_data)) | !file.exists(here("data",pvalues_a
             pvalue_vec_satterthwaite, 
             pvalue_vec_lrt, 
             pvalue_vec_satterthwaite.REML),
-        test_method = rep(c( "Vanilla", "VanillaREML",
-        "Satterthwaite", "LRT",
-        "SatterthwaiteREML"), each = nrow(data.trans))
+        test_method = rep(c( "ANOVA Phylo", "ANOVA Phylo REML",
+        "ANOVA Phylo Satterthwaite", "LRT",
+        "ANOVA Phylo Satterthwaite REML"), each = nrow(data.trans))
     )
 
     pvalues_dataframe$test_method <- as.factor(pvalues_dataframe$test_method)
@@ -167,11 +168,12 @@ if (!file.exists(here("data",pvalues_data)) | !file.exists(here("data",pvalues_a
 }
 @
 
-Nous appliquons les différentes méthodes que nous avons implémentés dans le 
+Nous appliquons les différentes méthodes que nous avons implémentées dans le 
 code.
 
-Ci-dessous la figure~\ref{fig:pval-methods} présente les p-values des 
-différentes méthodes. Il est important de noter que ce graphique présente les
+Ci-dessous la figure~\ref{fig:pval-methods} présente les p-values ordonnées des 
+différentes méthodes. Il s'agit d'une visualisation classique pour les données 
+RNA-seq. Il est important de noter que ce graphique présente les
 p-values \emph{non ajustées}.
 
 \begin{figure}[H]
@@ -193,7 +195,7 @@ p-values \emph{non ajustées}.
         axis_titles = "collect", tag_level = "new") + 
         plot_annotation(title = "Selected genes by tested methods")
     @
-    \caption{\emph{p-values} pour les différents tests}
+    \caption{\emph{p-values} ordonnées pour les différents tests}
     \label{fig:pval-methods}
 \end{figure}
 
@@ -202,6 +204,7 @@ pour les test multiples, nommément la correction de \cite{benjaminiControllingF
 
 << wide_data, echo = FALSE>>=
 pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>% 
+    filter(test_method != "ANOVA Phylo Satterthwaite Ajustée") %>%
         pivot_wider(id_cols = gene, 
         names_from = test_method, 
         values_from = selected) %>%
@@ -211,26 +214,15 @@ pvalues_adj_dataframe_wide <- pvalues_adj_dataframe %>%
 Une fois ces corrections appliquées, nous allons comparer les gènes sélectionnés,
 c'est-à-dire différentiellement exprimés. 
 
-
-Ces résultats sont présentés dans le diagramme de Venn (figure~\ref{fig:venn-all-methods}).
-
-
 On peut voir que la méthode de Satterthwaite sans REML a sélectionné énormément
 de gènes, 
-$\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "SatterthwaiteAdj",]$selected)}$ 
-comme étant différentiellement exprimés. 
-% TODO Comprendre la sur-sélection de Satterthwaite et pas de SatterthwaiteREML
+$\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "ANOVA Phylo Satterthwaite Ajustée",]$selected)}$ 
+comme étant différentiellement exprimés.
 
-\begin{figure}[H]
-    << upset_selection, echo = FALSE>>=
-    upset(pvalues_adj_dataframe_wide, 
-        nsets = 5,
-        mainbar.y.label = "Nombre de gènes en commun",
-        sets.x.label = "Nombre de gènes sélectionnés")
-    @
-    \caption{Diagramme de Venn comparant les gènes sélectionnés selon les méthodes}
-    \label{fig:venn-all-methods}
-\end{figure}
+Ce résultat n'étant pas biologiquement crédible, nous préférons ne pas 
+l'afficher dans le diagramme de Venn, figure~\ref{fig:venn-all-methods-eve}.
+% DONE Préciser que Satterthwaite sur-sélectionne et le retirer des graphiques *
+% pour cette raison
 
 \subsection*{EVEmodel}
 
@@ -293,6 +285,10 @@ Dans l'article \cite{rohlfsPhylogeneticANOVAExpression2015}, les auteurs
 introduisent une méthode de détection des gènes différentiellement exprimés.
 Cette méthode est à l'heure actuelle très utilisée.
 
+Son principe de fonctionnement suppose que les traits évoluent selon un 
+processus d'Ornstein-Uhlenbeck et le test réalisé est un \emph{Likelihood 
+Ratio test}. 
+
 \emph{Remarque :} La méthode a produit des \texttt{NA} pour certains gènes,
 d'après le message d'erreur, une optimisation n'a pas convergé. Ces gènes sont
 présentés dans le tableau~\ref{tab:na-evemodel}.
@@ -307,6 +303,7 @@ méthodes.
 pvalueseve_dataframe <- rbind(pvalues_adj_dataframe, evemodel_dataframe)
 
 pvalueseve_dataframe_wide <- pvalueseve_dataframe  %>% 
+    filter(test_method != "ANOVA Phylo Satterthwaite Ajustée") %>%
     pivot_wider(id_cols = gene,
     names_from = test_method, 
     values_from = selected, values_fill = 0) %>%

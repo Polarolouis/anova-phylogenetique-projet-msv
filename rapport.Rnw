@@ -193,8 +193,6 @@ ggplot(df) +
 % Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
 % figure avec le Brownien sur l'arbre à reprendre dans le chapitre de livre
 
-TODO Etre assez concis sur l'histoire de la projection et le modèle et les différences avec l'ANOVA. 
-
 \subsection{ANOVA phylogénétique avec erreur de mesure}
 Dans la section précedente, on a supposé que la seule source de variabilité provenait du mouvement brownien sur l'arbre.
 On rajoute dans cette section une autre variabilité specifiée par $\sigma^2_{err}$ qui à partir de la formule précédente \eqref{eq:ANOVAphylo}, nous donne:
