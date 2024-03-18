@@ -166,6 +166,7 @@ Le modèle de mouvement brownien va alors induire que les feuilles des arbres (n
     \label{eq:ANOVAphylo}
 \end{equation} 
 
+
 Les notations correspondent toujours à celles utilisées pour \eqref{eq:ANOVA}. La seule différence se trouvant dans la distribution de $u$ et la présence d'une matrice $K$.
 Dans le cadre du mouvement brownien $K=(K_{i,j})_{1\leq i,j \leq n}=(t_{i,j})_{1\leq i,j \leq n}$ où $t_{i,j}$ représente le temps d’évolution commun aux espèces i et j. 
 On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuousTraitEvolution}:
@@ -201,28 +202,45 @@ On rajoute dans cette section une autre variabilité specifiée par $\sigma^2_{e
     Y = X\beta + u + \epsilon \text{, } \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
 \label{eq:eq2err}
 \end{equation} 
-L'ajout de cette variance résiduelle dans notre modèle est crucial pour mieux représenter la complexité des données que nous traitons.
+\begin{align}
+    &\text{Alors } Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \notag\\
+    &\text{On pose } \theta=(\sigma^2_{phy}, \sigma^2_{err}) \notag \\
+    &\text{On définit pour la suite } Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n
+    \label{eq:VarTheta}
+\end{align}
+
+Comme décrit dans \cite{bastideModelesEvolutionCaracteres2022}, l'ajout de cette variance résiduelle dans notre modèle est crucial pour mieux représenter la complexité des données que nous traitons.
 En effet, supposer que la seule source de variation entre les observations est le processus stochastique sur l'arbre phylogénétique (specifiée par $\sigma^2_{phy}K$) est souvent peu réaliste, surtout dans des contextes où les données sont hétérogènes ou comme on le verra plus tard, nous avons les données de plusieurs individus d'une même espèce.
-C'est d'ailleurs pour ça qu'on peut parler de intraspécifique.
+C'est d'ailleurs pour ça qu'on peut parler de variation intraspécifique.
 Cette hypothèse simplificatrice peut introduire des biais significatifs dans nos analyses, compromettant ainsi la validité des résultats obtenus.
 En intégrant la variance résiduelle, qui capture l'effet indépendant de l'environnement sur chaque mesure, notre modèle devient plus flexible et mieux adapté pour tenir compte de la variabilité observée dans les données. 
 Le modèle mixte phylogénétique résultant, combinant à la fois la variance phylogénétique et la variance résiduelle, nous permet de distinguer les effets héritables des effets non héritables, offrant ainsi une approche plus nuancée et réaliste de l'analyse comparative des données évolutives.
+\newline
+\newline
+En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, on peut obtenir une nouvelle forme pour $Y$
+\begin{align}
+    \label{eq:V_lambda}
+    &Y = X\beta + E \text{, où } Var(E)=V(\theta)=\sigma^2_{phy}(K-\lambda I_n)=\sigma^2_{phy}V_\lambda \\
+    &E \sim \mathcal{N}_n(0, V_\lambda) \notag
+\end{align}
 
 \subsection{Le test statistique}
 Pour le test statistique d'ANOVA phylogénétique, on se met dans le cadre d'une ANOVA à un facteur et à 2 groupes. 
-Chacun de ces groupes ayant une moyenne qui lui est propre: $\mu_1$ et $\mu_2$. 
+Chacun de ces groupes ayant une moyenne qui lui est propre. Ce peut être la moyenne de la valeur d'un trait génétique ou bien de la valeur de la fréquance d'une séquence ou allèle. 
 On testera alors les hypothèses suivantes :
-\[ H_0 : \mu_1 = \mu_2 \]
-\[ H_1 : \mu_1 \neq \mu_2 \]
+\[ H_0 : \beta_2 =0 \text{, les 2 groupes ont la même moyenne}\]
+\[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
 
-On a pour un ce test de Fisher la statistique de test suivante dasn le caddre où l'on a $p$ groupes: 
-\[F=\frac{||\hat{Y} - \bar{Y}||_{K^{-1}}(n-p)}{(p-1)||Y - \hat{Y}||_{K^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (p-1, n-p)\] 
-TODO: Améliorer les notations
+\cite{bastideContinuousTraitEvolution} nous donne une F-statistique pour la méthode d'ANOVA de cette forme \eqref{eq:V_lambda} et le test de Fisher précédent. 
+\begin{equation}
+    F=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}(n-2)}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
+\end{equation}
+
+TODO: Rajouter def norme
 
 \subsection{Approximation de Satterthwaite}
 
-
-Dans la statistique de test précédente, on peut voir des degrés de liberté. De manière standard on va dans notre cas avoir $n-2$ degrés de liberté. 
+On va dans notre cas avoir $n-2$ degrés de liberté.
 L'ANOVA, suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
 
 Cependant, lorsque cette condition n'est pas satisfaite, l'approximation de Satterthwaite peut être utilisée pour tenir compte des variances inégales entre les groupes. Elle est particulièrement utile dans le cas des ANOVA à un facteur, mais peut également être appliquée à des ANOVA à plusieurs facteurs.
@@ -232,7 +250,7 @@ L'approximation de Satterthwaite ajuste les degrés de liberté pour tenir compt
 Cela permet d'obtenir des résultats plus fiables lorsque les conditions d'homoscédasticité ne sont pas respectées. 
 \newline
 \newline
-On s'est basé sur la documentation du package lmer \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre et ensuite les implémenter et voir si cela améliore la fiabilité de la statistique de test.
+On s'est basé sur la documentation du package lmerTest \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre et ensuite les implémenter et voir si cela améliore la fiabilité de la statistique de test.
 A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
 \[
  Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \text{, }\theta=(\sigma^2_{phy}, \sigma^2_{err}) \text{ et } Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
