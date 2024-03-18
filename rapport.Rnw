@@ -135,10 +135,11 @@ Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative 
 La forme matricielle usuelle de l'ANOVA à 1 facteur est la suivante :
 
 \begin{equation}
-    Y = X\beta + u 
+    Y = X\beta + u \text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2I_n)
+    \label{eq:ANOVA}
 \end{equation} 
 \[
-    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_1n_1 \\ Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}, \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix},  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2I_n), n=n_1+n_2
+    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_1n_1 \\ Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}\text{, } \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix}\text{, }  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix} \text{, } n=n_1+n_2
 \]
 
 Les paramètres $(\beta_1, \beta_2, \sigma^2)$ de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
@@ -150,9 +151,9 @@ Les paramètres $(\beta_1, \beta_2, \sigma^2)$ de l'ANOVA sont estimables, grâc
 \subsection{L'ANOVA phylogénétique}
 \label{subsec:anova-phylogenetique}
 Dans la méthode d'ANOVA classique l'information portée par l'arbre phylogénétique n'est pas prise en compte. 
-Le but de cette nouvelle est de ne plus mettre cette information de côté et peut être obtenir de meilleurs résultats. 
+Le but de cette nouvelle méthode est de ne plus mettre cette information de côté et peut être obtenir de meilleurs résultats. 
 En effet on peut imaginer, en considérant des traits évolutifs ou des séquences d'ADN, que des individus d'une même espèce ou bien d'espèces proche phylogénétiquement, pourraient avoir des valeurs proches.  
-D'abord il s'agit de modéliser l'arbre et les informations évolutives qu'ils contient de manière à l'incorporer. 
+Il s'agira alors de modéliser l'arbre et les informations évolutives qu'ils contient de manière à l'incorporer. 
 \newline
 \newline
 Comme décrit dans \cite{bastideModelesEvolutionCaracteres2022} l'évolution d'un trait nécessite de décrire ses fluctuations le long de l'arbre et ses branches. 
@@ -161,12 +162,11 @@ Le processus classique est le mouvement brownien et c'est celui que nous avons u
 Le modèle de mouvement brownien va alors induire que les feuilles des arbres (nos observations) auront une distribution gausienne que l'on écrira sous la forme suivante:
 
 \begin{equation}
-    Y = X\beta + u 
+    Y = X\beta + u \text{, } u \sim \mathcal{N}_n(0, \sigma^2_{phy}K)
+    \label{eq:ANOVAphylo}
 \end{equation} 
-\[
-    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}, \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_2} \end{bmatrix}=\begin{bmatrix} 1 & 0 \\ \vdots & \vdots\\1 & 0 \\ 0 & 1\\ \vdots & \vdots\\0 & 1 \end{bmatrix},  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix}\text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K)
-\]
- On remarque alors une différence par rapport à la formule d'ANOVA classique \eqref{eq:anova}, c'est la présence d'une matrice K. 
+
+Les notations correspondent toujours à celles utilisées pour \eqref{eq:ANOVA}. La seule différence se trouvant dans la distribution de $u$ et la présence d'une matrice $K$.
 Dans le cadre du mouvement brownien $K=(K_{i,j})_{1\leq i,j \leq n}=(t_{i,j})_{1\leq i,j \leq n}$ où $t_{i,j}$ représente le temps d’évolution commun aux espèces i et j. 
 On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuousTraitEvolution}:
 \begin{center}
