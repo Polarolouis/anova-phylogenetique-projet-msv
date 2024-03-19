@@ -97,15 +97,6 @@ proposant des répétitions intraspécifique.
 C'est par exemple le cas pour les données de 
 \cite{chenQuantitativeFrameworkCharacterizing2019} dont 
 la figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
-
-TODO Le problème d'analyse différentielle chez plein d'espèces, détecté le changement d'expression dans différents groupes d'espèces
-Trouver des méthodes qui fonctionne bien pour ces problèmes.
-Présenter les 4 modèles.
-TODO Dans l'état de l'art la méthode EVE est basée sur un LRT classique et ici
-l'idée est donc de balayer les méthodes classiques pour voir si l'adaptation 
-des méthodes basiques peut permettre de trouver des méthodes qui font au moins
-aussi bien.
-
 \begin{figure}[!h]
     \centering
 <<'plot-arbre-chen'>>=
@@ -119,14 +110,27 @@ aussi bien.
     \caption{Arbre phylogénétique de \cite{chenQuantitativeFrameworkCharacterizing2019}}
     \label{fig:arbre-chen2019}
 \end{figure}
-
+La problématique qui se pose souvent est celle de l'analyse de différents gènes qu'on mesure chez plusieurs espèces. 
+On cherche alors d'abord à trouver quels gènes pourraient être différentiels chez certaines espèces, en détectant un changement d'expression dans certains groupes. 
+En considérant l'arbre precédent \ref{fig:arbre-chen2019}, on pourra chercher les gènes qui sont différents entre les groupes des \textit{mus} et \textit{rat} par rapport aux autres espèces. 
+\newline
+Le modèle le plus couramment utilisé est actuellement l'Expression Variance and Evolution modèle (EVE) présenté dans \cite{rohlfsPhylogeneticANOVAExpression2015}. 
+L'EVE modèle est basé sur un LIkelihood Ratio Test (LRT), une méthode statistique classique. 
+Ce projet s'inscrit alors dans un questionnement plus large qui cherche à se demander si d'autres modèles classiques comme l'ANOVA, en les adaptant, pourrait produire des résultats similaires voire meilleurs que l'EVE modèle. 
+E effet, avoir un bon modèle qui, en particulier, donne peu de faux positifs est important. 
+On peut ensuite étudier les gènes potentiellement intéressants selon une problématique et des groupes d'espèces données. 
+TODO Présenter les 4 modèles. C'est quoi les 4 ? 
+\newline
 Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode 
 d'ANOVA phylogénétique. 
-Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés 
-pour affiner la fiabilité du test dans une première partie. 
-Viendra ensuite une partie de simulation destinée à comparer et étudier la 
+Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés pour affiner la fiabilité du test dans une première partie. Certains auront fait l'objet de calculs explicites en vue de leur implémentation. 
+A partir de ces résultats, nous avons implémenter ces méthodes en R
+d'abord appliquées à des simulations destinées à comparer et étudier la 
 méthode d'ANOVA phylogénétique sur des données d'arbre simulés. 
-Enfin, on teste sur des données réelles. 
+Enfin, on a testé sur des données réelles. 
+
+Au cours de ce projet nous avons donc eu une partie d'étude théoriques et mathématiques des modèles de l'ANOVA et de l'ANOVA phylogénétique afin de bien l'adapter à nos données. 
+A partir de la formulation mathématiques des modèles
 \newline
 \newline
 Un gène, comparer les moyennes d'expression d'un gène 
@@ -144,11 +148,6 @@ avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
 % Pas possible de supposer iid, existe relations entre les individus et les groupes que l'on compare donc besoin de les prendre en compte.
 
 % Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
-
-TODO Présenter le plan, insister sur le code.
-- Calculs pour Sattertwhaite
-- Études de simulations
-- Applications aux données réelles
 
 \section{Méthodes}
 \label{sec:methode}
