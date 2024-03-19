@@ -18,8 +18,8 @@ knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
 
 << import_modules, echo = FALSE, include=FALSE>>=
 necessary_packages <- c("phylotools", "phytools", "phylolm", "limma", "edgeR", 
-    "here", "ggplot2", "patchwork", "dplyr", "tidyr", "UpSetR", "evemodel", 
-    "compcodeR", "mvSLOUCH")
+    "here", "ggplot2", "patchwork", "dplyr", "tidyr", "evemodel", 
+    "compcodeR", "mvSLOUCH", "ComplexUpset", "see")
 
 if (!all(necessary_packages %in% installed.packages())) {
     install.packages(necessary_packages)
@@ -37,7 +37,8 @@ require(here)
 require(ggplot2)
 require(dplyr)
 require(tidyr)
-require(UpSetR)
+require(ComplexUpset)
+require(see)
 require(evemodel)
 require(compcodeR)
 require(mvSLOUCH)
@@ -70,7 +71,7 @@ data.trans <- log2(data.norm)
 rownames(data.trans) <- rownames(compcodeR:::count.matrix(cdata))
 @
 
-\subsection*{Vanilla (ML et REML), Satterthwaite (ML et REML), LRT}
+\subsection{Modalités des tests}
 << calcul_pvaleurs, echo = FALSE, warning = FALSE>>=
 ### Pvalues computation
 pvalues_data = "chen2019pvalues.Rds"
@@ -220,11 +221,11 @@ $\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "ANOVA Ph
 comme étant différentiellement exprimés.
 
 Ce résultat n'étant pas biologiquement crédible, nous préférons ne pas 
-l'afficher dans le diagramme de Venn, figure~\ref{fig:venn-all-methods-eve}.
+l'afficher dans le \emph{UpSet diagram}, figure~\ref{fig:venn-all-methods-eve}.
 % DONE Préciser que Satterthwaite sur-sélectionne et le retirer des graphiques *
 % pour cette raison
 
-\subsection*{EVEmodel}
+\subsection{EVEmodel}
 
 <<'evemodel', echo = FALSE, warning = FALSE, include = FALSE>>=
 eve_data = "evechen2019pvalues.Rds"
@@ -290,12 +291,12 @@ processus d'Ornstein-Uhlenbeck et le test réalisé est un \emph{Likelihood
 Ratio test}. 
 
 \emph{Remarque :} La méthode a produit des \texttt{NA} pour certains gènes,
-d'après le message d'erreur, une optimisation n'a pas convergé. Ces gènes sont
+d'après le message d'erreur, des optimisations n'ont pas convergées. Ces gènes sont
 présentés dans le tableau~\ref{tab:na-evemodel}.
 
 \subsection*{Toutes les méthodes}
 
-Nous allons ici comparer toutes les méthodes dans un diagramme de Venn (figure~\ref{fig:venn-all-methods-eve}) afin de 
+Nous allons ici comparer toutes les méthodes dans un \emph{UpSet diagram} (figure~\ref{fig:venn-all-methods-eve}) afin de 
 voir les gènes sélectionnés en commun et les éventuelles différences entre les 
 méthodes.
 
@@ -312,12 +313,54 @@ pvalueseve_dataframe_wide <- pvalueseve_dataframe  %>%
 
 \begin{figure}[H]
     << full_plot, echo = FALSE>>=
-    upset(pvalueseve_dataframe_wide, 
-        nsets = 10,
-        mainbar.y.label = "Nombre de gènes en commun",
-        sets.x.label = "Nombre de gènes sélectionnés")
+    sets <- colnames(pvalueseve_dataframe_wide)[-1]
+    sets_colors <- okabeito_colors()[-2][1:length(sets)]
+    highlight_intersections <- lapply(seq_along(sets), function(i) {
+        upset_query(set = sets[i], fill = sets_colors[i], color = sets_colors[i])
+    })
+    names(sets_colors) <- sets
+
+    upset(pvalueseve_dataframe_wide, sets,
+        name = "Méthode",
+        width_ratio=0.1,
+        base_annotations=list(
+        # 'Intersection size'=intersection_size(),
+        "Taille d'intersection" = intersection_size() + 
+            scale_fill_venn_mix(
+                data=pvalueseve_dataframe_wide,
+                guide='none',
+                colors=sets_colors
+            )
+        ),
+        queries = highlight_intersections,
+        set_sizes=(
+            upset_set_size() + 
+            theme(axis.text.x=element_text(angle=90))
+        ))
+
+    # upset(pvalueseve_dataframe_wide, 
+    #     sets = sets,
+    #     mainbar.y.label = "Nombre de gènes en commun",
+    #     sets.x.label = "Nombre de gènes sélectionnés",
+    #     sets.bar.color = sets_colors)
     @
-    \caption{Diagramme de Venn de toutes les méthodes en incluant la méthode EVE}
+    \caption{\emph{UpSet diagram} de toutes les méthodes en incluant la méthode EVE}
     \label{fig:venn-all-methods-eve}
 \end{figure}
 
+\paragraph{Analyse des résultats} Nous pouvons voir que la méthode la plus 
+parcimonieuse est celle utilisant le LRT, qui sélectionne
+$\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "LRT Ajusté",]$selected)}$
+gènes qui sont eux-mêmes \textbf{sélectionnés par toutes les méthodes}.
+Cette unanimité sur ces gènes nous invite à penser qu'ils sont en effet 
+différentiellement exprimés.
+
+La seconde méthode sélectionnant le moins de gènes est l'ANOVA Phylogénétique 
+avec REML. Elle sélectionne $\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "ANOVA Phylo REML Ajustée",]$selected)}$
+gènes. Ces sélections se décompose en plusieurs sous ensembles
+
+\begin{table}
+    <<'table-anova-phylo-reml'>>=
+    kable()
+    @
+\end{table}
