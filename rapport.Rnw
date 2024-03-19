@@ -98,6 +98,14 @@ C'est par exemple le cas pour les données de
 \cite{chenQuantitativeFrameworkCharacterizing2019} dont 
 la figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
 
+TODO Le problème d'analyse différentielle chez plein d'espèces, détecté le changement d'expression dans différents groupes d'espèces
+Trouver des méthodes qui fonctionne bien pour ces problèmes.
+Présenter les 4 modèles.
+TODO Dans l'état de l'art la méthode EVE est basée sur un LRT classique et ici
+l'idée est donc de balayer les méthodes classiques pour voir si l'adaptation 
+des méthodes basiques peut permettre de trouver des méthodes qui font au moins
+aussi bien.
+
 \begin{figure}[!h]
     \centering
 <<'plot-arbre-chen'>>=
@@ -137,17 +145,25 @@ avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
 
 % Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
 
+TODO Présenter le plan, insister sur le code.
+- Calculs pour Sattertwhaite
+- Études de simulations
+- Applications aux données réelles
+
 \section{Méthodes}
 \label{sec:methode}
 % Revue de la littérature sur l'ANOVA phylogénétique.
-Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La démonstration des limites de l'ANOVA phylogénétique par des simulations
+Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La 
+démonstration des limites de l'ANOVA phylogénétique par des simulations
 Méthode: la partie maths anova, anova phylo, satterthwaite, 
 
 \subsection{L'ANOVA}
 
-L'ANOVA est un cas classique du modèle linéaire, nous utilison ici une forme matricielle.
+L'ANOVA est un cas classique du modèle linéaire, nous utilison ici une forme 
+matricielle.
 
-Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative et une ou plusieurs variables qualitatives.
+Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative
+et une ou plusieurs variables qualitatives.
 
 La forme matricielle usuelle de l'ANOVA à 1 facteur est la suivante :
 
@@ -156,7 +172,9 @@ La forme matricielle usuelle de l'ANOVA à 1 facteur est la suivante :
     \label{eq:ANOVA}
 \end{equation} 
 \[
-    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_1n_1 \\ Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}\text{, } \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix}\text{, }  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix} \text{, } n=n_1+n_2
+    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_1n_1 \\ 
+        Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}\text{, } 
+        \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix}\text{, }  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix} \text{, } n=n_1+n_2
 \]
 
 Les paramètres $(\beta_1, \beta_2, \sigma^2)$ de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
@@ -258,6 +276,10 @@ On testera alors les hypothèses suivantes :
 
 
 \subsection{Approximation de Satterthwaite}
+TODO Insister sur la contribution
+TODO Pourquoi Satterthwaite, parce que l'ANOVA Phylo est exacte quand le 
+$\lambda$ est connu mais dans ce cas on ne le connaît pas et c'est ce qui motive
+Sattertwhaite.
 
 On va dans notre cas avoir $n-2$ degrés de liberté.
 L'ANOVA, suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
@@ -375,7 +397,12 @@ REML, ou Maximum de Vraisemblance Restreint (Restricted Maximum Likelihood en an
 \newline
 \newline
 TODO: formule pour montrer la différence ? 
-TODO: Pourquoi l'utiliser pour Satterthwaite ? 
+TODO: Pourquoi l'utiliser pour Satterthwaite ?
+
+\subsection{LRT}
+TODO Expliquer LRT rapidement. Décrire la statistique de test et coûte plus cher
+car besoin de fitter 2 modèles au lieu de 1 seul pour les autres tests.
+
 \section{Simulations}
 \label{chap:metho}
 % Ou faire une partie à part entière avec 
@@ -398,15 +425,8 @@ TODO: Pourquoi l'utiliser pour Satterthwaite ?
 <<donnees-reelles, child='Rnw/donnees-reelles.Rnw'>>=
 @
 
-\section{Résultats}
-\label{sec:results}
-% Présentation des résultats obtenus.
-
-% Présenter EVEmodel et son usage
-
-
-\section{Discussion et conclusion}
-\label{sec:discuss_conclusion}
+\section{Conclusions sur le projet}
+\label{sec:conclusion}
 % Analyse critique des résultats, limites, perspectives.
 
 Intro
@@ -415,6 +435,8 @@ Application/Résultats: décrire les données, vite fait normalisation avec vrai
 Discussion/COnclusion ? Interprétation des résultats sinon la mettre dans les 
 f-cicd: CI/CD to build Latex PDF ...
 CI/CD to build Latex pdf and create a release in with GitHub Actions. The workflow triggers on push to the repository. Integrates with Overleaf.
+
+
 % Bibliographie
 \printbibliography
 \nocite{*}

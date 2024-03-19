@@ -284,7 +284,10 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
 
 Dans l'article \cite{rohlfsPhylogeneticANOVAExpression2015}, les auteurs 
 introduisent une méthode de détection des gènes différentiellement exprimés.
-Cette méthode est à l'heure actuelle très utilisée.
+Cette méthode est à l'heure actuelle très utilisée pour cette problématique.
+
+Elle détecte ici \Sexpr{sum(evemodel_dataframe[evemodel_dataframe$test_method == "EVEAdj",]$selected)}
+gènes différentiellement exprimés.
 
 Son principe de fonctionnement suppose que les traits évoluent selon un 
 processus d'Ornstein-Uhlenbeck et le test réalisé est un \emph{Likelihood 
@@ -359,8 +362,12 @@ La seconde méthode sélectionnant le moins de gènes est l'ANOVA Phylogénétiq
 avec REML. Elle sélectionne $\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "ANOVA Phylo REML Ajustée",]$selected)}$
 gènes. Ces sélections se décompose en plusieurs sous ensembles
 
-\begin{table}
-    <<'table-anova-phylo-reml'>>=
-    kable()
-    @
-\end{table}
+TODO Ici nous avons supposé un mouvement brownien comme processus sous-jacent de
+l'arbre mais ce n'est peut-être pas le meilleur modèle et un OU pourrait être 
+intéressant. Intéressant pour l'ouverture.
+
+% \begin{table}
+%     <<'table-anova-phylo-reml'>>=
+%     kable()
+%     @
+% \end{table}

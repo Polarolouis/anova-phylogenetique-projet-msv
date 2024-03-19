@@ -208,10 +208,17 @@ L'erreur de type I est particulièrement importante à contrôler, en effet elle
 indique le nombre de faux positifs et l'on veut pouvoir en déterminer le seuil
 $\alpha$ avec comme seuil classique $0.05$.
 
+TODO Insister sur pourquoi trop de faux-positifs pour l'ANOVA classique, du fait
+de la structure Brownienne, deux clades peuvent être éloignés au niveau temporel
+beaucoup de génération. En oubliant la structure, on peut vouloir mettre un saut
+alors que l'écart est simplement dû à de la dérive.
+L'ANOVA suppose des données iid ce qui n'est pas le cas ici.
+
+TODO Important de préciser qu'il faut contrôler l'erreur de type I car les 
+manips coûtent très cher.
+
 TODO Ajouter les commentaires sur les simulations
 
 \paragraph*{REML vs Maximum Likelihood (ML)} D'après nos simulations, les méthodes utilisant le REML contrôle toujours mieux
 l'erreur de première espèce que les méthodes utilisant le maximum de 
 vraisemblance.
-
-\subsection{Pour des tests multiples}
