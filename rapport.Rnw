@@ -108,17 +108,24 @@ Pour données \cite{chenQuantitativeFrameworkCharacterizing2019} la figure~\ref{
 Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode d'ANOVA phylogénétique. 
 Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés pour affiner la fiabilité du test dans une première partie. 
 Viendra ensuite une partie de simulation destinée à comparer et étudier la méthode d'ANOVA phylogénétique sur des données d'arbre simulés. 
-Enfin, on tester sur des données réelles. 
+Enfin, on teste sur des données réelles. 
 \newline
 \newline
 Un gène, comparer les moyennes d'expression d'un gène 
 On connait les groupes
 exemple individus malade/sain
 
-Comparaison non pas sur individus malades/pas malades mais sur espèces différentes.
-Pas possible de supposer iid, existe relations entre les individus et les groupes que l'on compare donc besoin de les prendre en compte.
+Contrairement à une comparaison basée sur la santé des individus, cette approche
+se focalise sur les espèces. La non-indépendance et les relations complexes
+entre individus et groupes comparés nécessitent l'utilisation d'un modèle mixte,
+impliquant la matrice des temps de divergences, ainsi que l'intégration de 
+processus stochastiques tels que le Mouvement Brownien sans erreurs, 
+avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
 
-Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
+% Comparaison non pas sur individus malades/pas malades mais sur espèces différentes.
+% Pas possible de supposer iid, existe relations entre les individus et les groupes que l'on compare donc besoin de les prendre en compte.
+
+% Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
 
 \section{Méthodes}
 \label{sec:methode}
@@ -251,7 +258,7 @@ L'approximation de Satterthwaite ajuste les degrés de liberté pour tenir compt
 Cela permet d'obtenir des résultats plus fiables lorsque les conditions d'homoscédasticité ne sont pas respectées. 
 \newline
 \newline
-On s'est basé sur la documentation du package lmerTest \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre.
+On s'est basé sur la documentation du package \texttt{lmerTest} \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre.
 En effet il existe des formules explicite dans le cadre du modèle mixte. 
 Cela nous permettra ensuite de les implémenter et voir si cela améliore la fiabilité de la statistique de test.
 A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
@@ -327,9 +334,10 @@ Puis les dérivées secondes:
 \[\text{et} \quad \partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1} K V(\theta)^{-1} - V(\theta)^{-1} K V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1}\]
 \[\text{ce qui donne} \quad\partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -2V(\theta)^{-1} K V(\theta)^{-1} K V(\theta)^{-1}\]
 \begin{align*}
-    &{\bf\partial_{\sigma^2_{err}\sigma^2_{phylo}}\mathcal{L}} = \bf{\partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L}} \\
+    {\bf\partial_{\sigma^2_{err}\sigma^2_{phylo}}\mathcal{L}} & = \bf{\partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L}} \\
     &= -\frac{1}{2} Tr(\partial_{\sigma^2_{phy}\sigma^2_{err}} (V(\theta)^{-1})K) + \frac{1}{2}  (Y - X\beta)^T \partial_{\sigma^2_{phy}\sigma^2_{err}}(V(\theta)^{-1} K V(\theta)^{-1})(Y - X\beta) \\
-    &= \frac{1}{2} Tr(V(\theta)^{-1}I_nV(\theta)^{-1}K) - \frac{1}{2} (Y - X\beta)^T (V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})(Y - X\beta) \\
+    &= \frac{1}{2} Tr(V(\theta)^{-1}I_nV(\theta)^{-1}K) - \frac{1}{2} (Y - X\beta)^T (V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + \\
+    & V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})(Y - X\beta) \\
 \end{align*}
 \[\text{car} \quad \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -(V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})\]
 \begin{align*}
@@ -358,16 +366,8 @@ REML, ou Maximum de Vraisemblance Restreint (Restricted Maximum Likelihood en an
 \newline
 TODO: formule pour montrer la différence ? 
 TODO: Pourquoi l'utiliser pour Satterthwaite ? 
-\section{Méthodologie}
+\section{Simulations}
 \label{chap:metho}
-lrt 
-ANOVA normale 
-VANILLA = ANOVA phylo sans correction des degrés de liberté $df1 = K - 1, df2 = n-K$
-ANOVA phylo (avec REML)
-
-test sur arbre quelconque
-puis sur arbre avec petites branches ? 
-
 % Ou faire une partie à part entière avec 
 % 1) ANOVA vs ANOVA phylo sans correction des degrés de liberté
 %  b) avec une sous partie sur le REML
@@ -377,30 +377,16 @@ puis sur arbre avec petites branches ?
 %  a`) simulation et résultats 
 %  b) instabilités numériques -> correction avec la Hessienne ? 
 %  c) La hessienne analytique ? A voir si besoin d'une partie supplémentaire
- 
-
-3 parties :
-- théo
-- méthodo par simu
-- appli aux données réelles
-
-
-
-\subsection{Simulations}
 % On importe le fichier
 
 <<simulations-methodes, child='Rnw/simulations-methodes.Rnw'>>=
 @
 
-\section{Données}
+\section{Application aux données réelles}
 \label{sec:data}
 % Présentation des données utilisées.
 <<donnees-reelles, child='Rnw/donnees-reelles.Rnw'>>=
 @
-
-Revenir sur explication de gènes différentiellement exprimées etc.
-
-Applications aux données réelles de Chen mais ne pas perdre de temps à expliquer en détails EVEmodel (dire que c'est State of the art).
 
 \section{Résultats}
 \label{sec:results}
