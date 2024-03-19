@@ -214,7 +214,4 @@ TODO Ajouter les commentaires sur les simulations
 l'erreur de première espèce que les méthodes utilisant le maximum de 
 vraisemblance.
 
-TODO Ajouter les commentaires sur les simulations
-
-\paragraph*{REML vs Maximum Likelihood (ML)} En comparant les méthodes selon 
-l'utilisation du critère REML ou du ML nous pouvons voir que la méthode 
+\subsection{Pour des tests multiples}

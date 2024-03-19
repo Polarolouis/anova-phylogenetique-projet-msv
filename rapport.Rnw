@@ -80,16 +80,23 @@ source(here("R","utils.R"))
 \section{Introduction}
 \label{chap:intro}
 % Introduction au projet, contexte, objectifs.
-Ici contexte biologique, les données de \cite{gomez-mestrePhylogeneticAnalysesReveal2012}, les données de Paul et Mélina, etc.
+Avec l'avènement des données massives de génomiques, transcriptomiques, 
+protéomiques, il y a besoin de techniques statistiques robustes et passant à 
+l'échelle permettant de mener à bien les analyses.
 
-Avec l'avènement des données massives de génomiques, transcriptomiques, protéomiques etc, il y a besoin de techniques statistiques robustes et passant à l'échelle permettant de mener à bien l'anal
-Format des données : arbres phylogénétiques, données génétiques 
-Arbres avec des petites branche: plusieurs individus par espèces avec chacun leurs données 
---> problème biologique 
+Ces données de génétiques proposent bien souvent deux informations, les mesures
+et l'arbre phylogénétique. Et pour certaines, l'arbre est ramifié au bout en
+proposant des répétitions intraspécifique.
 
-Deux sujets différents écologie et transcriptomique mais une même méthode.
+% Format des données : arbres phylogénétiques, données génétiques 
+% Arbres avec des petites branche: plusieurs individus par espèces avec chacun leurs données 
+% --> problème biologique 
 
-Pour données \cite{chenQuantitativeFrameworkCharacterizing2019} la figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
+% Deux sujets différents écologie et transcriptomique mais une même méthode.
+
+C'est par exemple le cas pour les données de 
+\cite{chenQuantitativeFrameworkCharacterizing2019} dont 
+la figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
 
 \begin{figure}[!h]
     \centering
@@ -105,9 +112,12 @@ Pour données \cite{chenQuantitativeFrameworkCharacterizing2019} la figure~\ref{
     \label{fig:arbre-chen2019}
 \end{figure}
 
-Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode d'ANOVA phylogénétique. 
-Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés pour affiner la fiabilité du test dans une première partie. 
-Viendra ensuite une partie de simulation destinée à comparer et étudier la méthode d'ANOVA phylogénétique sur des données d'arbre simulés. 
+Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode 
+d'ANOVA phylogénétique. 
+Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés 
+pour affiner la fiabilité du test dans une première partie. 
+Viendra ensuite une partie de simulation destinée à comparer et étudier la 
+méthode d'ANOVA phylogénétique sur des données d'arbre simulés. 
 Enfin, on teste sur des données réelles. 
 \newline
 \newline
@@ -176,7 +186,7 @@ Le modèle de mouvement brownien va alors induire que les feuilles des arbres (n
 
 Les notations correspondent toujours à celles utilisées pour \eqref{eq:ANOVA}. La seule différence se trouvant dans la distribution de $u$ et la présence d'une matrice $K$.
 Dans le cadre du mouvement brownien $K=(K_{i,j})_{1\leq i,j \leq n}=(t_{i,j})_{1\leq i,j \leq n}$ où $t_{i,j}$ représente le temps d’évolution commun aux espèces i et j. 
-On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuousTraitEvolution}:
+On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuousTraitEvolution2022}:
 \begin{center}
     \includegraphics[width=0.7\textwidth]{matrix_K.png}
 \end{center}
@@ -236,7 +246,7 @@ On testera alors les hypothèses suivantes :
 \[ H_0 : \beta_2 =0 \text{, les 2 groupes ont la même moyenne}\]
 \[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
 
-\cite{bastideContinuousTraitEvolution} nous donne une F-statistique pour la méthode d'ANOVA de cette forme \eqref{eq:V_lambda} et le test de Fisher précédent. 
+\cite{bastideContinuousTraitEvolution2022} nous donne une F-statistique pour la méthode d'ANOVA de cette forme \eqref{eq:V_lambda} et le test de Fisher précédent. 
 \begin{equation}
     F=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}(n-2)}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
 \end{equation}
