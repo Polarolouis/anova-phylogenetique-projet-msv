@@ -47,6 +47,8 @@
 \author{Alizée Geffroy \and Louis Lacoste}
 \date{\today}
 
+\newtheorem*{proposition}{Proposition}
+
 \begin{document}
 
 \maketitle
@@ -151,6 +153,7 @@ avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
 
 \section{Méthodes}
 \label{sec:methode}
+Dans cette partie, on fera des rappels sur la méthode d'ANOVA puis on présentera l'ANOVA phylogénétique.  
 % Revue de la littérature sur l'ANOVA phylogénétique.
 Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La 
 démonstration des limites de l'ANOVA phylogénétique par des simulations
@@ -207,7 +210,7 @@ On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuou
 \begin{center}
     \includegraphics[width=0.7\textwidth]{matrix_K.png}
 \end{center}
-
+TODO: image arbre qui correspond ou note
 <<'plot-MB', warnings = FALSE, message = FALSE, fig.cap = "Exemple d'un arbre phylogénétique dont le trait est généré selon un Mouvement Brownien", out.width = "75%", fig.height = 3.5, fig.align = "center", fig.pos = "H">>=
 source(here("simulations","mouvement_brownien.R"))
 set.seed(12)
@@ -223,9 +226,6 @@ ggplot(df) +
     coord_fixed(ratio=0.75) +
     theme_minimal()
 @
-
-% Besoin de le dire qu'on fait une régression linéaire matrice structurée, 
-% figure avec le Brownien sur l'arbre à reprendre dans le chapitre de livre
 
 \subsection{ANOVA phylogénétique avec erreur de mesure}
 Dans la section précedente, on a supposé que la seule source de variabilité provenait du mouvement brownien sur l'arbre.
@@ -259,8 +259,8 @@ En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, o
 \subsection{Le test statistique}
 Pour le test statistique d'ANOVA phylogénétique, on se met dans le cadre d'une ANOVA à un facteur et à 2 groupes. 
 Chacun de ces groupes ayant une moyenne qui lui est propre. Ce peut être la moyenne de la valeur d'un trait génétique ou bien de la valeur de la fréquance d'une séquence ou allèle. 
-On testera alors les hypothèses suivantes :
-\[ H_0 : \beta_2 =0 \text{, les 2 groupes ont la même moyenne}\]
+On testera alors les hypothèses suivantes avec $l=\begin{bmatrix}0 \\1 \end{bmatrix}$:
+\[ H_0 : \beta_2 =0 \Leftrightarrow l^T\beta = \begin{bmatrix}0 \\0\end{bmatrix} \text{, les 2 groupes ont la même moyenne}\]
 \[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
 
 \cite{bastideContinuousTraitEvolution2022} nous donne une F-statistique pour la méthode d'ANOVA de cette forme \eqref{eq:V_lambda} et le test de Fisher précédent. 
@@ -272,26 +272,16 @@ On testera alors les hypothèses suivantes :
 &\text{et }||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}=(\hat{Y} - \bar{Y})^TV^{-1}_\lambda(\hat{Y}- \bar{Y})
 \end{align*}
 
-
+Il est important de noter que lorsque le paramètre $\lambda$ est connu, l'ANOVA phylogénétique est exacte.
+Cependant, dans la pratique, $\lambda$ est généralement inconnu et doit être estimé à partir des données.
+ Dans ce cas, l'approximation de la distribution de F par une distribution de Fisher ne tient plus, et il est nécessaire d'utiliser des méthodes alternatives telles que la méthode de Satterthwaite pour estimer les degrés de liberté.
+Cette méthode tient compte de l'incertitude associée à l'estimation de $\lambda$ et fournit une approximation plus précise de la distribution de la statistique de test.
 
 \subsection{Approximation de Satterthwaite}
-TODO Insister sur la contribution
-TODO Pourquoi Satterthwaite, parce que l'ANOVA Phylo est exacte quand le 
-$\lambda$ est connu mais dans ce cas on ne le connaît pas et c'est ce qui motive
-Sattertwhaite.
-
-On va dans notre cas avoir $n-2$ degrés de liberté.
-L'ANOVA, suppose souvent une homoscédasticité des variances entre les groupes ou les échantillons. Cela signifie que les variances des groupes sont égales.
-Cependant, lorsque cette condition n'est pas satisfaite, l'approximation de Satterthwaite peut être utilisée pour tenir compte des variances inégales entre les groupes. Elle est particulièrement utile dans le cas des ANOVA à un facteur, mais peut également être appliquée à des ANOVA à plusieurs facteurs.
-
-L'approximation de Satterthwaite ajuste les degrés de liberté pour tenir compte de ces différences dans les variances.
-\newline
-Cela permet d'obtenir des résultats plus fiables lorsque les conditions d'homoscédasticité ne sont pas respectées. 
-\newline
-\newline
 On s'est basé sur la documentation du package \texttt{lmerTest} \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre.
 En effet il existe des formules explicite dans le cadre du modèle mixte. 
-Cela nous permettra ensuite de les implémenter et voir si cela améliore la fiabilité de la statistique de test.
+Dans notre cas, on peut voir l'équation \eqref{eq:eq2err} comme l'équation d'un modèle linéaire mixte où $\beta$ représente tous les paramètres à effets fixes, avec sa matrice de design associée $X$, u les effets aléatoires et $\epsilon$ les résidus.
+Dans l'optique de l'implémenter, nous avons calculer la formule explicite de l'approximation de Satterthwaite. 
 A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
 \[
  Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \text{, }\theta=(\sigma^2_{phy}, \sigma^2_{err}) \text{ et } Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
@@ -301,7 +291,14 @@ De la documentation on obtient alors la covariance suivante:
 \begin{equation}
     C(\theta) = (Cov(\beta_i , \beta_j))_{i,j} = (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1}
 \end{equation}
-TODO: Préciser df degré de liberté de quoi !
+
+TODO: Ecrire sous forme proposition avec Fapprox 
+\begin{proposition}
+    \begin{equation}
+        F_{approx}
+    \end{equation}
+\end{proposition}
+
 Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} on part de l'expression pour les degrés de liberté $df$ et de l'approximation. Ce qui nous donne :
 \begin{equation}
     df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta}))]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
