@@ -15,8 +15,6 @@ knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
 %     \item soit partir sur regarder l'impact de la taille de l'arbre etc.
 % \end{itemize}
 
-\subsection{Erreur de type I et puissance}
-
 Dans cette partie nous souhaitons comparer les résultats de l'ANOVA et de 
 l'ANOVA phylogénétique classique, avec approximation de Satterthwaite et avec le
 \emph{Likelihood ratio test}. 
@@ -32,7 +30,8 @@ l'\emph{erreur de première espèce} et la \emph{puissance} obtenue.
 
 En sélectionnant des espèces de manière aléatoire, nous cassons la structure 
 induite par la phylogénie. Nous nous attendons donc à ce que l'ANOVA réalise de
-meilleurs résultats en ne prenant pas en compte l'information phylogénétique.
+meilleurs résultats que l'ANOVA Phylogénétique en ne prenant pas en compte 
+l'information phylogénétique.
 
 Pour les simulations avec des groupes respectant la structure de l'arbre 
 phylogénétique, nous nous attendons à ce que l'ANOVA phylogénétique 
@@ -204,21 +203,97 @@ Sur toutes les sous-figures de la figure~\ref{fig:simus-results}, les étiquette
 A présentent les erreurs de type I commises par les méthodes et les étiquettes B
 présentent les puissances des mêmes méthodes.
 
+\subsubsection*{Analyse pour les groupes respectant la phylogénie}
+% Analyses des erreurs de type I
+
+\paragraph*{Analyse des erreurs de type I}
 L'erreur de type I est particulièrement importante à contrôler, en effet elle
 indique le nombre de faux positifs et l'on veut pouvoir en déterminer le seuil
 $\alpha$ avec comme seuil classique $0.05$.
 
-TODO Insister sur pourquoi trop de faux-positifs pour l'ANOVA classique, du fait
-de la structure Brownienne, deux clades peuvent être éloignés au niveau temporel
-beaucoup de génération. En oubliant la structure, on peut vouloir mettre un saut
-alors que l'écart est simplement dû à de la dérive.
-L'ANOVA suppose des données iid ce qui n'est pas le cas ici.
+% DONE Insister sur pourquoi trop de faux-positifs pour l'ANOVA classique, du fait
+% de la structure Brownienne, deux clades peuvent être éloignés au niveau temporel
+% beaucoup de génération. En oubliant la structure, on peut vouloir mettre un saut
+% alors que l'écart est simplement dû à de la dérive.
+% L'ANOVA suppose des données iid ce qui n'est pas le cas ici.
+Nous constatons que dans le cas des groupes respectant la phylogénie, l'ANOVA
+a une erreur de type I très forte dans toutes les simulations.
+Pour l'expliquer nous avons deux interprétations principales.
+Tout d'abord, l'ANOVA suppose des observations indépendantes et identiquement
+distribuées et les en accord avec la phylogénie ne respectent pas cette 
+hypothèse.
+De plus, n'ayant pas l'information de la dérive génétique 
+sous-jacente, elle ne peut pas différencier ce qui est dû à la dérive et à de
+vraies différences entre les groupes.
+C'est la raison de son fort de taux de faux-positifs pour les
+groupes qui respectent la structure phylogénétique.
 
-TODO Important de préciser qu'il faut contrôler l'erreur de type I car les 
-manips coûtent très cher.
+Par exemple, deux clades peuvent être éloignés à cause de leur éloignement 
+temporel. L'oubli de la structure peut suggérer de mettre un saut alors que cet
+éloignement est seulement dû à la dérive.
 
-TODO Ajouter les commentaires sur les simulations
+Pour les autres méthodes, elles ont toutes tendances à avoir de forts taux de
+faux-positifs, exceptée l'ANOVA phylogénétique REML avec approximation de 
+Satterthwaite qui respectent le seuil de 5\% dans toutes nos conditions.
 
-\paragraph*{REML vs Maximum Likelihood (ML)} D'après nos simulations, les méthodes utilisant le REML contrôle toujours mieux
+Nous remarquons qu'en général, plus l'héritabilité augmente et plus les méthodes incluant
+l'information phylogénétique contrôle l'erreur de première espèce.
+
+% DONE Important de préciser qu'il faut contrôler l'erreur de type I car les 
+% manips coûtent très cher.
+
+\paragraph*{Importance de l'erreur de type I} Nous insistons particulièrement 
+sur le contrôle de l'erreur de type I, car dans 
+le cadre des analyses de données transcriptomiques cette phase d'analyse 
+statistique permet d'identifier des gènes différentiellement exprimés et pouvant
+donc potentiellement intervenir dans des réseaux de gènes d'intérêt.
+
+Une fois les gènes identifiés il faut faire des expériences qui sont 
+particulièrement onéreuses et donc on ne souhaite pas faire des expériences 
+"pour rien".
+
+\paragraph*{Analyse des puissances} Le revers de la médaille se fait sentir sur
+les puissances. La méthode d'ANOVA phylogénétique REML avec approximation de 
+Sattertwhaite, a les puissances les plus faibles de toutes les méthodes, ce qui 
+fait sens, étant plus conservatrice elle sélectionne moins.
+Et nous observons donc que les méthodes avec les puissances les plus fortes sont
+le LRT et l'ANOVA.
+
+\paragraph*{REML vs Maximum Likelihood (ML)} D'après nos simulations, les 
+méthodes utilisant le REML contrôle toujours mieux
 l'erreur de première espèce que les méthodes utilisant le maximum de 
-vraisemblance.
+vraisemblance. Les paramètres de variance étant mieux estimés dans ce cas, ce 
+résultat est cohérent avec les résultats classiques sur le REML.
+Mais à cause de ce meilleur contrôle, les méthodes REML ont donc des puissances
+plus faible, comme décrit plus haut.
+
+\subsubsection*{Analyse pour les groupes choisis}
+
+Nous analysons ici les groupes sélectionnés pour ne pas respecter la phylogénie.
+Ils correspondent aux barres de couleurs bleues sur la 
+figure~\ref{fig:simus-results} 
+
+\paragraph*{Analyse des erreurs de type I}
+Toutes les erreurs de types sont proches d'être sous la barre des 5\%. Les 
+méthodes qui ne sont pas sous les 5\% sont l'ANOVA et le LRT\footnote{Ainsi que
+pour les valeurs d'héritabilité de $h = 0.7$ et $h=0.9$ l'ANOVA phylogénétique 
+et l'ANOVA phylogénétique avec approximation de Satterthwaite, qui sont 
+légèrement au-dessus. Un point intéressant à remarquer est que leurs 
+contreparties utilisant le REML ne présentent pas ces problèmes.}.
+Cela indique peut-être que malgré notre sélection que nous avons souhaité 
+la plus aléatoire possible\footnote{Cela en respectant la contrainte de ne pas 
+séparer les individus d'une même espèce.}, nous n'avons peut-être pas 
+cassé toute la structure phylogénétique existante. Il faudrait investiguer avec
+d'autres simulations.
+
+\paragraph*{Analyse des puissances} 
+Comme l'on pouvait s'y attendre cette fois-ci toutes les puissances sont 
+relativement élevées. Nous remarquons que la méthode la plus puissante est 
+l'ANOVA phylogénétique REML avec approximation de Satterthwaite.
+Aux vues du doute émis au paragraphe précédent cela pourrait être dû à la 
+persistance d'une structure phylogénétique.
+
+\paragraph*{REML vs Maximum Likelihood (ML)}
+Ici aussi les méthodes REML contrôlent mieux l'erreur de type I mais fait 
+intéressant elles obtiennent aussi de meilleures puissances. Cela pourrait être
+dû au fait que leur estimation de la variance est meilleure.
