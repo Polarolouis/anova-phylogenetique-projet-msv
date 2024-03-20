@@ -44,9 +44,9 @@
 
 
 % Titre du document
-\title{Rapport de Projet : ANOVA Phylogénétique}
+\title{Rapport de Projet : ANOVA Phylogénétique \newline Co-encadré par Mélina Gallopin et Paul Bastide}
 \author{Alizée Geffroy \and Louis Lacoste}
-\date{\today}
+\date{20 mars 2024}
 
 \newtheorem*{approximation}{Approximation}
 
@@ -256,7 +256,6 @@ On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuou
 \begin{center}
     \includegraphics[width=0.7\textwidth]{matrix_K.png}
 \end{center}
-TODO: image arbre qui correspond ou note
 <<'plot-MB', warnings = FALSE, message = FALSE, fig.cap = "Exemple d'un arbre phylogénétique dont le trait est généré selon un Mouvement Brownien", out.width = "75%", fig.height = 3.5, fig.align = "center", fig.pos = "H">>=
 source(here("simulations","mouvement_brownien.R"))
 set.seed(12)
@@ -498,8 +497,39 @@ Il est à noter que cette méthode est plus coûteuse car il est nécessaire d'a
 \label{sec:conclusion}
 % Analyse critique des résultats, limites, perspectives.
 
-
-\subsection*{Ouvertures}
+Le travail portait sur l'élaboration de nouvelles méthodes statistiques 
+spécifiquement conçues pour traiter les données phylogénétiques. Nous 
+avons accompli cela en adaptant des approches classiques déjà existantes 
+à ce contexte particulier. Pour y parvenir, nous avons approfondi notre 
+compréhension de ces diverses méthodes en consultant la littérature spécialisée
+et en échangeant de manière intensive avec Paul Bastide et Mélina Gallopin.
+\newline
+Ce projet nous a offert l'opportunité de renforcer nos connaissances théoriques 
+en explorant diverses méthodes, tout en approfondissant notre compréhension de 
+leurs relations et de la manière de formaliser un modèle.
+Nous avons également effectué des calculs et programmé en R, utilisant à la fois
+des packages existants et en développant nos propres fonctionnalités. De plus, 
+nous avons analysé et interprété une variété de graphiques pour comparer les 
+différentes méthodes.
+Ce travail s'est déroulé en binôme, permettant ainsi d'exploiter les compétences
+individuelles de chaque membre pour atteindre nos objectifs de manière 
+collaborative.
+\newline
+Nos recherches ont abouti à des conclusions intéressantes concernant les 
+méthodes d'ANOVA phylogénétique.
+Nous avons observé que l'ANOVA phylogénétique surpasse l'ANOVA classique en 
+termes de contrôle de l'erreur de type 1.
+En revanche, l'utilisation isolée de la méthode de Satterthwaite présente des 
+limitations, ce qui souligne l'importance d'intégrer REML dans nos analyses 
+pour obtenir des résultats plus fiables.
+\newline
+Au cours de notre projet, plusieurs obstacles ont été identifiés. Tout d'abord, 
+nous avons rencontré des difficultés avec la convergence de l'algorithme 
+d'optimisation lors du calcul approximatif de la Hessienne dans l'approche de 
+Satterthwaite. Comprendre le contexte biologique s'est avéré être un élément 
+crucial pour le développement de méthodes statistiques appropriées. En outre, 
+l'importance d'écrire un code propre, clair et réutilisable a été mise en 
+évidence pour assurer l'efficacité et la durabilité de nos travaux.
 
 De nombreux points restent à explorer, nous en proposons quelques-uns 
 ci-dessous.\newline
@@ -532,7 +562,6 @@ bon modèle.
 \printbibliography
 \nocite{*}
 
-% TODO Ici éventuellement une partie annexe discussion de l'impact des tailles d'abres
 \appendix
 \section{Application aux données réelles}
 
