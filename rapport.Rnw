@@ -193,7 +193,7 @@ On a alors la statistique de test suivante :
     \label{eq:F_ANOVA}
     F_{ANOVA}=\frac{||\hat{Y} - \bar{Y}||^2(n-2)}{||Y - \hat{Y}||^2} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
 \end{equation}
-
+\[\text{Où } \bar{Y}= \frac{1}{n} \sum_{i,j=1}^{n_1,n_2} Y_{i,j} \text{ et } \hat{Y}=X\hat{\beta}\]
 \subsection{L'ANOVA phylogénétique}
 \label{subsec:anova-phylogenetique}
 Dans la méthode d'ANOVA classique l'information portée par l'arbre phylogénétique n'est pas prise en compte. 
@@ -203,7 +203,7 @@ Il s'agira alors de modéliser l'arbre et les informations évolutives qu'ils co
 \newline
 \newline
 Comme décrit dans \cite{bastideModelesEvolutionCaracteres2022} l'évolution d'un trait nécessite de décrire ses fluctuations le long de l'arbre et ses branches. 
-C'est pour cela que souvent cela est le résultat d'un processus stochastique à temps continu. 
+C'est pour cela que souvent cela est le résultat d'un processus stochastique à temps continu branchant sur un arbre phylogénétique, supposé connu et fixé. 
 Le processus classique est le mouvement brownien et c'est celui que nous avons utilisé. Il a cependant quelques limites qui ne font pas l'objet de ce rapport mais qui peuvent alors justifier le choix d'autres types de processus comme celui d'Ornstein-Uhlenbecks.
 Le modèle de mouvement brownien va alors induire que les feuilles des arbres (nos observations) auront une distribution gausienne que l'on écrira sous la forme suivante:
 
@@ -215,6 +215,7 @@ Le modèle de mouvement brownien va alors induire que les feuilles des arbres (n
 
 Les notations correspondent toujours à celles utilisées pour \eqref{eq:ANOVA}. La seule différence se trouvant dans la distribution de $u$ et la présence d'une matrice $K$.
 Dans le cadre du mouvement brownien $K=(K_{i,j})_{1\leq i,j \leq n}=(t_{i,j})_{1\leq i,j \leq n}$ où $t_{i,j}$ représente le temps d’évolution commun aux espèces i et j. 
+Comme on peut le voir dans l'exemple suivant, cette matrice a bien la forme attendue : deux espèces proches dans l'arbre ont un coefficient de covariance élevé (leur temps d'évolution commun est grand), alors que deux espèces éloignées sont plus faiblement corrélées.
 On peut voir un exemple utilisé dans les slides de cours \cite{bastideContinuousTraitEvolution2022}:
 \begin{center}
     \includegraphics[width=0.7\textwidth]{matrix_K.png}
@@ -235,7 +236,18 @@ ggplot(df) +
     coord_fixed(ratio=0.75) +
     theme_minimal()
 @
-
+A note que seules les réalisation du processus aux feuilles de l'abre (ici, à t = 10) sont observées. Le reste du processus est latent.
+\subsubsection*{Test statistique}
+\label{subsubsec: test-ANOVAphylo}
+En considérant le même test et les mêmes hypothèses que \ref{subsubsec: test-ANOVA} mais en prenant en compte la nouvelle formule \ref{eq:ANOVAphylo}, on obtient une nouvelle statistique de test. 
+\begin{equation}
+    F_{ANOVAphylo}=\frac{||\hat{Y} - \bar{Y}||^2_{K^{-1}}(n-2)}{||Y - \hat{Y}||^2_{K^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
+\end{equation}
+\begin{align*}
+&\text{Où }||Y - \hat{Y}||^2_{K^{-1}} = ||Y - X\hat{\beta}||^2_{K^{-1}}= Proj_X^{K}Y= (Y-\hat{Y})^TK^{-1}(Y-\hat{Y})\\
+&\text{et }||\hat{Y} - \bar{Y}||^2_{K^{-1}}=(\hat{Y} - \bar{Y})^TK^{-1}(\hat{Y}- \bar{Y})
+\end{align*}
+Concernant cette statitstique, on peut dire qu'elle est toujours exacte car on connait la matrice $K$.
 \subsection{ANOVA phylogénétique avec erreur de mesure}
 Dans la section précedente, on a supposé que la seule source de variabilité provenait du mouvement brownien sur l'arbre.
 On rajoute dans cette section une autre variabilité specifiée par $\sigma^2_{err}$ qui à partir de la formule précédente \eqref{eq:ANOVAphylo}, nous donne:
@@ -265,7 +277,7 @@ En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, o
     &E \sim \mathcal{N}_n(0, V_\lambda) \notag
 \end{align}
 
-\subsection{Le test statistique}
+\subsubsection*{Le test statistique}
 Pour le test statistique d'ANOVA phylogénétique, on se met dans le cadre d'une ANOVA à un facteur et à 2 groupes. 
 Chacun de ces groupes ayant une moyenne qui lui est propre. Ce peut être la moyenne de la valeur d'un trait génétique ou bien de la valeur de la fréquance d'une séquence ou allèle. 
 On testera alors les hypothèses suivantes avec $l=\begin{bmatrix}0 \\1 \end{bmatrix}$:
