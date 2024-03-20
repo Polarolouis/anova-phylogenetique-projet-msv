@@ -414,42 +414,35 @@ Puis les dérivées secondes:
 De là on obtient la Hessienne $\begin{pmatrix}
     \partial_{\sigma^2_{phy}\sigma^2_{phy}}l & \partial_{\sigma^2_{phy}\sigma^2_{err}}l \\
     \partial_{\sigma^2_{err}\sigma^2_{phy}}l & \partial_{\sigma^2_{err}\sigma^2_{err}}l \\
-\end{pmatrix}$ puis A en l'inversant, ce qui peut se faire par des méthodes numériques ou analytiques ici car cela signifie inverser une matrice 2 x 2 ce qui est facile.
+\end{pmatrix}$ puis A en inversant la matrice de Fisher liée, ce qui peut se faire par des méthodes numériques ou analytiques ici car cela signifie inverser une matrice 2 x 2 ce qui est facile.
 
 
 \end{proof}
 
-% TODO REML voir sujet d'exam corrigée
-% Quand estimateur classique on divise par n-p au lieu de diviser par n donc on 
-% fait sans le dire un REML.
-% Au lieu de maximiser la vraisemblance on maximise la vraisemblance restreinte
-% Gaussien : effet fixe les betas, pour estimer al variance on projette sur 
-% l'orthogonal et on estime sigma sur l'orthogonal.
-
-% Si bayésien on met un prior impropre sur les betas et on intègre apr rapport aux 
 \subsection{REML}
-REML, ou Maximum de Vraisemblance Restreint (Restricted Maximum Likelihood en anglais), est une méthode statistique utilisée dans l'estimation des paramètres de modèles linéaires mixtes (ou modèles à effets mixtes) et dans l'analyse de la variance (ANOVA).
+Le REML, ou Maximum de Vraisemblance Restreint (Restricted Maximum Likelihood en anglais), est une méthode statistique utilisée dans l'estimation des paramètres de modèles linéaires mixtes (ou modèles à effets mixtes) et dans l'analyse de la variance (ANOVA).
 Il s'agit d'une approche alternative à la méthode de maximum de vraisemblance (ML) standard, notamment lorsque l'on travaille avec des modèles à effets aléatoires.
 \newline
 \newline
-L'une des formules pour la vraissemblance restreinte consite à regarder la vraissemblances des observations en intégrant sur les effets fixes, ici $\beta$.
+L'une des formules pour la vraissemblance restreinte consite à regarder la vraissemblances des observations en intégrant sur les effets fixes, ici $\beta$ sur lesquels on a mis un prior impropre uniforme entre moins l'infini et plus l'infini.
 C'est à dire sous l'hypothèse que les estimations des effets fixes sont éliminées (conditionnées)
 \begin{equation*}
-    L_{REML} (Y;\theta)=\int _{\beta \in \mathbb{R} ^2} \frac{1}{(2\pi)^{n/2}|V(\theta)|^{1/2}} \exp\left( -\frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \right), d\beta
+    L_{REML} (Y;\theta)=\int _{\beta \in \mathbb{R} ^2} \frac{1}{(2\pi)^{n/2}|V(\theta)|^{1/2}} \exp\left( -\frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \right)d\beta
 \end{equation*}
-Lorsque dans un estimateur on a la division par $(n-p)$ au lieu de n, on fait sans le dire un REML. 
-TODO: Pourquoi l'utiliser pour Satterthwaite ?
+Lorsque dans un estimateur on a la division par $(n-p)$ au lieu de n, on fait sans le dire un REML dans le cas de la régression linéaire classique. 
+\newline
+Satterthewaite maximum likelihood ne fait pas l'astuce de diviser par $n-p$, au contraire de l'anova classique ou phylogénétique. Il est donc particulièrement mauvais. Le REML permet de mieux estimer la variance, et aussi le $\lambda$ (ratio des variances), ce qui est crucial dans la dérivation des degrés de libertés approchés.
 
 \subsection{Méthode Likelihood Ratio Test}
 La méthode du test de rapport de vraisemblance (LRT) est une technique statistique utilisée pour comparer deux modèles statistiques et déterminer s'ils diffèrent significativement en termes d'ajustement aux données.
-Le rapport de vraisemblance est calculé comme le rapport des vraisemblances maximales des deux modèles (sous les deux hypothèses):
+Le rapport de vraisemblance est calculé comme le rapport des vraisemblances maximales de deux modèles (sous les deux hypothèses) emboîtés :
 \begin{equation*}
     \text{LRT} = -2 \log\left(\frac{L(\theta_{\text{H}_0})}{L(\theta_{\text{H}_1})}\right)
     \end{equation*}
 Sous l'hypothèse nulle que le modèle plus simple est correct, ce rapport suit approximativement une distribution du chi-deux avec un nombre de degrés de liberté égal à la différence dans le nombre de paramètres entre les deux modèles.
 Ainsi, en comparant la valeur observée du rapport de vraisemblance à la distribution du chi-deux, on peut décider si l'ajout de paramètres dans le modèle conduit à une amélioration significative de l'ajustement aux données.
 \newline
-Il est à noter que cette méthode est plus coûteuse car il est nécessaire de fitter 2 modèles au lieu d'un seul dans les autres méthodes. 
+Il est à noter que cette méthode est plus coûteuse car il est nécessaire d'ajuster 2 modèles au lieu d'un seul dans les autres méthodes. 
 
 
 \section{Simulations}
