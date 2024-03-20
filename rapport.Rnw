@@ -153,11 +153,10 @@ avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
 
 \section{Méthodes}
 \label{sec:methode}
-Dans cette partie, on fera des rappels sur la méthode d'ANOVA puis on présentera l'ANOVA phylogénétique.  
-% Revue de la littérature sur l'ANOVA phylogénétique.
-Ici les rappels sur l'ANOVA, l'explication de l'ANOVA phylogénétique. La 
-démonstration des limites de l'ANOVA phylogénétique par des simulations
-Méthode: la partie maths anova, anova phylo, satterthwaite, 
+Dans cette partie nous présentons les modèles statistiques d'ANOVA et sa dérivée phylogénétique. 
+Après avoir posé le cadre mathématique à partir des recherches bibliographiques, nous développerons les outils mathématiques. 
+En particulier pour l'approximation nous avons calculé une forme explicite afin de l'implémenter. 
+Finalement, nous faisons une présentation succinte des méthodes REML et du modèle LRT. 
 
 \subsection{L'ANOVA}
 
@@ -453,6 +452,7 @@ Discussion/COnclusion ? Interprétation des résultats sinon la mettre dans les
 f-cicd: CI/CD to build Latex PDF ...
 CI/CD to build Latex pdf and create a release in with GitHub Actions. The workflow triggers on push to the repository. Integrates with Overleaf.
 
+TODO: problèmes qu'on peut avoir eu : Satterthwaite estimation de la Hessienne pas stable, donc utilisation de l'analytique
 
 % Bibliographie
 \printbibliography
