@@ -10,7 +10,8 @@
 \usepackage{graphicx}
 \graphicspath{{img/}}
 \usepackage{float}
-\usepackage{subcaption} %  for subfigures environments 
+\usepackage{subcaption} %  for subfigures environments
+\usepackage{wrapfig} 
 
 % Booktabs
 \usepackage{booktabs}
@@ -82,24 +83,54 @@ source(here("R","utils.R"))
 \section{Introduction}
 \label{chap:intro}
 % Introduction au projet, contexte, objectifs.
-Avec l'avènement des données massives de génomiques, transcriptomiques, 
-protéomiques, il y a besoin de techniques statistiques robustes et passant à 
-l'échelle permettant de mener à bien les analyses.
+Avec l'avènement des données massives de génomique, transcriptomique et 
+protéomique, il est impératif de disposer de techniques statistiques robustes 
+et adaptées à l'échelle pour mener à bien les analyses. Ces données génétiques 
+fournissent généralement deux types d'informations : les mesures elles-mêmes et 
+les arbres phylogénétiques. Dans certains cas, ces arbres présentent des 
+ramifications intra-espèces.
 
-Ces données de génétiques proposent bien souvent deux informations, les mesures
-et l'arbre phylogénétique. Et pour certaines, l'arbre est ramifié au bout en
-proposant des répétitions intraspécifique.
+Nous mesurons l'expression des gènes orthologues chez plusieurs espèces, 
+souvent considérée comme une expression constitutive. Par exemple, la base de 
+données BGee (\url{https://www.bgee.org}) compile les niveaux d'expression de 
+gènes chez diverses espèces. En utilisant ces données inter-espèces, notre 
+objectif est de détecter les gènes orthologues présentant des variations 
+d'expression entre différents groupes d'espèces. En notant $Y$ le niveau 
+d'expression d'un gène chez plusieurs espèces, nous modélisons ce niveau 
+d'expression par une variable aléatoire ayant une moyenne $\mu_1$ dans un groupe
+d'espèces (par exemple, les primates) et $\mu_2$ dans un autre groupe d'espèces 
+(par exemple, toutes les espèces non primates). Nous testons alors l'hypothèse 
+$H_0$ : $\mu_1 = \mu_2$ contre $H_1$ : $\mu_1 \neq \mu_2$. 
+
+Par exemple, dans l'article 
+\cite{chenQuantitativeFrameworkCharacterizing2019}, les auteurs identifient
+un ensemble de gènes exprimés dans le foie qui sont sous-exprimés chez les 
+primates par rapport aux autres espèces, sous-exprimés chez les rongeurs par 
+rapport aux autres espèces ou sous-exprimés dans les tissus des testicules chez
+les primates par rapport aux autres espèces (voir la figure~\ref{fig:chen-fig4}
+extraite de l'article de
+\cite{chenQuantitativeFrameworkCharacterizing2019} où les individus sont 
+représentés en colonnes et les gènes en lignes, la couleur reflétant le niveau 
+d'expression du gène).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{chenFig4.png}
+    \caption{Figure extraite de l'article de \cite{chenQuantitativeFrameworkCharacterizing2019}}
+    \label{fig:chen-fig4}
+\end{figure}
+
+Ces données illustrent parfaitement la nécessité de techniques analytiques
+robustes face à des ensembles de données complexes, combinant à la fois des
+aspects écologiques et transcriptomiques.
 
 % Format des données : arbres phylogénétiques, données génétiques 
 % Arbres avec des petites branche: plusieurs individus par espèces avec chacun leurs données 
 % --> problème biologique 
 
 % Deux sujets différents écologie et transcriptomique mais une même méthode.
-
-C'est par exemple le cas pour les données de 
-\cite{chenQuantitativeFrameworkCharacterizing2019} dont 
-la figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
-\begin{figure}[!h]
+La figure~\ref{fig:arbre-chen2019} présente l'arbre phylogénétique :
+\begin{figure}[H]
     \centering
 <<'plot-arbre-chen'>>=
     tree <- read.tree(here("R","chen2019.tree"))
@@ -484,6 +515,35 @@ f-cicd: CI/CD to build Latex PDF ...
 CI/CD to build Latex pdf and create a release in with GitHub Actions. The workflow triggers on push to the repository. Integrates with Overleaf.
 
 TODO: problèmes qu'on peut avoir eu : Satterthwaite estimation de la Hessienne pas stable, donc utilisation de l'analytique
+
+\subsection{Ouvertures}
+
+De nombreux points restent à explorer, nous en proposons quelques-uns 
+ci-dessous.\newline
+
+Dans tout le rapport nous avons supposé que le processus de dérive était un
+mouvement brownien mais nous aurions pu utiliser un autre processus comme le
+processus d'Ornstein-Uhlenbeck. Ce dernier permet de modéliser des traits 
+tendant vers une valeur, ce qui peut correspondre par exemple à un optimum 
+écologique comme sur la figure~\ref{fig:OrnsteinUhlenbeck}.\newline
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{OrnsteinUhlenbeck3.png}
+    \caption{Exemple de processus d'Ornstein-Uhlenbeck (tiré de Wikipédia)}
+    \label{fig:OrnsteinUhlenbeck}
+\end{figure}
+
+Un autre point que l'on pourrait considérer, c'est que le LRT est un test
+asymptotique, contrairement à l'ANOVA quequi est un test exact (sous les bonnes
+hypothèses). Cela peut expliquer pourquoi leil est un peu moins bon sur 
+les simulations.\newline
+Par contre, il dépend moins des hypothèses (le ratio des vraisemblance converge
+sous des hypothèses faible). Cela peut peut-être expliquer pourquoi il est plus
+robuste dans le cas des données rééelles, qui n'ont pas de raison de suivre le 
+bon modèle.
+
+\newpage
 
 % Bibliographie
 \printbibliography

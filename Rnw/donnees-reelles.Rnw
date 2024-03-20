@@ -1,11 +1,8 @@
-Ici nous appliquons les méthodes implémentées sur l'arbre de \cite{chenQuantitativeFrameworkCharacterizing2019}.
-
-% TODO Décrire les données en détails
-
 Les données compilées par \cite{chenQuantitativeFrameworkCharacterizing2019} 
 sont des données de RNA-seq, c'est-à-dire des données quantifiant l'expression 
 des gènes, par le biais du transcriptome, parmi les différentes espèces du bout 
-de l'arbre.
+de l'arbre. Nous réanalysons les données, en utilisant les méthodes développées
+et testées ci-dessus.
 
 Le but est alors d'identifier les gènes différentiellement exprimés, au sens de
 nombre d'ARN par gène différent entre les espèces. 
@@ -193,8 +190,8 @@ p-values \emph{non ajustées}.
             theme(axis.text.x=element_blank(), axis.ticks.x = element_blank())
     }
     all_plots + patchwork::plot_layout(guides = "collect", 
-        axis_titles = "collect", tag_level = "new") + 
-        plot_annotation(title = "Selected genes by tested methods")
+        axis_titles = "collect", tag_level = "new") 
+        # + plot_annotation(title = "Selected genes by tested methods")
     @
     \caption{\emph{p-values} ordonnées pour les différents tests}
     \label{fig:pval-methods}
@@ -286,9 +283,6 @@ Dans l'article \cite{rohlfsPhylogeneticANOVAExpression2015}, les auteurs
 introduisent une méthode de détection des gènes différentiellement exprimés.
 Cette méthode est à l'heure actuelle très utilisée pour cette problématique.
 
-Elle détecte ici \Sexpr{sum(evemodel_dataframe[evemodel_dataframe$test_method == "EVEAdj",]$selected)}
-gènes différentiellement exprimés.
-
 Son principe de fonctionnement suppose que les traits évoluent selon un 
 processus d'Ornstein-Uhlenbeck et le test réalisé est un \emph{Likelihood 
 Ratio test}. 
@@ -351,23 +345,34 @@ pvalueseve_dataframe_wide <- pvalueseve_dataframe  %>%
     \label{fig:venn-all-methods-eve}
 \end{figure}
 
-\paragraph{Analyse des résultats} Nous pouvons voir que la méthode la plus 
+\paragraph{Analyse des résultats} La barre indiquant 3681 gènes comptabilise les
+gènes qui n'ont été sélectionnés par aucune méthode. Le nombre de gènes 
+sélectionnés par méthode est présenté dans le tableau~\ref{tab:data-genes-selectionnes}. 
+
+La méthode EVE détecte ici
+\Sexpr{sum(evemodel_dataframe[evemodel_dataframe$test_method == "EVEAdj",]$selected)}
+gènes différentiellement exprimés. Étant la méthode état de l'art nous pouvons
+nous en servir comme référence. 
+
+Nous pouvons voir que la méthode la plus 
 parcimonieuse est celle utilisant le LRT, qui sélectionne
 $\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "LRT Ajusté",]$selected)}$
 gènes qui sont eux-mêmes \textbf{sélectionnés par toutes les méthodes}.
-Cette unanimité sur ces gènes nous invite à penser qu'ils sont en effet 
-différentiellement exprimés.
+Cette unanimité sur ces gènes nous invite à penser qu'ils sont en effet bel et 
+bien différentiellement exprimés.
 
 La seconde méthode sélectionnant le moins de gènes est l'ANOVA Phylogénétique 
 avec REML. Elle sélectionne $\Sexpr{sum(pvalues_adj_dataframe[pvalues_adj_dataframe$test_method == "ANOVA Phylo REML Ajustée",]$selected)}$
-gènes. Ces sélections se décompose en plusieurs sous ensembles
+gènes. Ces sélections se décompose en plusieurs sous ensembles. Des méthodes 
+que nous avons utilisées c'est celle-ci qui semble s'en sortir le mieux, elle
+donne des résultats semblables à EVE.
 
-TODO Ici nous avons supposé un mouvement brownien comme processus sous-jacent de
-l'arbre mais ce n'est peut-être pas le meilleur modèle et un OU pourrait être 
-intéressant. Intéressant pour l'ouverture.
 
-% \begin{table}
-%     <<'table-anova-phylo-reml'>>=
-%     kable()
-%     @
-% \end{table}
+\begin{table}[H]
+    \centering
+    <<'table-anova-phylo-reml'>>=
+    kable(colSums(pvalueseve_dataframe_wide[,-1]), col.names = c("Nombre de gènes sélectionnés"), booktabs = TRUE)
+    @
+    \caption{Nombre de gènes sélectionnés par méthode}
+    \label{tab:data-genes-selectionnes}
+\end{table}
