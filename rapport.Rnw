@@ -121,7 +121,6 @@ L'EVE modèle est basé sur un LIkelihood Ratio Test (LRT), une méthode statist
 Ce projet s'inscrit alors dans un questionnement plus large qui cherche à se demander si d'autres modèles classiques comme l'ANOVA, en les adaptant, pourrait produire des résultats similaires voire meilleurs que l'EVE modèle. 
 E effet, avoir un bon modèle qui, en particulier, donne peu de faux positifs est important. 
 On peut ensuite étudier les gènes potentiellement intéressants selon une problématique et des groupes d'espèces données. 
-TODO Présenter les 4 modèles. C'est quoi les 4 ? 
 \newline
 Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode 
 d'ANOVA phylogénétique. 
@@ -166,23 +165,34 @@ matricielle.
 Le principe de l'ANOVA est d'expliciter le lien entre une variable quantitative
 et une ou plusieurs variables qualitatives.
 
-La forme matricielle usuelle de l'ANOVA à 1 facteur est la suivante :
+La forme matricielle usuelle de l'ANOVA à 1 facteur et 2 groupes de taille respectivement $n_1$ et $n_2$ est la suivante :
 
 \begin{equation}
     Y = X\beta + u \text{,} \quad u \sim \mathcal{N}_n(0, \sigma^2I_n)
     \label{eq:ANOVA}
 \end{equation} 
 \[
-    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_1n_1 \\ 
+    \text{où} \quad \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_{1n_1} \\ 
         Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}\text{, } 
         \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix}\text{, }  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix} \text{, } n=n_1+n_2
 \]
-
+On noter qu'ici  $\beta_1 = \mu_1$ la moyenne du groupe 1, et $\beta_2 = \mu_2 - \mu_1$ la différence des moyennes entre les groupes dans cette paramétrisation.
+\newline
+\newline
 Les paramètres $(\beta_1, \beta_2, \sigma^2)$ de l'ANOVA sont estimables, grâce par exemple à la méthode du maximum de vraisemblance et ont des formules bien connues.
 
-% ICI LES FORMULES: est ce que vraiment besoin des formules ? 
-
-% LIMITES de l'ANOVA classique sur les données phylo
+\subsubsection*{Test statistique}
+\label{subsubsec: test-ANOVA}
+Dans le  cadre d'ANOVA classique nous allons rappeler les hypothèses du test et la statistique de test. 
+On fait un test sur les moyennes de chaque groupe. Ce peut être la moyenne de la valeur d'un trait génétique ou bien de la valeur de la fréquance d'une séquence ou allèle. 
+On testera alors les hypothèses suivantes avec $l=\begin{bmatrix}0 \\1 \end{bmatrix}$:
+\[ H_0 : \beta_2 =0 \Leftrightarrow l^T\beta = \begin{bmatrix}0 \\0\end{bmatrix} \text{, les 2 groupes ont la même moyenne}\]
+\[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
+On a alors la statistique de test suivante : 
+\begin{equation}
+    \label{eq:F_ANOVA}
+    F_{ANOVA}=\frac{||\hat{Y} - \bar{Y}||^2(n-2)}{||Y - \hat{Y}||^2} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
+\end{equation}
 
 \subsection{L'ANOVA phylogénétique}
 \label{subsec:anova-phylogenetique}
