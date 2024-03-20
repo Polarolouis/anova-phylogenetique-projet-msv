@@ -117,12 +117,11 @@ On cherche alors d'abord à trouver quels gènes pourraient être différentiels
 En considérant l'arbre precédent \ref{fig:arbre-chen2019}, on pourra chercher les gènes qui sont différents entre les groupes des \textit{mus} et \textit{rat} par rapport aux autres espèces. 
 \newline
 Le modèle le plus couramment utilisé est actuellement l'Expression Variance and Evolution modèle (EVE) présenté dans \cite{rohlfsPhylogeneticANOVAExpression2015}. 
-L'EVE modèle est basé sur un LIkelihood Ratio Test (LRT), une méthode statistique classique. 
+L'EVE modèle est basé sur un Likelihood Ratio Test (LRT), une méthode statistique classique. 
 Ce projet s'inscrit alors dans un questionnement plus large qui cherche à se demander si d'autres modèles classiques comme l'ANOVA, en les adaptant, pourrait produire des résultats similaires voire meilleurs que l'EVE modèle. 
-E effet, avoir un bon modèle qui, en particulier, donne peu de faux positifs est important. 
+En effet, avoir un bon modèle qui, en particulier, donne peu de faux positifs est important. 
 On peut ensuite étudier les gènes potentiellement intéressants selon une problématique et des groupes d'espèces données. 
-TODO Présenter les 4 modèles. C'est quoi les 4 ? 
-\newline
+
 Au vu de la forme des données étudiées, le projet s'est tourné vers une méthode 
 d'ANOVA phylogénétique. 
 Celle-ci sera d'abord décrite ainsi que d'autres outils mathématiques utilisés pour affiner la fiabilité du test dans une première partie. Certains auront fait l'objet de calculs explicites en vue de leur implémentation. 
@@ -135,10 +134,19 @@ Au cours de ce projet nous avons donc eu une partie d'étude théoriques et math
 A partir de la formulation mathématiques des modèles
 \newline
 \newline
+Tout le code produit est disponible sur le dépôt GitHub suivant 
+\url{https://github.com/Polarolouis/anova-phylogenetique-projet-msv/}.
+Ce dépôt contient le code pour implémenter la méthode, faire les 
+simulations et compiler le rapport.
+
+Nous avons au maximum indiqué le code qui n'a pas été écrit par nous, la plupart
+du temps dans les commentaires du code.
+
 Un gène, comparer les moyennes d'expression d'un gène 
 On connait les groupes
 exemple individus malade/sain
-
+\newline
+\newline
 Contrairement à une comparaison basée sur la santé des individus, cette approche
 se focalise sur les espèces. La non-indépendance et les relations complexes
 entre individus et groupes comparés nécessitent l'utilisation d'un modèle mixte,
@@ -475,16 +483,5 @@ le tableau suivant.
     \caption{Table des gènes pour lesquels la méthode \texttt{EVEmodel} a produit des NA}
     \label{tab:na-evemodel}
 \end{table}
-
-\section*{Code du projet}
-
-Tout le code produit est disponible sur le dépôt GitHub suivant 
-\url{https://github.com/Polarolouis/anova-phylogenetique-projet-msv/}.
-Ce dépôt contient le code pour implémenter la méthode, faire les 
-simulations et compiler le rapport.
-
-
-Nous avons au maximum indiqué le code qui n'a pas été écrit par nous, la plupart
-du temps dans les commentaires du code.
 
 \end{document}
