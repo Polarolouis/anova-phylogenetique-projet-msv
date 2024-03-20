@@ -498,16 +498,8 @@ Il est à noter que cette méthode est plus coûteuse car il est nécessaire d'a
 \label{sec:conclusion}
 % Analyse critique des résultats, limites, perspectives.
 
-Intro
 
-Application/Résultats: décrire les données, vite fait normalisation avec vrai aebre, on ne connait pas 
-Discussion/COnclusion ? Interprétation des résultats sinon la mettre dans les 
-f-cicd: CI/CD to build Latex PDF ...
-CI/CD to build Latex pdf and create a release in with GitHub Actions. The workflow triggers on push to the repository. Integrates with Overleaf.
-
-TODO: problèmes qu'on peut avoir eu : Satterthwaite estimation de la Hessienne pas stable, donc utilisation de l'analytique
-
-\subsection{Ouvertures}
+\subsection*{Ouvertures}
 
 De nombreux points restent à explorer, nous en proposons quelques-uns 
 ci-dessous.\newline
