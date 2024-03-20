@@ -173,19 +173,6 @@ simulations et compiler le rapport.
 Nous avons au maximum indiqué le code qui n'a pas été écrit par nous, la plupart
 du temps dans les commentaires du code.
 
-Un gène, comparer les moyennes d'expression d'un gène 
-On connait les groupes
-exemple individus malade/sain
-\newline
-\newline
-Contrairement à une comparaison basée sur la santé des individus, cette approche
-se focalise sur les espèces. La non-indépendance et les relations complexes
-entre individus et groupes comparés nécessitent l'utilisation d'un modèle mixte,
-impliquant la matrice des temps de divergences, ainsi que l'intégration de 
-processus stochastiques tels que le Mouvement Brownien sans erreurs, 
-avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
-
-
 \section{Méthodes}
 \label{sec:methode}
 Dans cette partie nous présentons les modèles statistiques d'ANOVA et sa dérivée phylogénétique. 
