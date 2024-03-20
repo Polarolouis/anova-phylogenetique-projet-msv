@@ -289,7 +289,7 @@ En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, o
     &E \sim \mathcal{N}_n(0, V_\lambda) \notag
 \end{align}
 
-\subsubsection*{Le test statistique}
+\subsubsection*{Test statistique}
 Le test statistique et ses hypothèses sont conservés et on obtient de la même façon que dans la section précédente une nouvelle statistique de test en lien avec l'équation \ref{eq:V_lambda}.
 \begin{equation}
     F_{ANOVAphylo-error}=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}(n-2)}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
@@ -308,7 +308,7 @@ Cette méthode tient compte de l'incertitude associée à l'estimation de $\lamb
 On s'est basé sur la documentation du package \texttt{lmerTest} \cite{kuznetsovaLmerTestPackageTests2017} pour calculer les formules explicites de l'approximation dans notre cadre.
 En effet il existe des formules explicite dans le cadre du modèle mixte. 
 Dans notre cas, on peut voir l'équation \eqref{eq:eq2err} comme l'équation d'un modèle linéaire mixte où $\beta$ représente tous les paramètres à effets fixes, avec sa matrice de design associée $X$, u les effets aléatoires et $\epsilon$ les résidus.
-Dans l'optique de l'implémenter, nous avons calculer la formule explicite de l'approximation de Satterthwaite. 
+Dans l'optique de l'implémenter, nous avons calculé la formule explicite de l'approximation de Satterthwaite. 
 A partir de \ref{eq:eq2err} on rappelle les valeurs suivantes:
 \[
  Y \sim \mathcal{N}_n(X\beta, \sigma^2_{phy}K + \sigma^2_{err}I_n) \text{, }\theta=(\sigma^2_{phy}, \sigma^2_{err}) \text{ et } Var_\theta(Y) = V(\theta) = \sigma^2_{phy}K + \sigma^2_{err}I_n 
@@ -333,7 +333,8 @@ Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} o
 \end{equation} 
 \[\text{où} \quad \hat{C} = C(\hat\theta) \quad \text{et} \quad f(\theta) = l^TC(\theta)l\]
 A partir de cette expression, on calcule $\nabla f(\theta)$ qu'on appliquera en $\hat{\theta}$ et $A$ la matrice de variance-covariance de $\hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err})$ 
-
+\newline
+\newline
 \textbf{Étape 1 :} Calcul du gradient
 \newline
 \newline
@@ -361,33 +362,37 @@ Ce qui donne :
 De là en remettant les formules explicite les unes dans les autres, on obtient :
 \[[\nabla f(\hat{\theta})] = \begin{bmatrix} \partial_{\sigma^2_{phy}}f(\hat{\theta}) \\ \partial_{\sigma^2_{err}}f(\hat{\theta}) \end{bmatrix}=\begin{bmatrix} l^TC(\hat{\theta})X^TV(\hat{\theta})^{-1}KV(\hat{\theta})^{-1}XC(\hat{\theta})l \\ l^TC(\hat{\theta})X^TV(\hat{\theta})^{-1}I_nV(\hat{\theta})^{-1}XC(\hat{\theta})l\end{bmatrix}
 \]
-
+\newline
+\newline
 \textbf{Étape 2 :} Calcul de A
 \newline
 \newline
+Par Cramer-Rao on sait que pour les estimateurs non biaisés, $Var(\hat{\theta})\geqslant I(\theta)^{-1}$. $I(\theta)^{-1}$ est l'inverse de l'information de Fisher.
+Lorsque la fonction de vraissemblance est assez régulière comme ici, on a $I(\theta)= -\mathbb{E}\left[\frac{\partial^2}{\partial \theta^2} l(Y,\theta)\right]$
+La matrice de variance-covariance $Var(\hat{\theta})$ peut alors être approximée par $I(\hat{\theta})^{-1}=A$.
+\newline
+Dans la plupart des cas il est plus simple d'estimer cette matrice par des méthodes numériques, pour autant une formule explicite de la Hessienne rend le calcul plus rapide et plus robuste quant aux erreurs numériques.  
+\newline
+On va donc abord calculer la log-vraissemblance du vecteur Y défini précédemment:
 
-    La matrice de variance-covariance $A$ de $\hat{\theta}$, également appelée matrice d'information de Fisher inverse $I(\theta)^{-1}$, est définie comme l'inverse de la hessienne $H$ de la fonction de log vraisemblance évaluée en $\hat{\theta}$, soit $A = H^{-1}$.
-    \newline
-    Dans ce cadre on peut obtenir une formule explicite de la Hessienne, même si dans la plupart des cas il est plus simple d'estimer cette matrice par des méthodes numériques, mais cela peut la rendre instable, et l'approximation des degrés de libertés aussi par la même occasion.
-    On va d'abord calculer la log-vraissemblance du vecteur Y défini précédemment:
 \begin{align*}
-    \mathcal{L} (\bf{Y}, \theta)&= \log (\frac{1}{(2\pi)^{n/2}|V(\theta)|^{1/2}} \exp\left( -\frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \right)) \\
+    l (\bf{Y}, \theta)&= \log (\frac{1}{(2\pi)^{n/2}|V(\theta)|^{1/2}} \exp\left( -\frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \right)) \\
     &= - \frac{n}{2} \log(2\pi) -\frac{1}{2} \log(|V(\theta)|) - \frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \\
 \end{align*}
 On calcule les dérivées premières de la log-vraissemblance
 \begin{align*}
-    \partial_{\sigma^2_{phy}} \mathcal{L}  &= -\frac{1}{2} \partial_{\sigma^2_{phy}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{phy}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
+    \partial_{\sigma^2_{phy}} l  &= -\frac{1}{2} \partial_{\sigma^2_{phy}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{phy}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
     &= -\frac{1}{2} Tr(V(\theta)^{-1}\partial_{\sigma^2_{phy}}(V(\theta))) - \frac{1}{2} (Y - X\beta)^T \partial_{\sigma^2_{phy}}(V(\theta)^{-1})(Y - X\beta)\\
     &= -\frac{1}{2} Tr(V(\theta)^{-1}K) + \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta)\\
 \end{align*}
 \begin{align*}
-    \partial_{\sigma^2_{err}} \mathcal{L}  &= -\frac{1}{2} \partial_{\sigma^2_{err}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{err}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
+    \partial_{\sigma^2_{err}} l  &= -\frac{1}{2} \partial_{\sigma^2_{err}}(\log(|V(\theta)|)) - \frac{1}{2} \partial_{\sigma^2_{err}}((Y - X\beta)^T V(\theta)^{-1} (Y - X\beta))\\
     &= -\frac{1}{2} Tr(V(\theta)^{-1}\partial_{\sigma^2_{err}}(V(\theta))) - \frac{1}{2} (Y - X\beta)^T \partial_{\sigma^2_{err}}(V(\theta)^{-1})(Y - X\beta)\\
     &= -\frac{1}{2} Tr(V(\theta)^{-1}I_n) + \frac{1}{2} (Y - X\beta)^T V(\theta)^{-1} I_n V(\theta)^{-1}(Y - X\beta)\\
 \end{align*}
 Puis les dérivées secondes:
 \begin{align*}
-    \bf{\partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L}} &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} (Tr(V(\theta)^{-1}K)) + \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
+    \textbf{$\partial_{\sigma^2_{phy}\sigma^2_{phy}} $}l &= -\frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} (Tr(V(\theta)^{-1}K)) + \frac{1}{2} \partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( (Y - X\beta)^T V(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \right)\\
     &= -\frac{1}{2} Tr(\partial_{\sigma^2_{phy}\sigma^2_{phy}} (V(\theta)^{-1})K) + \frac{1}{2}  (Y - X\beta)^T \partial_{\sigma^2_{phy}\sigma^2_{phy}}(V(\theta)^{-1} K V(\theta)^{-1})(Y - X\beta) \\
     &= \frac{1}{2} Tr(V(\theta)^{-1}KV(\theta)^{-1}K) -  (Y - X\beta)^T V(\theta)^{-1}KV(\theta)^{-1} K V(\theta)^{-1}(Y - X\beta) \\
 \end{align*}
@@ -395,21 +400,21 @@ Puis les dérivées secondes:
 \[\text{et} \quad \partial \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1} K V(\theta)^{-1} - V(\theta)^{-1} K V(\theta)^{-1} \partial V(\theta) V(\theta)^{-1}\]
 \[\text{ce qui donne} \quad\partial_{\sigma^2_{phy}\sigma^2_{phy}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -2V(\theta)^{-1} K V(\theta)^{-1} K V(\theta)^{-1}\]
 \begin{align*}
-    {\bf\partial_{\sigma^2_{err}\sigma^2_{phylo}}\mathcal{L}} & = \bf{\partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L}} \\
+    \textbf{$\partial_{\sigma^2_{err}\sigma^2_{phylo}}$}l& = \textbf{$\partial_{\sigma^2_{phy}\sigma^2_{err}}$}l \\
     &= -\frac{1}{2} Tr(\partial_{\sigma^2_{phy}\sigma^2_{err}} (V(\theta)^{-1})K) + \frac{1}{2}  (Y - X\beta)^T \partial_{\sigma^2_{phy}\sigma^2_{err}}(V(\theta)^{-1} K V(\theta)^{-1})(Y - X\beta) \\
     &= \frac{1}{2} Tr(V(\theta)^{-1}I_nV(\theta)^{-1}K) - \frac{1}{2} (Y - X\beta)^T (V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + \\
     & V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})(Y - X\beta) \\
 \end{align*}
 \[\text{car} \quad \partial_{\sigma^2_{phy}\sigma^2_{err}} \left( V(\theta)^{-1} K V(\theta)^{-1} \right) = -(V(\theta)^{-1}V(\theta)^{-1}KV(\theta)^{-1} + V(\theta)^{-1}KV(\theta)^{-1}V(\theta)^{-1})\]
 \begin{align*}
-    \bf{\partial_{\sigma^2_{err}\sigma^2_{err}} \mathcal{L}}  &= -\frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} (Tr(V(\theta)^{-1})) + \frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} V(\theta)^{-1}(Y - X\beta) \right)\\
+    \textbf{$\partial_{\sigma^2_{err}\sigma^2_{err}}$} l  &= -\frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} (Tr(V(\theta)^{-1})) + \frac{1}{2} \partial_{\sigma^2_{err}\sigma^2_{err}} \left( (Y - X\beta)^T V(\theta)^{-1} V(\theta)^{-1}(Y - X\beta) \right)\\
     &=\frac{1}{2}Tr(V(\theta)^{-1}V(\theta)^{-1}) - (Y - X\beta)^T V(\theta)^{-1}V(\theta)^{-1}V(\theta)^{-1}(Y - X\beta)
 \end{align*}
 
 De là on obtient la Hessienne $\begin{pmatrix}
-    \partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L} & \partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L} \\
-    \partial_{\sigma^2_{err}\sigma^2_{phy}}\mathcal{L} & \partial_{\sigma^2_{err}\sigma^2_{err}}\mathcal{L} \\
-\end{pmatrix}$ puis A en l'inversant, ce qui peut se faire par des méthodes numériques.
+    \partial_{\sigma^2_{phy}\sigma^2_{phy}}l & \partial_{\sigma^2_{phy}\sigma^2_{err}}l \\
+    \partial_{\sigma^2_{err}\sigma^2_{phy}}l & \partial_{\sigma^2_{err}\sigma^2_{err}}l \\
+\end{pmatrix}$ puis A en l'inversant, ce qui peut se faire par des méthodes numériques ou analytiques ici car cela signifie inverser une matrice 2 x 2 ce qui est facile.
 
 
 \end{proof}
@@ -435,7 +440,7 @@ C'est à dire sous l'hypothèse que les estimations des effets fixes sont élimi
 Lorsque dans un estimateur on a la division par $(n-p)$ au lieu de n, on fait sans le dire un REML. 
 TODO: Pourquoi l'utiliser pour Satterthwaite ?
 
-\subsection{Mathode Likelihood Ratio Test}
+\subsection{Méthode Likelihood Ratio Test}
 La méthode du test de rapport de vraisemblance (LRT) est une technique statistique utilisée pour comparer deux modèles statistiques et déterminer s'ils diffèrent significativement en termes d'ajustement aux données.
 Le rapport de vraisemblance est calculé comme le rapport des vraisemblances maximales des deux modèles (sous les deux hypothèses):
 \begin{equation*}
