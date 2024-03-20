@@ -154,10 +154,6 @@ impliquant la matrice des temps de divergences, ainsi que l'intégration de
 processus stochastiques tels que le Mouvement Brownien sans erreurs, 
 avec ajustement du ratio erreur de mesure / erreur dûe à la phylogénie.
 
-% Comparaison non pas sur individus malades/pas malades mais sur espèces différentes.
-% Pas possible de supposer iid, existe relations entre les individus et les groupes que l'on compare donc besoin de les prendre en compte.
-
-% Modele mixte la matrice des temps de divergences, BM simple sans erreurs, avec erreur (ajustement du ratio) avec OU...
 
 \section{Méthodes}
 \label{sec:methode}
@@ -502,4 +498,26 @@ le tableau suivant.
     \label{tab:na-evemodel}
 \end{table}
 
+\[
+K = 
+
+\begin{pmatrix}
+10 & a_{12} & a_{13} & a_{14} & a_{15} \\
+a_{21} & 10 & a_{23} & a_{24} & a_{25} \\
+a_{31} & a_{32} & 10 & a_{34} & a_{35} \\
+a_{41} & a_{42} & a_{43} & 10 & a_{45} \\
+a_{51} & a_{52} & a_{53} & a_{54} & 10
+\end{pmatrix}
+\]
+\[
+\begin{array}{c|ccccc}
+& Y_1 & Y_2 & Y_3 & Y_4 & Y_5 \\
+\hline
+Y_1 & a_{11} & a_{12} & a_{13} & a_{14} & a_{15} \\
+Y_2 & a_{21} & a_{22} & a_{23} & a_{24} & a_{25} \\
+Y_3 & a_{31} & a_{32} & a_{33} & a_{34} & a_{35} \\
+Y_4 & a_{41} & a_{42} & a_{43} & a_{44} & a_{45} \\
+Y_5 & a_{51} & a_{52} & a_{53} & a_{54} & a_{55}
+\end{array}
+\]
 \end{document}
