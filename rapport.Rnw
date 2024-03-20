@@ -249,6 +249,8 @@ A note que seules les réalisation du processus aux feuilles de l'abre (ici, à 
 \subsubsection*{Test statistique}
 \label{subsubsec: test-ANOVAphylo}
 En considérant le même test et les mêmes hypothèses que \ref{subsubsec: test-ANOVA} mais en prenant en compte la nouvelle formule \ref{eq:ANOVAphylo}, on obtient une nouvelle statistique de test. 
+
+\cite{bastideContinuousTraitEvolution2022} nous donne la forme de la statistique pour la méthode d'ANOVA de cette forme. 
 \begin{equation}
     F_{ANOVAphylo}=\frac{||\hat{Y} - \bar{Y}||^2_{K^{-1}}(n-2)}{||Y - \hat{Y}||^2_{K^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
 \end{equation}
@@ -257,6 +259,7 @@ En considérant le même test et les mêmes hypothèses que \ref{subsubsec: test
 &\text{et }||\hat{Y} - \bar{Y}||^2_{K^{-1}}=(\hat{Y} - \bar{Y})^TK^{-1}(\hat{Y}- \bar{Y})
 \end{align*}
 Concernant cette statitstique, on peut dire qu'elle est toujours exacte car on connait la matrice $K$.
+
 \subsection{ANOVA phylogénétique avec erreur de mesure}
 Dans la section précedente, on a supposé que la seule source de variabilité provenait du mouvement brownien sur l'arbre.
 On rajoute dans cette section une autre variabilité specifiée par $\sigma^2_{err}$ qui à partir de la formule précédente \eqref{eq:ANOVAphylo}, nous donne:
@@ -287,15 +290,9 @@ En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, o
 \end{align}
 
 \subsubsection*{Le test statistique}
-Pour le test statistique d'ANOVA phylogénétique, on se met dans le cadre d'une ANOVA à un facteur et à 2 groupes. 
-Chacun de ces groupes ayant une moyenne qui lui est propre. Ce peut être la moyenne de la valeur d'un trait génétique ou bien de la valeur de la fréquance d'une séquence ou allèle. 
-On testera alors les hypothèses suivantes avec $l=\begin{bmatrix}0 \\1 \end{bmatrix}$:
-\[ H_0 : \beta_2 =0 \Leftrightarrow l^T\beta = \begin{bmatrix}0 \\0\end{bmatrix} \text{, les 2 groupes ont la même moyenne}\]
-\[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
-
-\cite{bastideContinuousTraitEvolution2022} nous donne une F-statistique pour la méthode d'ANOVA de cette forme \eqref{eq:V_lambda} et le test de Fisher précédent. 
+Le test statistique et ses hypothèses sont conservés et on obtient de la même façon que dans la section précédente une nouvelle statistique de test en lien avec l'équation \ref{eq:V_lambda}.
 \begin{equation}
-    F=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}(n-2)}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
+    F_{ANOVAphylo-error}=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}(n-2)}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
 \end{equation}
 \begin{align*}
 &\text{Où }||Y - \hat{Y}||^2_{V_\lambda^{-1}} = ||Y - X\hat{\beta}||^2_{V_\lambda^{-1}}= Proj_X^{V_\lambda}Y= (Y-\hat{Y})^TV^{-1}_\lambda(Y-\hat{Y})\\
