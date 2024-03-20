@@ -47,7 +47,7 @@
 \author{Alizée Geffroy \and Louis Lacoste}
 \date{\today}
 
-\newtheorem*{proposition}{Proposition}
+\newtheorem*{approximation}{Approximation}
 
 \begin{document}
 
@@ -292,13 +292,14 @@ De la documentation on obtient alors la covariance suivante:
     C(\theta) = (Cov(\beta_i , \beta_j))_{i,j} = (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1}
 \end{equation}
 
-TODO: Ecrire sous forme proposition avec Fapprox 
-\begin{proposition}
-    \begin{equation}
-        F_{approx}
-    \end{equation}
-\end{proposition}
-
+\begin{approximation}[F-statistique et approximation de Satterthwaite]
+    \begin{align}
+        &F_{approx}=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}df_{approx}}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, df_{approx})\\
+        \text{Avec } &df_{approx} = \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]} \\
+        \text{où } &f(\theta) = l^TC(\theta)l \text{ et A matrice de variance-covariance de } \hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err}) \notag
+    \end{align}
+\end{approximation}
+\begin{proof}[Calcul explicite de l'approximation]
 Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} on part de l'expression pour les degrés de liberté $df$ et de l'approximation. Ce qui nous donne :
 \begin{equation}
     df = \frac{2(l^T\hat{C}l)^2}{[Var(l^T\hat{C}l)]}=\frac{2(f(\hat{\theta}))^2}{[Var(f(\hat{\theta}))]}\approx \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]}
@@ -306,7 +307,9 @@ Toujours en suivant la documentation \cite{kuznetsovaLmerTestPackageTests2017} o
 \[\text{où} \quad \hat{C} = C(\hat\theta) \quad \text{et} \quad f(\theta) = l^TC(\theta)l\]
 A partir de cette expression, on calcule $\nabla f(\theta)$ qu'on appliquera en $\hat{\theta}$ et $A$ la matrice de variance-covariance de $\hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err})$ 
 
-\begin{proof}[Calcul du gradient]
+\textbf{Étape 1 :} Calcul du gradient
+\newline
+\newline
 Nous voulons calculer les dérivées partielles $\partial_{\sigma^2_{phy}}f(\theta)$ et $\partial_{\sigma^2_{err}}f(\theta)$. Pour les premières étapes de calculs, on écrira seulement $\partial$ sans distinction car ce sont les mêmes expressions pour les 2 dérivées. 
 On utilisera dans la suite les formules de \cite{petersenMatrixCookbook2012} pour les dérivées de matrice
 \[
@@ -331,11 +334,14 @@ Ce qui donne :
 De là en remettant les formules explicite les unes dans les autres, on obtient :
 \[[\nabla f(\hat{\theta})] = \begin{bmatrix} \partial_{\sigma^2_{phy}}f(\hat{\theta}) \\ \partial_{\sigma^2_{err}}f(\hat{\theta}) \end{bmatrix}=\begin{bmatrix} l^TC(\hat{\theta})X^TV(\hat{\theta})^{-1}KV(\hat{\theta})^{-1}XC(\hat{\theta})l \\ l^TC(\hat{\theta})X^TV(\hat{\theta})^{-1}I_nV(\hat{\theta})^{-1}XC(\hat{\theta})l\end{bmatrix}
 \]
-\end{proof}
 
-\begin{proof}[Calcul de A]
-    A est la matrice variance-covariance de $\hat{\theta}$, c'est à dire l'inverse de la Hessienne $H$ de la vraissemblance de $\hat{\theta}$: $A=H^{-1}$
-    Dans ce cadre on peut obtenir une formule explicite de la Hessienne, même si dans la plupart des cas il est plus simple d'estimer cette matrice par des méthodes numériques.
+\textbf{Étape 2 :} Calcul de A
+\newline
+\newline
+
+    La matrice de variance-covariance $A$ de $\hat{\theta}$, également appelée matrice d'information de Fisher inverse $I(\theta)^{-1}$, est définie comme l'inverse de la hessienne $H$ de la fonction de log vraisemblance évaluée en $\hat{\theta}$, soit $A = H^{-1}$.
+    \newline
+    Dans ce cadre on peut obtenir une formule explicite de la Hessienne, même si dans la plupart des cas il est plus simple d'estimer cette matrice par des méthodes numériques, mais cela peut la rendre instable, et l'approximation des degrés de libertés aussi par la même occasion.
     On va d'abord calculer la log-vraissemblance du vecteur Y défini précédemment:
 \begin{align*}
     \mathcal{L} (\bf{Y}, \theta)&= \log (\frac{1}{(2\pi)^{n/2}|V(\theta)|^{1/2}} \exp\left( -\frac{1}{2}(Y - X\beta)^T V(\theta)^{-1} (Y - X\beta) \right)) \\
@@ -377,6 +383,7 @@ De là on obtient la Hessienne $\begin{pmatrix}
     \partial_{\sigma^2_{phy}\sigma^2_{phy}}\mathcal{L} & \partial_{\sigma^2_{phy}\sigma^2_{err}}\mathcal{L} \\
     \partial_{\sigma^2_{err}\sigma^2_{phy}}\mathcal{L} & \partial_{\sigma^2_{err}\sigma^2_{err}}\mathcal{L} \\
 \end{pmatrix}$ puis A en l'inversant, ce qui peut se faire par des méthodes numériques.
+
 
 \end{proof}
 
