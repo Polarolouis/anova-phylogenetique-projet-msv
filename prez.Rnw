@@ -126,7 +126,7 @@ Objectif : Comparer les méthodes Anova et Anova phylogénétique
         \begin{figure}
         \centering
     On forme des groupes \textbf{en lien avec la phylogénie}.
-        \includegraphics[scale=0.32]{img/group_phylo_tree.png}
+        % \includegraphics[scale=0.32]{img/group_phylo_tree.png}
         \caption{Arbre phylogénétique et groupes concordants}
         \label{fig:phylo_matching}
     \end{figure}
@@ -135,7 +135,7 @@ Objectif : Comparer les méthodes Anova et Anova phylogénétique
         \begin{figure}
             \centering
     On forme des groupes qui ne sont \textbf{pas phylogénétiques}.
-            \includegraphics[scale=0.32]{img/group_nonphylo_tree.png}
+            % \includegraphics[scale=0.32]{img/group_nonphylo_tree.png}
             \caption{Arbre phylogénétique et groupes non concordants}
             \label{fig:phylo-non-matching}
         \end{figure}
@@ -167,7 +167,7 @@ Objectif : Comparer les méthodes Anova et Anova phylogénétique
 \begin{frame}[fragile]{Les résultats, 1}
 \begin{figure}
     \centering
-    \includegraphics[scale=0.32]{img/simulation_power_pure_BM.png}
+    % \includegraphics[scale=0.32]{img/simulation_power_pure_BM.png}
     \caption{Avec de la variabilité purement phylogénétique}
     \label{fig:only_phylo_error}
 \end{figure}
@@ -176,7 +176,7 @@ Objectif : Comparer les méthodes Anova et Anova phylogénétique
 \begin{frame}[fragile]{Les résultats, 2}
 \begin{figure}
     \centering
-    \includegraphics[scale=0.32]{img/simulation_power_pure_both_error.png}
+    % \includegraphics[scale=0.32]{img/simulation_power_pure_both_error.png}
     \caption{Avec de la variabilité phylogénétique et d'erreur de mesure}
     \label{fig:with_phylo_and_measure_error}
 \end{figure}
