@@ -4,6 +4,8 @@
 \usecolortheme{aggie}
 
 \usepackage{tikz}
+\usepackage[compatibility=false]{caption}
+\usepackage{subcaption}
 \usepackage{graphicx}
 \graphicspath{{img/}}
 \usepackage{appendixnumberbeamer}
@@ -31,23 +33,24 @@ alsoletter={.}
 
 \setbeamertemplate{footline}{
   \begin{tikzpicture}[remember picture,overlay]
-    % Utiliser un compteur pour sélectionner différentes images avec modulo 5
+    % Utiliser un compteur pour sélectionner différentes images avec modulo
     \pgfmathtruncatemacro{\imageindex}{mod(\thepage-1,10)+1}
     \node[anchor=south west, inner sep=0pt] at (current page.south west) {
       % Insérer l'image à gauche
-      \includegraphics[height=0.5cm]{img/footer/image\imageindex}
+      \includegraphics[height=0.75cm]{img/footer/image\imageindex}
     };
     \node[anchor=south east, inner sep=0pt] at (current page.south east) {
       % Vous pouvez également ajouter d'autres éléments à droite du pied de page si nécessaire
+      \ifnum\c@framenumber>1%
+      \hfill%
+      {\fontsize{10}{12}\selectfont % Adjust the font size here
+      \color{gray}%
+      \raisebox{0pt}[\height-10pt][\depth]{\insertframenumber/\inserttotalframenumber}
+      }%
+    \fi%
     };
   \end{tikzpicture}
-  \ifnum\c@framenumber>1%
-    \hfill%
-    {\fontsize{10}{12}\selectfont % Adjust the font size here
-    \color{gray}%
-    \raisebox{0pt}[\height-10pt][\depth]{\insertframenumber/\inserttotalframenumber}
-    }%
-  \fi%
+
 }
 \makeatother
 
@@ -55,8 +58,7 @@ alsoletter={.}
 \newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
 
 \title{Projet: ANOVA Phylogénétique}
-\subtitle{Présentation du Mercredi 10 Jan. 2024}
-% \date{\today}
+\subtitle{Présentation du Mardi 26 Mars. 2024}
 \date{}
 \author{Alizée Geffroy, Louis Lacoste, encadrés par Mélina Gallopin et Paul Bastide}
 \institute{M2 MathSV Université Paris-Saclay}
@@ -65,12 +67,34 @@ alsoletter={.}
 \begin{document}
 
 \maketitle
+
+<<'init', include=FALSE>>=
+  knitr::opts_knit$set(fig.align = "center", warnings = FALSE, echo = FALSE, format = "latex")
+  require("knitr", quietly = TRUE)
+  options(knitr.table.format = "latex")
+@
+
+<<'libraries', include=FALSE>>=
+# "phytools", "phylotools"
+necessary_packages <- c("ape", "here")
+
+if (any(!(necessary_packages %in% installed.packages()))) {
+    install.packages(necessary_packages)
+}
+
+require(ape)
+require(here)
+
+
+source(here("R","utils.R"))
+@
+
 \begin{frame}{Sommaire}
   \setbeamertemplate{section in toc}[sections numbered]
-  \tableofcontents%[hideallsubsections]
+  \tableofcontents[hideallsubsections]
 \end{frame}
 
-\begin{frame}{Idée structure}
+\begin{frame}[allowframebreaks]{Idée structure}
   TODO Supprimer cette slide temporaire
   intro/contexte: biologique avec l'exemple de Chen (mettre l'arbre) + figure de l'article ? -> trouver les gènes différentiellement exprimés
 
@@ -90,213 +114,252 @@ alsoletter={.}
   Méthode par nous :
 
   - Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) + stat approximée + df formule 
+  une méthode possible parmi tant d'autres: Kenward Roger classique
 
-  Transition : hypothèses, vite fait ce qu'on va comparer
+  Simulations :
+  - les 2 arbres avec les groupes 
+  - Modalités de simulations, bien préciser que l'idée de simuler c'est pour voir erreur de type I et puissance
+  - Les résultats de simulations: pour les résultats 
+  Mettre ANOVA , ANOVA phylo Satterthwaite LRT 
+
+  Applications aux données réelles :
+  - Rappel du type de données, RNA-seq sur pleins de gènes (éventuellement un extrait du tableau ?)
+  - Mentionner toutes les méthodes rapidement et présenter l'UpSet diagramme avec son analyse et la remarque sur Satterthwaite ML qui sur-sélectionne
 
   Conclusions/Ouvertures:
     Conclusions:
+    - Récap du projet sur son contenu scientifique
     
     Ouvertures :
     - Utiliser un autre processus stochastique Ornstein-Uhlenbeck
-    - Comprendre ppourquoi Sattertwhaite a sur-sélectionné dans l'application
+    - Comprendre ppourquoi Sattertwhaite a sur-sélectionné dans l'application: mausvaise implémentation ? évaluer l'impact de l'approx
+    - Prendre un autre arbre ou ré-échantillonner les groupes dans les simus
+    - Agrandir le cadre de simulations
+    - Appliquer les méthodes à d'autre données 
+    - modèle qui fait gène par gène: imaginer en prenant tous les gènes : Limma
+
+
 
 \end{frame}
-\begin{frame}{questions posables}
-  - comment obtenir la stat de test pour anova phylo (Cholesky)
- - en quoi c'est un modèle mixte pour Satterthwaite ? 
- - calcul de la Hessienne optim vs formule analytique, mettre formule analytique
-\end{frame}
 
-\section[Rappel du contexte et enjeux du projet]{Rappel du contexte et enjeux du projet}
+\section[Introduction]{Introduction}
+
 \begin{frame}[fragile]{Contexte biologique}
-\begin{itemize}
-    \item Un arbre phylo avec plusieurs espèces
-    \item Un trait quantitatif présent chez ces espèces
-    \item Représenté par un paramètre $\mu$
-\end{itemize}
-Typiquement un gène dont on mesure l'expression.
-Dans \textbf{\textcite{gomez-mestrePhylogeneticAnalysesReveal2012}} ces méthodes sont utilisées pour répondre à des questions d'évolution et d'ordre d'apparition de caractères chez les \emph{Anoures}.
+  \begin{figure}[H]
+    \centering
+    <<'plot-arbre-chen', out.width = "50%", echo = FALSE>>=
+        tree <- read.tree(here("R","chen2019.tree"))
+        # Normalising tree edge length
+        taille_tree <- diag(vcv(tree))[1]
+        tree$edge.length <- tree$edge.length / taille_tree
+
+        phytools::plotTree(tree, ftype="i")
+    @
+    \caption{Arbre phylogénétique de \cite{chenQuantitativeFrameworkCharacterizing2019}}
+    \label{fig:arbre-chen2019}
+\end{figure}
+intro/contexte: biologique avec l'exemple de Chen + figure de l'article ? 
+trouver les gènes différentiellement exprimés
 \end{frame}
-\begin{frame}{ANOVA vs ANOVA phylogénétique}
-  \begin{equation*}
-    \bm{Y} = \bm{X}\beta+ \bm{\sigma} \bm{E}  \text{  où  } \bm{X}=(1,1_2, ..., 1_K) \text{   et   }\beta = (\mu _1, \beta _2, ..., \beta _K)^T
-  \end{equation*}
-    \begin{columns}
-
-       \column{0.5\textwidth}
-       \begin{center}
-       Anova
-       \end{center}
-    \begin{equation*}
-    \bm{E} \sim \mathcal{N}(0_n, \bm{Id})
-      \end{equation*} 
-      
-    \column{0.5\textwidth}
-    \begin{center}
-       Anova phylogénétique 
-       \end{center}
-    \begin{equation*}
-    \bm{E} \sim \mathcal{N}(0_n, \bm{V})
-    \end{equation*}
-  \end{columns}
-    \begin{center}
-        Estimateur du max. de vraisemblance
-    \end{center}
-  \begin{columns}
-      \column{0.5\textwidth}
-      \centering
-        $\hat{\beta} = (\bm{X}^{T}\bm{X})^{-1}\bm{X}^{T}\bm{Y}$\\
-        $\hat{\sigma}^2 =  \frac{1}{n-p} (\bm{Y} - \bm{X}\hat{\beta})^T(\bm{Y} - \bm{X}\hat{\beta})$
-        % Finir
-      \column{0.5\textwidth}
-      \centering
-        $\hat{\beta}_{phylo} = (\bm{X}^{T}\bm{V}^{-1}\bm{X})^{-1}\bm{X}^{T}\bm{V}^{-1}\bm{Y}$\\
-        $\hat{\sigma}_{phylo}^2 =  \frac{1}{n-p} (\bm{Y} - \bm{X}\hat{\beta})^T\bm{V}^{-1}(\bm{Y} - \bm{X}\hat{\beta})$
-  \end{columns}
-  
-
-    \footnotetext{Pour l'ANOVA Phylogénétique, nos références sont \cite{bastideContinuousTraitEvolution} et \cite{bastideModelesEvolutionCaracteres2022} et pour l'ANOVA, \cite{belModeleLineaireSes}.}
-Objectif : Comparer les méthodes Anova et Anova phylogénétique
+\begin{frame}{Mouvement brownien}
+    Présenter le MB qui évolue sur l'arbre + lien matrice K 
 \end{frame}
-\begin{frame}{Différents types de groupes}
-\begin{columns}
-    \begin{column}{0.5\textwidth}
-        \begin{figure}
-        \centering
-    On forme des groupes \textbf{en lien avec la phylogénie}.
-        % \includegraphics[scale=0.32]{img/group_phylo_tree.png}
-        \caption{Arbre phylogénétique et groupes concordants}
-        \label{fig:phylo_matching}
-    \end{figure}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-        \begin{figure}
-            \centering
-    On forme des groupes qui ne sont \textbf{pas phylogénétiques}.
-            % \includegraphics[scale=0.32]{img/group_nonphylo_tree.png}
-            \caption{Arbre phylogénétique et groupes non concordants}
-            \label{fig:phylo-non-matching}
-        \end{figure}
-    \end{column}
-\end{columns}
+% \begin{frame}{partie maths}
 
-\end{frame}
+%   % Passer au brownien sur l'arbre donc la dérive mélange tout, le problème est 
+%   % dur et présenter l'ANOVA phylogénétique 
+% Le modèle le plus couramment utilisé pour ce type de données: Expression Variance and Evolution (EVE) modèle décrit dans \cite{rohlfsPhylogeneticANOVAExpression2015}
 
-% \begin{frame}[fragile]{Cas 1}
-% Anova classique VS Anova phylogénétique
-% \newline
-% Voir les impacts de leur utilisation dans 2 cas:
-% \begin{itemize}
-%     \item 1) On attribue des groupes au hasard -> les groupes ne sont pas liés à l'info phylogénétique
-%     \item  2) Les groupes sont définis en lien avec la phylogénie (des espèces proches ont un trait identique ou proche) -> la phylogénie donne une information sur les groupes
-% \end{itemize}
-% #METTRE LES IMAGES
+% Il suppose que les traits évoluent selon un 
+% processus d'Ornstein-Uhlenbeck et le test réalisé est un \emph{Likelihood Ratio test} (LRT). 
 
-% Objectifs : Comparer les méthodes Anova et Anova phylogénétique
-% \end{frame}
-% \begin{frame}[fragile]{Nos hypothèses}
-% \newline
-% \begin{itemize}
-%     \item 1) Groupes non liés à l'info phylogénétique -> l'Anova phylogénétique sera égale voir moins bonne que l'Anova classique
-%     \item 2) Phylogénie donne une information sur les groupes -> l'Anova phylogénétique va donner de meilleurs résultats que la classique en prenant en compte la structure de l'arbre
-% \end{itemize}
+% Notre projet s'inscrit dans un plus grand projet qui vise à trouver d'autres méthodes statistiques adaptées de méthodes classiques qui feraient aussi bien ou mieux
 % \end{frame}
 
-\begin{frame}[fragile]{Les résultats, 1}
-\begin{figure}
-    \centering
-    % \includegraphics[scale=0.32]{img/simulation_power_pure_BM.png}
-    \caption{Avec de la variabilité purement phylogénétique}
-    \label{fig:only_phylo_error}
-\end{figure}
+\section{État de l'art}
+\begin{frame}{ANOVA phylogénétique}
+  \begin{equation}
+    Y = X\beta + u \text{, } u \sim \mathcal{N}_n(0, \textcolor{red}{\sigma^2_{phy}K})
+    \label{eq:ANOVAphylo}
+\end{equation}  
+\[
+    \text{où } \mathbf{Y} = \begin{bmatrix} Y_{11} \\\vdots\\ Y_{1n_1} \\ 
+        Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}\text{, } 
+        \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix} \text{, }  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix} \text{, } n=n_1+n_2
+\]
+% Au tableau pas oublier de dire \beta1 = \mu1, \beta2 = \mu1 - \mu2
 \end{frame}
 
-\begin{frame}[fragile]{Les résultats, 2}
-\begin{figure}
-    \centering
-    % \includegraphics[scale=0.32]{img/simulation_power_pure_both_error.png}
-    \caption{Avec de la variabilité phylogénétique et d'erreur de mesure}
-    \label{fig:with_phylo_and_measure_error}
-\end{figure}
+
+\begin{frame}{Statistique de test}
+Pour $l=\begin{bmatrix}0 \\1 \end{bmatrix}$ :
+\[ H_0 : \beta_2 =0 \Leftrightarrow l^T\beta = \begin{bmatrix}0 \\0\end{bmatrix} \text{, les 2 groupes ont la même moyenne}\]
+\[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
+On a alors la statistique de test suivante venant de \cite{bastideContinuousTraitEvolution2022} :   
+\begin{equation}
+    F_{ANOVAphylo}=\frac{||\hat{Y} - \bar{Y}||^2_{\textcolor{red}{K^{-1}}}(n-2)}{||Y - \hat{Y}||^2_{\textcolor{red}{K^{-1}}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
+\end{equation}
 \end{frame}
 
-\begin{frame}[fragile]{Ce qu'il se passe vraiment}
-L'observation se présente sous la forme suivante si réécrite en tant que modèle à effets mixtes :
-$$\bm{Y} = \bm{X}\beta + \underbrace{\bm{E}}_{\bm{Z} u + \epsilon} $$
-avec $\bm{Z} u \sim \mathcal{N}(0,\sigma^2_{phylo}V)$, $\epsilon \sim \mathcal{N}(0,\sigma^2_{mesure}\bm{Id})$ et $Var(\bm{E})=\sigma^2_{phylo} (V + \lambda\bm{Id})$ où $\lambda=\frac{\sigma^2_{mesure}}{\sigma^2_{phylo}}$
-
-Les méthodes d'ANOVA phylogénétique telles qu'implémentées dans \texttt{phylolm} estiment les paramètres $\sigma^2_{mesure}$ d'erreur de mesure et $\sigma^2_{phylo}$ de variabilité dûe à la phylogénie.\\
-\emph{Mais} une fois estimé, lors du test de Fisher les paramètres sont considérés comme si non estimés.
-
-
-Le but ici est donc d'utiliser l'approximation de \textcite{satterthwaiteApproximateDistributionEstimates1946} afin de calculer les degrés de libertés du test de loi de Fisher à réaliser.
+\begin{frame}{ANOVA phylogénétique et erreur de mesure}
+\begin{equation}
+    Y = X\beta + u + \epsilon \text{, } \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
+\label{eq:eq2err}
+\end{equation} 
+   avec justification de l'ajout de l'erreur de mesure, formule transfo $V_{\lambda}$, pointer la limite qui est l'erreur dûe à l'estimation du $\lambda$
 \end{frame}
 
-\section{Conclusions et perspectives}
-\begin{frame}{Avec des données individuelles}
-\begin{center}
-\usetikzlibrary{trees}
-\scalebox{0.75}{
-\begin{tikzpicture}[level distance=2cm,
-                    level 1/.style={sibling distance=4cm},
-                    level 2/.style={sibling distance=2cm},
-                    level 3/.style={sibling distance=1cm}]
-  \node {Root}
-    child {
-    node {A}
-      child {node {A1}
-        child {node {}}
-        child {node {}}
-        child {node {}}
-      }
-      child {node {A2}
-        child {node {}}
-        child {node {}}
-        child {node {}}
-      }
+\section{Calculs}
+  \begin{frame}{Calcul avec approximation de Satterthwaite}
+    Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) + stat approximée + df formule 
+
+  \end{frame}
+
+
+\section{Simulations}
+<<'modules-simulations', include = FALSE, eval=TRUE>>=
+necessary_simu <- c("ape", "remotes", "phylolm", "phylolimma", "phytools", 
+    "latex2exp", "here")
+
+if (any(!(necessary_simu %in% installed.packages()))){
+    install.packages(necessary_simu)
+    remotes::install_github("lamho86/phylolm", quiet = TRUE)
+    remotes::install_github("pbastide/phylolimma", quiet = TRUE)
+}
+
+library("ape")
+library("phylolm")
+library("phytools")
+library("here")
+library("tidyverse")
+library("ggplot2")
+library("patchwork")
+library("latex2exp")
+source(here("R","utils.R"))
+@
+
+<<'Import-arbre', include = FALSE>>=
+K <- 2
+
+nb_species <- 43
+
+plot_group_on_tree <- function(tree, groups, ...) {
+    plot(tree, ...)
+    tiplabels(bg = groups, pch = 21, cex = 1.5)
+}
+tree <- read.tree(here("R","chen2019.tree"))
+# Normalising tree edge length
+taille_tree <- diag(vcv(tree))[1]
+tree$edge.length <- tree$edge.length / taille_tree
+@
+
+<<'simus-groupes', include = FALSE>>=
+seed <- 1234
+set.seed(seed)
+# Mus et Rat vs le reste
+group_mus_rat_vs_other <- sapply(1:nb_species, function(tip) {
+    if (tip %in% getDescendants(tree = tree, 55)) {
+        return(1)
     }
-    child {
-    node {B}
-      child {node {B1}
-        child {node {}}
-        child {node {}}
-        child {node {}}
-      }
-      child {node {B2}
-        child {node {}}
-        child {node {}}
-        child {node {}}
-      }
-    }    
-    child {
-    node {C}
-      child {node {C1}
-        child {node {}}
-        child {node {}}
-        child {node {}}
-      }
-      child {node {C2}
-        child {node {}}
-        child {node {}}
-        child {node {}}
-      }
-    };
-\end{tikzpicture}
-}\\
-\end{center}
-Le package \texttt{phylolimma}\footnote{Disponible sur \url{https://github.com/pbastide/phylolimma/}} permet de compléter un arbre existant en ajoutant les sous-branches au bout.\\
-Nous voulons obtenir une méthode d'estimation des paramètres et l'implémenter sur ce type d'arbre.
-\end{frame}
-\begin{frame}{Perspectives}
-    \begin{itemize}
-        \item Implémenter le test statistique correspondant à l'approximation de Satterthwaite.
-        \item Implémenter le test de ratio de log-vraisemblance.
-        \item Implémenter avec plusieurs individus par espèces
-    \end{itemize}
-    \begin{block}{Objectif principal}
-    Trouver un test robuste et rapide, applicable à des milliers de données d'expressions de gènes mesurées dans une expérience RNAseq typique.
-    \end{block}
+    return(2)
+})
 
+rng_species <- c("chimp", "bonobo", "human", "orangutan", "marmoset", 
+    "musMusculus", "rat", "dog", "ferret", "cow", "opossum")
+random_groups <- rowSums(sapply(rng_species, 
+    function(spec) grepl(spec, tree$tip.label)))
+random_groups[random_groups == 0] <- 2
+@
+
+\begin{frame}[fragile, allowframebreaks]{Modalités de simulations}
+  Afin d'avoir une idée des performances des méthodes, nous avons choisis de les
+  comparer dans un contexte proche des cas d'application réels.
+
+  \begin{figure}[H]
+    \begin{subfigure}[H]{0.49\textwidth}
+        \centering
+        <<'plot-groupes-mus', echo = FALSE>>=
+        plot_group_on_tree(tree, group = group_mus_rat_vs_other)
+        @
+        \caption{Groupes \emph{Mus} et rats contre les autres}
+        \label{fig:simu-groupes-mus} 
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[H]{0.49\textwidth}
+        \centering
+        <<'plot-groupes-random', echo = FALSE>>=
+        plot_group_on_tree(tree, group = random_groups)
+        @
+        \caption{Groupes sélectionnés sans respect de la phylogénie.}
+        \label{fig:simu-groupes-prop} 
+    \end{subfigure}
+    \caption{Arbre et groupes pour les simulations}
+    \label{fig:arbres-groupes}
+
+    <<'param-simulation', echo = FALSE>>=
+    # Generate data for rat&mus vs the rest
+    N <- 500
+    risk_threshold <- 0.05
+
+    ## Standardized parameters
+    total_variance <- 1.0 # sigma2_phylo + sigma2_error, fixed [as tree_height = 1]
+    heri <- c(0.3, 0.5, 0.7, 0.9) # heritability her = sigma2_phylo / total_variance. 0 means only noise. 1 means only phylo.
+    snr <- 1 # signal to noise ratio snr = size_effect / total_variance
+    @
+
+Nous re-paramétrisons :
+
+$$v_{tot} = \sigma^2_{phylo} + \sigma^2_{measure} = \Sexpr{total_variance}$$
+
+Et alors les paramètres du modèles sont :
+
+\begin{align*}
+      h \in (\Sexpr{heri}),&\\ 
+      \sigma^2_{phylo} &= h\times v_{tot},\\
+      \sigma^2_{measure} &= (1-h) \times v_{tot} \\
+    \end{align*}
+ Ainsi, $h = 0$ signifie qu'il y a seulement du bruit, et $h = 1$ 
+    seulement de l'information phylogénétique.
+\end{figure}
+  
+ % Choisir les figures que l'on veut mettre en valeur, les méthodes
+
+ % Montrer les erreurs de type I
+ % Pas présenter les ML
+ % Enlever ANOVA phylo, Satterthwaite
+
+ % Comparer ANOVA contre ANOVA phylo REML -> meilleur controle des faux positifs
+
+ % Parler de Satterthwaite, ANOVA et ANOVA phylo
+
+  % TODO faire retour sur 
+  % La prise en compte de la structure de covariance même dans le groupe 
+  % aléatoire aide car 2 espèce proches sont censées être proche et donc
+  % si différentes on peut se dire qu'ils sont bien différent, l'ANOVA phylo
+  % a un problème plus facile.
+
+
+%  Couper en deux : ANOVA vs ANOVA phylo
+%  ANOVA phylo vs Sattertwhaite
+%  Satterthwaite vs LRT
+\end{frame}
+
+
+\section{Application aux données réelles}
+\begin{frame}{Rappel des données}
+  Nous allons appliquer les différentes méthodes aux données compilées par 
+  \cite{chenQuantitativeFrameworkCharacterizing2019}. Il s'agit de données de 
+  RNA-seq chez 17 espèces et de l'arbre phylogénétique présenté 
+  figure~\ref{fig:arbre-chen2019}.
+\end{frame}
+
+\begin{frame}{Remerciements}
+
+  Merci pour votre attention.
+
+
+  Merci à nos encadrants pour leur accompagnement, leur disponibilité et 
+  leur gentillesse.
 \end{frame}
 
 \section{Références et appendices}
@@ -310,312 +373,50 @@ Nous voulons obtenir une méthode d'estimation des paramètres et l'implémenter
 \appendix
 
 \begin{frame}[allowframebreaks]{Code pour les simulations}
- Le code pour les simulations est disponible sur notre dépôt GitHub : \\
+Le code pour les simulations est disponible sur notre dépôt GitHub : \\
 \begin{center}
     \url{https://github.com/Polarolouis/anova-phylogenetique-projet-msv/}
 \end{center}
 \end{frame}
 
-% \begin{frame}[fragile]{Metropolis}
+\begin{frame}{Concernant les fautes d'orthographes}
+  Après relecture du rapport, nous avons pu constater que celui-ci contenait de
+  nombreuses coquille. Nous vous présentons nos excuses.
+\end{frame}
 
-%   The \themename theme is a Beamer theme with minimal visual noise
-%   inspired by the \href{https://github.com/hsrmbeamertheme/hsrmbeamertheme}{\textsc{hsrm} Beamer
-%   Theme} by Benjamin Weiss.
-
-%   Enable the theme by loading
-
-%   \begin{verbatim}    \documentclass{beamer}
-%     \usetheme{metropolis}\end{verbatim}
-
-%   Note, that you have to have Mozilla's \emph{Fira Sans} font and XeTeX
-%   installed to enjoy this wonderful typography.
-% \end{frame}
-% \begin{frame}[fragile]{Sections}
-%   Sections group slides of the same topic
-
-%   \begin{verbatim}    \section{Elements}\end{verbatim}
-
-%   for which \themename provides a nice progress indicator \ldots
+\begin{frame}[allowframebreaks]{questions posables}
+  - comment obtenir la stat de test pour anova phylo (Cholesky)
+  - en quoi c'est un modèle mixte pour Satterthwaite ? 
+  - calcul de la Hessienne optim vs formule analytique, mettre formule analytique
+  - Le LRT un modèle emboité blabla ?
+  - sur quoi est basé EVEmodel ?
+  - Mettre la démo du calcul de la Hessienne
+  - Ornstein Uhleinbeck : qu'est ce que ça change par rapport au MB ? EVE dit optimum qui saute pas le processus qui saute 
+    Modélise deux niches différentes.
+    Effet sur la moyenne masi ok , et sur la variance $K_\alpha$, ok pour satterthwaite masi prendre $\alpha$ en compte aussi 
+    Modifie la structure de variance et ajoute un paramètre $\alpha$, $K(\alpha)$, un saut sur l'optima. 
+  - données de comptage transformées donc ok de modéliser par MB
   
-% \end{frame}
+  En écologie ne travaille pas sur autant de traits, spécificité de la RNA-seq
+  des milliers de données.
 
-% \section{Titleformats}
+  LIMMA pour le cas non phylogénétique.
+  Pour le cas phylogénétique \texttt{phylolimma}.
+  
+  Méthodes d'amélioration essayer de faire quelque chose qui prennent en compte
+  plusieurs gènes à la fois
+  - Est ce q'on pourrait faire une méthode comme LIMMA et faire Satterthwaite ?
+  - c'est bizarre d'utiliser des mesures 
 
-% \begin{frame}{Metropolis titleformats}
-% 	\themename supports 4 different titleformats:
-% 	\begin{itemize}
-% 		\item Regular
-% 		\item \textsc{Smallcaps}
-% 		\item \textsc{allsmallcaps}
-% 		\item ALLCAPS
-% 	\end{itemize}
-% 	They can either be set at once for every title type or individually.
-% \end{frame}
+  Questions Mélina :
+  - Qu’est qu’une ANOVA phylogénétique ? En quoi différent l’ ANOVA classique et l’ ANOVA phylogénétique ? 
+  - Comment modéliser l’évolution d’un trait continu sur un arbre (choix du processus dans l’ANOVA phylogénétique : savoir qu’il existe différentes manières de faire, soit on prend un brownien, soit on prend un OU … )
+  - Comment prendre en compte les erreurs de mesures dans l’anova phylogénétique ? (Car ici, dans le cadre de l’expression des gènes chez plusieurs espèces, on mesure plusieurs individus par espèce, on a donc une variabilité intra-espèce et une variabilité inter-espèces… il faut donc prendre en compte cela dans le modèle, et c’est d’ailleurs ce que fait EVE)
+  - Quel test effectuer pour tester si on a une différence d’expression significative entre différent groupes d’espèces ? (LRT ou test basé sur la stat de Fisher).
+  - Qu’est ce qu’un modèle mixte ? Comment estimer les paramètres dans un modèle mixte ? Quels tests stats ? Quel est le lien entre une anova phylo et un modèle mixte ?
+  - Pourquoi faire du REML au du ML classique ? Dans quel context? 
+  - Pour l'analyse de données réelles, vous avez également été confrontés à un problème de tests multiples : puisque vous faites un test par gènes, et que vous avez des milliers de gènes, alors vous devez "corriger les p-values" pour extraire votre sous liste de "gènes différentiellement exprimés" (deux approches classiques : Bonferroni / BH ) 
 
-% \subsection{Tricks}
-
-% {
-%     \metroset{titleformat frame=smallcaps}
-% \begin{frame}{Small caps}
-% 	This frame uses the \texttt{smallcaps} titleformat.
-
-% 	\begin{alertblock}{Potential Problems}
-% 		Be aware, that not every font supports small caps. If for example you typeset your presentation with pdfTeX and the Computer Modern Sans Serif font, every text in smallcaps will be typeset with the Computer Modern Serif font instead.
-% 	\end{alertblock}
-% \end{frame}
-% }
-
-% {
-% \metroset{titleformat frame=allsmallcaps}
-% \begin{frame}{All small caps}
-% 	This frame uses the \texttt{allsmallcaps} titleformat.
-
-% 	\begin{alertblock}{Potential problems}
-% 		As this titleformat also uses smallcaps you face the same problems as with the \texttt{smallcaps} titleformat. Additionally this format can cause some other problems. Please refer to the documentation if you consider using it.
-
-% 		As a rule of thumb: Just use it for plaintext-only titles.
-% 	\end{alertblock}
-% \end{frame}
-% }
-
-% {
-% \metroset{titleformat frame=allcaps}
-% \begin{frame}{All caps}
-% 	This frame uses the \texttt{allcaps} titleformat.
-
-% 	\begin{alertblock}{Potential Problems}
-% 		This titleformat is not as problematic as the \texttt{allsmallcaps} format, but basically suffers from the same deficiencies. So please have a look at the documentation if you want to use it.
-% 	\end{alertblock}
-% \end{frame}
-% }
-
-% \section{Elements}
-
-% \begin{frame}[fragile]{Typography}
-%       \begin{verbatim}The theme provides sensible defaults to
-% \emph{emphasize} text, \alert{accent} parts
-% or show \textbf{bold} results.\end{verbatim}
-
-%   \begin{center}becomes\end{center}
-
-%   The theme provides sensible defaults to \emph{emphasize} text,
-%   \alert{accent} parts or show \textbf{bold} results.
-% \end{frame}
-
-% \begin{frame}{Font feature test}
-%   \begin{itemize}
-%     \item Regular
-%     \item \textit{Italic}
-%     \item \textsc{SmallCaps}
-%     \item \textbf{Bold}
-%     \item \textbf{\textit{Bold Italic}}
-%     \item \textbf{\textsc{Bold SmallCaps}}
-%     \item \texttt{Monospace}
-%     \item \texttt{\textit{Monospace Italic}}
-%     \item \texttt{\textbf{Monospace Bold}}
-%     \item \texttt{\textbf{\textit{Monospace Bold Italic}}}
-%   \end{itemize}
-% \end{frame}
-
-% \begin{frame}{Lists}
-%   \begin{columns}[T,onlytextwidth]
-%     \column{0.33\textwidth}
-%       Items
-%       \begin{itemize}
-%         \item Milk \item Eggs \item Potatos
-%       \end{itemize}
-
-%     \column{0.33\textwidth}
-%       Enumerations
-%       \begin{enumerate}
-%         \item First, \item Second and \item Last.
-%       \end{enumerate}
-
-%     \column{0.33\textwidth}
-%       Descriptions
-%       \begin{description}
-%         \item[PowerPoint] Meeh. \item[Beamer] Yeeeha.
-%       \end{description}
-%   \end{columns}
-% \end{frame}
-% \begin{frame}{Animation}
-%   \begin{itemize}[<+- | alert@+>]
-%     \item \alert<4>{This is\only<4>{ really} important}
-%     \item Now this
-%     \item And now this
-%   \end{itemize}
-% \end{frame}
-% \begin{frame}{Figures}
-%   \begin{figure}
-%     \newcounter{density}
-%     \setcounter{density}{20}
-%     \begin{tikzpicture}
-%       \def\couleur{alerted text.fg}
-%       \path[coordinate] (0,0)  coordinate(A)
-%                   ++( 90:5cm) coordinate(B)
-%                   ++(0:5cm) coordinate(C)
-%                   ++(-90:5cm) coordinate(D);
-%       \draw[fill=\couleur!\thedensity] (A) -- (B) -- (C) --(D) -- cycle;
-%       \foreach \x in {1,...,40}{%
-%           \pgfmathsetcounter{density}{\thedensity+20}
-%           \setcounter{density}{\thedensity}
-%           \path[coordinate] coordinate(X) at (A){};
-%           \path[coordinate] (A) -- (B) coordinate[pos=.10](A)
-%                               -- (C) coordinate[pos=.10](B)
-%                               -- (D) coordinate[pos=.10](C)
-%                               -- (X) coordinate[pos=.10](D);
-%           \draw[fill=\couleur!\thedensity] (A)--(B)--(C)-- (D) -- cycle;
-%       }
-%     \end{tikzpicture}
-%     \caption{Rotated square from
-%     \href{http://www.texample.net/tikz/examples/rotated-polygons/}{texample.net}.}
-%   \end{figure}
-% \end{frame}
-% \begin{frame}{Tables}
-%   \begin{table}
-%     \caption{Largest cities in the world (source: Wikipedia)}
-%     \begin{tabular}{lr}
-%       \toprule
-%       City & Population\\
-%       \midrule
-%       Mexico City & 20,116,842\\
-%       Shanghai & 19,210,000\\
-%       Peking & 15,796,450\\
-%       Istanbul & 14,160,467\\
-%       \bottomrule
-%     \end{tabular}
-%   \end{table}
-% \end{frame}
-% \begin{frame}{Blocks}
-%   Three different block environments are pre-defined and may be styled with an
-%   optional background color.
-
-%   \begin{columns}[T,onlytextwidth]
-%     \column{0.5\textwidth}
-%       \begin{block}{Default}
-%         Block content.
-%       \end{block}
-
-%       \begin{alertblock}{Alert}
-%         Block content.
-%       \end{alertblock}
-
-%       \begin{exampleblock}{Example}
-%         Block content.
-%       \end{exampleblock}
-
-%     \column{0.5\textwidth}
-
-%       \metroset{block=fill}
-
-%       \begin{block}{Default}
-%         Block content.
-%       \end{block}
-
-%       \begin{alertblock}{Alert}
-%         Block content.
-%       \end{alertblock}
-
-%       \begin{exampleblock}{Example}
-%         Block content.
-%       \end{exampleblock}
-
-%   \end{columns}
-% \end{frame}
-% \begin{frame}{Math}
-%   \begin{equation*}
-%     e = \lim_{n\to \infty} \left(1 + \frac{1}{n}\right)^n
-%   \end{equation*}
-% \end{frame}
-% \begin{frame}{Line plots}
-%   \begin{figure}
-%     \begin{tikzpicture}
-%       \begin{axis}[
-%         mlineplot,
-%         width=0.9\textwidth,
-%         height=6cm,
-%       ]
-
-%         \addplot {sin(deg(x))};
-%         \addplot+[samples=100] {sin(deg(2*x))};
-
-%       \end{axis}
-%     \end{tikzpicture}
-%   \end{figure}
-% \end{frame}
-% \begin{frame}{Bar charts}
-%   \begin{figure}
-%     \begin{tikzpicture}
-%       \begin{axis}[
-%         mbarplot,
-%         xlabel={Foo},
-%         ylabel={Bar},
-%         width=0.9\textwidth,
-%         height=6cm,
-%       ]
-
-%       \addplot plot coordinates {(1, 20) (2, 25) (3, 22.4) (4, 12.4)};
-%       \addplot plot coordinates {(1, 18) (2, 24) (3, 23.5) (4, 13.2)};
-%       \addplot plot coordinates {(1, 10) (2, 19) (3, 25) (4, 15.2)};
-
-%       \legend{lorem, ipsum, dolor}
-
-%       \end{axis}
-%     \end{tikzpicture}
-%   \end{figure}
-% \end{frame}
-% \begin{frame}{Quotes}
-%   \begin{quote}
-%     Veni, Vidi, Vici
-%   \end{quote}
-% \end{frame}
-
-% {%
-% \setbeamertemplate{frame footer}{My custom footer}
-% \begin{frame}[fragile]{Frame footer}
-%     \themename defines a custom beamer template to add a text to the footer. It can be set via
-%     \begin{verbatim}\setbeamertemplate{frame footer}{My custom footer}\end{verbatim}
-% \end{frame}
-% }
-
-% \begin{frame}{References}
-%   Some references to showcase [allowframebreaks] \cite{knuth92,ConcreteMath,Simpson,Er01,greenwade93}
-% \end{frame}
-
-% \section{Conclusion}
-
-% \begin{frame}{Summary}
-
-%   Get the source of this theme and the demo presentation from
-
-%   \begin{center}\url{github.com/matze/mtheme}\end{center}
-
-%   The theme \emph{itself} is licensed under a
-%   \href{http://creativecommons.org/licenses/by-sa/4.0/}{Creative Commons
-%   Attribution-ShareAlike 4.0 International License}.
-
-%   \begin{center}\ccbysa\end{center}
-
-% \end{frame}
-
-% {\setbeamercolor{palette primary}{fg=ag-blue, bg=ag-beige}
-% \begin{frame}[standout]
-%   Questions?
-% \end{frame}
-% }
-
-% \appendix
-
-% \begin{frame}[fragile]{Backup slides}
-%   Sometimes, it is useful to add slides at the end of your presentation to
-%   refer to during audience questions.
-
-%   The best way to do this is to include the \verb|appendixnumberbeamer|
-%   package in your preamble and call \verb|\appendix| before your backup slides.
-
-%   \themename will automatically turn off slide numbering and progress bars for
-%   slides in the appendix.
-% \end{frame}
-
+\end{frame}
 
 \end{document}
