@@ -32,7 +32,7 @@ alsoletter={.}
 \setbeamertemplate{footline}{
   \begin{tikzpicture}[remember picture,overlay]
     % Utiliser un compteur pour sélectionner différentes images avec modulo 5
-    \pgfmathtruncatemacro{\imageindex}{mod(\thepage-1,4)+1}
+    \pgfmathtruncatemacro{\imageindex}{mod(\thepage-1,10)+1}
     \node[anchor=south west, inner sep=0pt] at (current page.south west) {
       % Insérer l'image à gauche
       \includegraphics[height=0.5cm]{img/footer/image\imageindex}
@@ -45,7 +45,8 @@ alsoletter={.}
     \hfill%
     {\fontsize{10}{12}\selectfont % Adjust the font size here
     \color{gray}%
-    \insertframenumber/\inserttotalframenumber}%
+    \raisebox{0pt}[\height-10pt][\depth]{\insertframenumber/\inserttotalframenumber}
+    }%
   \fi%
 }
 \makeatother
