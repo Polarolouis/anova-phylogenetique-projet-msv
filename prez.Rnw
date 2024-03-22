@@ -161,11 +161,37 @@ source(here("R","utils.R"))
 intro/contexte: biologique avec l'exemple de Chen + figure de l'article ? 
 trouver les gènes différentiellement exprimés
 \end{frame}
-\begin{frame}{Mouvement brownien}
-    Présenter le MB qui évolue sur l'arbre + lien matrice K 
+\begin{frame}[fragile]{Mouvement brownien}
+  \begin{figure}[H]
+    \centering
+  <<'plot-MB', warnings = FALSE, message = FALSE, out.width = "75%", fig.height = 3.5, echo = FALSE>>=
+    source(here("simulations","mouvement_brownien.R"))
+    set.seed(12)
+    df <- generate_phylo_tree(5,100, 0.1)
+    df$id_branche <- as.factor(df$id_branche)
+
+    ggplot(df) +
+        aes(x = time, y = traj, color = as.factor(id_branche))+
+        geom_line() +
+        # geom_vline(data = df[df$is_spec_time,], aes(xintercept = time, color = .data$id_branche), linetype = "dashed")+
+        geom_point(data = df[df$is_spec_time,], aes(x = time, y = .data$traj), color = df[df$is_spec_time,]$id_branche, size = 4)+
+        labs(color = "Espèce", x = "Temps", y = "Trait") +
+        coord_fixed(ratio=0.75) +
+        theme_minimal()
+  @
+\caption{Exemple d'un arbre phylogénétique dont le trait est généré selon un Mouvement Brownien}
+  \end{figure}
+\end{frame}
+
+\begin{frame}
+  Pour un trait Y mesuré chez des espèce i et j, $Cov(Y_i, Y_j)= \sigma^2t_{i,j}$ où $t_{i,j}$ est le temps d'évolution commune. 
+  \begin{center}
+    \includegraphics[width=0.7\textwidth]{matrix_K.png}
+  \end{center}
+  \footcite{bastideContinuousTraitEvolution2022}
 \end{frame}
 % \begin{frame}{partie maths}
-
+% Le modèle de mouvement brownien va alors induire que les feuilles des arbres (nos observations) auront une distribution gausienne que l'on écrira sous la forme suivante
 %   % Passer au brownien sur l'arbre donc la dérive mélange tout, le problème est 
 %   % dur et présenter l'ANOVA phylogénétique 
 % Le modèle le plus couramment utilisé pour ce type de données: Expression Variance and Evolution (EVE) modèle décrit dans \cite{rohlfsPhylogeneticANOVAExpression2015}
@@ -202,16 +228,31 @@ On a alors la statistique de test suivante venant de \cite{bastideContinuousTrai
 \end{frame}
 
 \begin{frame}{ANOVA phylogénétique et erreur de mesure}
+  On ajoute une erreur de mesure qui correspond mieux à la réalité des données: erreur intraspécifique
 \begin{equation}
     Y = X\beta + u + \epsilon \text{, } \quad u \sim \mathcal{N}_n(0, \sigma^2_{phy}K) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2_{err}I_n)
 \label{eq:eq2err}
 \end{equation} 
-   avec justification de l'ajout de l'erreur de mesure, formule transfo $V_{\lambda}$, pointer la limite qui est l'erreur dûe à l'estimation du $\lambda$
+En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, on peut obtenir une nouvelle forme pour $Y$
+\begin{align}
+    \label{eq:V_lambda}
+    &Y = X\beta + E \text{, où } Var(E)=V(\theta)=\sigma^2_{phy}(K-\lambda I_n)=\sigma^2_{phy}V_\lambda \\
+    &E \sim \mathcal{N}_n(0, \sigma^2_{phy}V_\lambda) \notag
+\end{align}
+Problème: $\lambda$ n'est souvent pas connu et il faut l'estimer. Dans ce cas, l'approximation de la distribution de F par une distribution de Fisher ne tient plus
+
 \end{frame}
 
 \section{Calculs}
   \begin{frame}{Calcul avec approximation de Satterthwaite}
-    Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) + stat approximée + df formule 
+    Méthode pour approximer les véritables degrés de liberté quand $\lambda$ inconnu
+    Pour cela on peur voir le modèle comme un modèle mixte
+    \begin{align}
+      &F_{approx}=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}df_{approx}}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, df_{approx})\\
+      \text{Avec } &df_{approx} = \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]} \\
+      \text{où } &f(\theta) = l^TC(\theta)l \text{ et A matrice de variance-covariance de } \hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err}) \notag
+  \end{align}
+    Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) 
 
   \end{frame}
 
