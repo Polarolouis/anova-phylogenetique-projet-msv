@@ -70,6 +70,43 @@ alsoletter={.}
   \tableofcontents%[hideallsubsections]
 \end{frame}
 
+\begin{frame}{Idée structure}
+  TODO Supprimer cette slide temporaire
+  intro/contexte: biologique avec l'exemple de Chen (mettre l'arbre) + figure de l'article ? -> trouver les gènes différentiellement exprimés
+
+  Il existe déjà des méthodes statistiques pour cette problématique (EVEmodel ?
+  State of the Art)
+
+  Transition avec le pourquoi du projet, trouver d'autres méthodes statistiques,
+  adaptées de méthodes classiques qui pourraient bien marcher
+
+  Méthode pas par nous : 1 slide par tiret
+  - Reprendre la forme matricielle de l'ANOVA phylo (mettre en rouge les diffs)
+  - Présenter le MB qui évolue sur l'arbre + lien matrice K 
+  - Mettre la statistique de test (mettre en rouge la projection (donc diffs))
+  
+  Transition vers notre travail
+  - Mettre la formule avec erreur de mesure avec justification de l'ajout de l'erreur de mesure, formule transfo $V_{\lambda}$, pointer la limite qui est l'erreur dûe à l'estimation du $\lambda$
+  Méthode par nous :
+
+  - Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) + stat approximée + df formule 
+
+  Transition : hypothèses, vite fait ce qu'on va comparer
+
+  Conclusions/Ouvertures:
+    Conclusions:
+    
+    Ouvertures :
+    - Utiliser un autre processus stochastique Ornstein-Uhlenbeck
+    - Comprendre ppourquoi Sattertwhaite a sur-sélectionné dans l'application
+
+\end{frame}
+\begin{frame}{questions posables}
+  - comment obtenir la stat de test pour anova phylo (Cholesky)
+ - en quoi c'est un modèle mixte pour Satterthwaite ? 
+ - calcul de la Hessienne optim vs formule analytique, mettre formule analytique
+\end{frame}
+
 \section[Rappel du contexte et enjeux du projet]{Rappel du contexte et enjeux du projet}
 \begin{frame}[fragile]{Contexte biologique}
 \begin{itemize}
