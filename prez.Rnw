@@ -342,6 +342,7 @@ random_groups[random_groups == 0] <- 2
     \end{subfigure}
     \caption{Arbre et groupes pour les simulations}
     \label{fig:arbres-groupes}
+  \end{figure}
 
     <<'param-simulation', echo = FALSE>>=
     # Generate data for rat&mus vs the rest
@@ -358,18 +359,19 @@ Nous re-paramétrisons :
 
 $$v_{tot} = \sigma^2_{phylo} + \sigma^2_{measure} = \Sexpr{total_variance}$$
 
-Et alors les paramètres du modèles sont :
+Et alors les paramètres du modèle s'expriment :
 
-\begin{align*}
-      h \in (\Sexpr{heri}),&\\ 
+  \begin{align*}
       \sigma^2_{phylo} &= h\times v_{tot},\\
       \sigma^2_{measure} &= (1-h) \times v_{tot} \\
-    \end{align*}
- Ainsi, $h = 0$ signifie qu'il y a seulement du bruit, et $h = 1$ 
-    seulement de l'information phylogénétique.
-\end{figure}
+  \end{align*}
 
-  
+
+Ainsi, $h = 0$ signifie qu'il y a seulement du bruit, et $h = 1$ 
+seulement de l'information phylogénétique.
+
+Et nous avons réalisé des simulations pour $h \in (\Sexpr{heri})$.
+    
  % Choisir les figures que l'on veut mettre en valeur, les méthodes
 
  % Montrer les erreurs de type I
@@ -391,8 +393,38 @@ Et alors les paramètres du modèles sont :
 %  ANOVA phylo vs Sattertwhaite
 %  Satterthwaite vs LRT
 \end{frame}
-\begin{frame}{Résultats: Erreur de type I}
+\begin{frame}[fragile]{Résultats: Erreur de type I}
   Add erreur de type 1 pour comparer que ça avec Satterthwaite REML, ANOVA et ANOVA phylo REML 
+  \begin{figure}[H]
+    \begin{subfigure}[H]{0.49\textwidth}
+        \centering
+        <<'typeI-data-plot-h01', echo = FALSE>>=
+          her <- 0.3
+          filename <- here("data", "simus", 
+            paste0("real_her_", her, "_seed_", seed, ".Rds"))
+          sim <- readRDS(filename)
+
+          df_sim_plot <- compute_power_typeI(df = sim)
+          head(df_sim_plot)
+        @
+        \caption{}
+        \label{fig:simu-errI-h03} 
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[H]{0.49\textwidth}
+        \centering
+        <<'typeI-data-plot-h09', echo = FALSE>>=
+          her <- 0.9
+          filename <- here("data", "simus", 
+            paste0("real_her_", her, "_seed_", seed, ".Rds"))
+          sim <- readRDS(filename)
+        @
+        \caption{}
+        \label{fig:simu-errI-h09} 
+    \end{subfigure}
+    \caption{Erreurs de type I pour $h \in \{0.3 ; 0.9\}$}
+    \label{fig:simu-errI}
+  \end{figure}
 
 \end{frame}
 \begin{frame}{Résultats: puissance}
@@ -638,9 +670,10 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
     highlight_intersections <- lapply(seq_along(sets), function(i) {
         upset_query(set = sets[i], fill = sets_colors[i], color = sets_colors[i])
     })
+
     names(sets_colors) <- sets
 
-    upset(pvalueseve_dataframe_wide, sets,
+    plot <- upset(pvalueseve_dataframe_wide, sets,
         name = "Méthode",
         width_ratio=0.1,
         base_annotations=list(
@@ -654,9 +687,10 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
         ),
         queries = highlight_intersections,
         set_sizes=(
-            upset_set_size() + 
+            upset_set_size() +
             theme(axis.text.x=element_text(angle=90))
-        ))
+        )) 
+    plot
 
     # upset(pvalueseve_dataframe_wide, 
     #     sets = sets,
