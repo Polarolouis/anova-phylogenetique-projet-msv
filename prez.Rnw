@@ -54,10 +54,12 @@ alsoletter={.}
   \end{tikzpicture}
 
 }
+
 \makeatother
 
 \usepackage{xspace}
 \newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
+\newcommand{\dd}{\mathrm{d}}
 
 \title{Projet: ANOVA Phylogénétique}
 \subtitle{Présentation du Mardi 26 Mars. 2024}
@@ -969,7 +971,8 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
     \item ANOVA phylo Satterthwait REML surselectionne des genes
     \item mais il y a des recoupements 
     \item Lrt sous selectionne
-    \item la méthode EVE c'est l'etat de l'art basé sur lrt 
+    \item la méthode EVE (Expression Variance and Evolution) c'est l'état de 
+    l'art basé sur lrt 
   \end{itemize}
 }
 \end{frame}
@@ -1010,8 +1013,10 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
 
 \appendix
 
-\begin{frame}[allowframebreaks]{Code pour les simulations}
-Le code pour les simulations est disponible sur notre dépôt GitHub : \\
+\begin{frame}{Code pour les simulations}
+Le code pour les simulations, nos implémentations, le rapport et cette 
+présentation est disponible sur notre dépôt GitHub : \\
+
 \begin{center}
     \url{https://github.com/Polarolouis/anova-phylogenetique-projet-msv/}
 \end{center}
@@ -1021,40 +1026,88 @@ Le code pour les simulations est disponible sur notre dépôt GitHub : \\
   Après relecture du rapport, nous avons pu constater que celui-ci contenait de
   nombreuses coquille. Nous vous présentons nos excuses.
 \end{frame}
+\begin{frame}{Ornstein-Uhlenbeck}
+Une autre possibilité de processus stochastique est le processus 
+d'Ornstein-Uhlenbeck (\emph{mean-reverting process}) décrit par l'EDS suivante:
+
+$$\dd r_t = -\theta(r_t - \mu)+\sigma\dd W_t$$
+
+\begin{figure}
+  \includegraphics[scale=0.20]{OrnsteinUhlenbeck3.png}
+  \caption{Exemple de trajectoires de processus d'Ornstein-Uhlenbeck (tiré de Wikipédia)}
+\end{figure}
+\note{
+  \begin{itemize}
+    \item Ce processus tend avec le temps vers la valeur $\mu$ et peut donc 
+    modéliser l'existence d'un optimum pour le trait considéré.
+    \item C'est le processus qui sous-tend le modèle EVE
+    \item Et l'idée derrière que ce n'est pas le processus qui saute, mais 
+    l'optimum et il modélise donc deux niches différentes.
+  \end{itemize}
+}
+\end{frame}
 
 \begin{frame}[allowframebreaks]{questions posables}
-  - comment obtenir la stat de test pour anova phylo (Cholesky)
-  - en quoi c'est un modèle mixte pour Satterthwaite ? 
-  - calcul de la Hessienne optim vs formule analytique, mettre formule analytique
-  - Le LRT un modèle emboité blabla ?
-  - sur quoi est basé EVEmodel ?
-  - Mettre la démo du calcul de la Hessienne
-  - Ornstein Uhleinbeck : qu'est ce que ça change par rapport au MB ? EVE dit optimum qui saute pas le processus qui saute 
-    Modélise deux niches différentes.
-    Effet sur la moyenne masi ok , et sur la variance $K_\alpha$, ok pour satterthwaite masi prendre $\alpha$ en compte aussi 
-    Modifie la structure de variance et ajoute un paramètre $\alpha$, $K(\alpha)$, un saut sur l'optima. 
-  - données de comptage transformées donc ok de modéliser par MB
+  % - comment obtenir la stat de test pour anova phylo (Cholesky)
+  % - en quoi c'est un modèle mixte pour Satterthwaite ? 
+  % - calcul de la Hessienne optim vs formule analytique, mettre formule analytique
+  % - Le LRT un modèle emboité blabla ?
+  % - sur quoi est basé EVEmodel ?
+  % - Mettre la démo du calcul de la Hessienne
+  % - Ornstein Uhleinbeck : qu'est ce que ça change par rapport au MB ? EVE dit optimum qui saute pas le processus qui saute 
+  %   Modélise deux niches différentes.
+  %   Effet sur la moyenne masi ok , et sur la variance $K_\alpha$, ok pour satterthwaite masi prendre $\alpha$ en compte aussi 
+  %   Modifie la structure de variance et ajoute un paramètre $\alpha$, $K(\alpha)$, un saut sur l'optima. 
+  % - données de comptage transformées donc ok de modéliser par MB
   
-  En écologie ne travaille pas sur autant de traits, spécificité de la RNA-seq
-  des milliers de données.
+  % En écologie ne travaille pas sur autant de traits, spécificité de la RNA-seq
+  % des milliers de données.
 
-  LIMMA pour le cas non phylogénétique.
-  Pour le cas phylogénétique \texttt{phylolimma}.
+  % LIMMA pour le cas non phylogénétique.
+  % Pour le cas phylogénétique \texttt{phylolimma}.
   
-  Méthodes d'amélioration essayer de faire quelque chose qui prennent en compte
-  plusieurs gènes à la fois
-  - Est ce q'on pourrait faire une méthode comme LIMMA et faire Satterthwaite ?
-  - c'est bizarre d'utiliser des mesures 
+  % Méthodes d'amélioration essayer de faire quelque chose qui prennent en compte
+  % plusieurs gènes à la fois
+  % - Est ce q'on pourrait faire une méthode comme LIMMA et faire Satterthwaite ?
+  % - c'est bizarre d'utiliser des mesures 
 
-  Questions Mélina :
-  - Qu’est qu’une ANOVA phylogénétique ? En quoi différent l’ ANOVA classique et l’ ANOVA phylogénétique ? 
-  - Comment modéliser l’évolution d’un trait continu sur un arbre (choix du processus dans l’ANOVA phylogénétique : savoir qu’il existe différentes manières de faire, soit on prend un brownien, soit on prend un OU … )
-  - Comment prendre en compte les erreurs de mesures dans l’anova phylogénétique ? (Car ici, dans le cadre de l’expression des gènes chez plusieurs espèces, on mesure plusieurs individus par espèce, on a donc une variabilité intra-espèce et une variabilité inter-espèces… il faut donc prendre en compte cela dans le modèle, et c’est d’ailleurs ce que fait EVE)
-  - Quel test effectuer pour tester si on a une différence d’expression significative entre différent groupes d’espèces ? (LRT ou test basé sur la stat de Fisher).
-  - Qu’est ce qu’un modèle mixte ? Comment estimer les paramètres dans un modèle mixte ? Quels tests stats ? Quel est le lien entre une anova phylo et un modèle mixte ?
-  - Pourquoi faire du REML au du ML classique ? Dans quel context? 
-  - Pour l'analyse de données réelles, vous avez également été confrontés à un problème de tests multiples : puisque vous faites un test par gènes, et que vous avez des milliers de gènes, alors vous devez "corriger les p-values" pour extraire votre sous liste de "gènes différentiellement exprimés" (deux approches classiques : Bonferroni / BH ) 
+  % Questions Mélina :
+  % - Qu’est qu’une ANOVA phylogénétique ? En quoi différent l’ ANOVA classique et l’ ANOVA phylogénétique ? 
+  % - Comment modéliser l’évolution d’un trait continu sur un arbre (choix du processus dans l’ANOVA phylogénétique : savoir qu’il existe différentes manières de faire, soit on prend un brownien, soit on prend un OU … )
+  % - Comment prendre en compte les erreurs de mesures dans l’anova phylogénétique ? (Car ici, dans le cadre de l’expression des gènes chez plusieurs espèces, on mesure plusieurs individus par espèce, on a donc une variabilité intra-espèce et une variabilité inter-espèces… il faut donc prendre en compte cela dans le modèle, et c’est d’ailleurs ce que fait EVE)
+  % - Quel test effectuer pour tester si on a une différence d’expression significative entre différent groupes d’espèces ? (LRT ou test basé sur la stat de Fisher).
+  % - Qu’est ce qu’un modèle mixte ? Comment estimer les paramètres dans un modèle mixte ? Quels tests stats ? Quel est le lien entre une anova phylo et un modèle mixte ?
+  % - Pourquoi faire du REML au du ML classique ? Dans quel context? 
+  % - Pour l'analyse de données réelles, vous avez également été confrontés à un problème de tests multiples : puisque vous faites un test par gènes, et que vous avez des milliers de gènes, alors vous devez "corriger les p-values" pour extraire votre sous liste de "gènes différentiellement exprimés" (deux approches classiques : Bonferroni / BH ) 
+  % Voici la reformulation de votre texte en utilisant l'environnement "itemize" pour qu'il soit copiable :
 
+  \begin{itemize}
+      \item Comment obtenir la stat de test pour ANOVA phylo (Cholesky)
+      \item En quoi c'est un modèle mixte pour Satterthwaite ?
+      \item Calcul de la Hessienne optim vs formule analytique, mettre formule analytique
+      \item Le LRT un modèle emboîté blabla ?
+      \item Sur quoi est basé EVEmodel ?
+      \item Mettre la démo du calcul de la Hessienne
+      \item Ornstein Uhleinbeck : qu'est-ce que ça change par rapport au MB ? EVE dit optimum qui saute pas le processus qui saute Modélise deux niches différentes. Effet sur la moyenne mais ok, et sur la variance $K_\alpha$, ok pour Satterthwaite mais prendre $\alpha$ en compte aussi Modifie la structure de variance et ajoute un paramètre $\alpha$, $K(\alpha)$, un saut sur l'optima.
+      \item Données de comptage mais transformées donc ok de modéliser par MB
+      \item En écologie, ne travaille pas sur autant de traits, spécificité de la RNA-seq des milliers de données.
+      \item LIMMA pour le cas non phylogénétique. Pour le cas phylogénétique \texttt{phylolimma}.
+      \item Méthodes d'amélioration essayer de faire quelque chose qui prennent en compte plusieurs gènes à la fois
+      \begin{itemize}
+          \item Est-ce qu'on pourrait faire une méthode comme LIMMA et faire Satterthwaite ?
+          \item C'est bizarre d'utiliser des mesures
+      \end{itemize}
+      \item Questions Mélina :
+      \begin{itemize}
+          \item Qu’est-ce qu’une ANOVA phylogénétique ? En quoi diffère l’ANOVA classique et l’ANOVA phylogénétique ?
+          \item Comment modéliser l’évolution d’un trait continu sur un arbre (choix du processus dans l’ANOVA phylogénétique : savoir qu’il existe différentes manières de faire, soit on prend un brownien, soit on prend un OU … )
+          \item Comment prendre en compte les erreurs de mesures dans l’ANOVA phylogénétique ? (Car ici, dans le cadre de l’expression des gènes chez plusieurs espèces, on mesure plusieurs individus par espèce, on a donc une variabilité intra-espèce et une variabilité inter-espèces… il faut donc prendre en compte cela dans le modèle, et c’est d’ailleurs ce que fait EVE)
+          \item Quel test effectuer pour tester si on a une différence d’expression significative entre différents groupes d’espèces ? (LRT ou test basé sur la stat de Fisher).
+          \item Qu’est-ce qu’un modèle mixte ? Comment estimer les paramètres dans un modèle mixte ? Quels tests stats ? Quel est le lien entre une ANOVA phylo et un modèle mixte ?
+          \item Pourquoi faire du REML au du ML classique ? Dans quel contexte?
+          \item Pour l'analyse de données réelles, vous avez également été confrontés à un problème de tests multiples : puisque vous faites un test par gènes, et que vous avez des milliers de gènes, alors vous devez "corriger les p-values" pour extraire votre sous-liste de "gènes différentiellement exprimés" (deux approches classiques : Bonferroni / BH )
+      \end{itemize}
+  \end{itemize}
 \end{frame}
 
 \end{document}
