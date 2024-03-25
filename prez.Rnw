@@ -10,6 +10,8 @@
 \graphicspath{{img/}}
 \usepackage{appendixnumberbeamer}
 
+\setbeameroption{show notes on second screen}
+
 \usepackage{booktabs}
 \usepackage[scale=2]{ccicons}
 \usepackage[style=authoryear-comp,backend=biber]{biblatex}
@@ -88,7 +90,6 @@ require(here)
 
 source(here("R","utils.R"))
 @
-
 \begin{frame}{Sommaire}
   \setbeamertemplate{section in toc}[sections numbered]
   \tableofcontents[hideallsubsections]
@@ -164,11 +165,26 @@ source(here("R","utils.R"))
     \caption{Arbre phylogénétique de \cite{chenQuantitativeFrameworkCharacterizing2019}}
     \label{fig:arbre-chen2019}
 \end{figure}
-intro/contexte: biologique avec l'exemple de Chen + figure de l'article ? 
-trouver les gènes différentiellement exprimés
+
+\note{
+  \begin{itemize}
+    \item Avec l'avènement des données omiques de masses, on a accès à des données quantitatives très nombreuses pour plusieurs espèces.
+    \item Le but derrière est de trouver les voies métaboliques et les gènes impliqués dans leur fonctionnement.
+    \item Problème : cela coûte cher de regarder tous les gènes.
+    \item On veut alors trouver les gènes qui s'expriment différentiellement en utilisant des méthodes statistiques en contrôlant l'erreur de type I, c'est-à-dire les faux positifs.
+\end{itemize}
+
+article de Chen: 
+\begin{itemize}
+  \item En compilant plusieurs jeux de données pour plusieurs espèces avec 
+  parfois plusieurs individus cf l'arbre les auteurs regardent par exemple 
+  entre les espèces les gènes qui sont différentiellement exprimés dans le foie.
+  \item Pour voir s'il y a une différence entre 2 groupes d'espèces (\textit{RatMus vs Autres}). $\mu_1$, $\mu_2$ etc.
+\end{itemize}
+}
 \end{frame}
 \begin{frame}[fragile]{Mouvement brownien}
-  \begin{figure}[H]
+\begin{figure}[H]
     \centering
   <<'plot-MB', warnings = FALSE, message = FALSE, out.width = "75%", fig.height = 3.5, echo = FALSE>>=
     source(here("simulations","mouvement_brownien.R"))
@@ -186,15 +202,33 @@ trouver les gènes différentiellement exprimés
         theme_minimal()
   @
 \caption{Exemple d'un arbre phylogénétique dont le trait est généré selon un Mouvement Brownien}
-  \end{figure}
+\end{figure}
+
+\note{
+    Pour un arbre phylo donné ça nous renseigne sur les instants de spéciation, donc moment de divergence entre 2 espèces représenté ici par les ronds
+    \begin{itemize}
+      \item   Ici représenté l'évolution d'un trait cad d'une valeur quantitaive qu'on considère : ex comptage du nombre d'ARN exprimé pour un gène donné. 
+      \item   La valeur du trait peut diverger pour chaque espèce  à partir du moment de spéciation. 
+      \item   Processus stochastique utilisé comme support de modélisation le mouvement brownien. 
+      \item   Finalement, on a juste accès aux observations aux feuilles, jamais à ce qu'il se passe jusqu'alors
+  \end{itemize}
+  }
+
 \end{frame}
 
 \begin{frame}
-  Pour un trait Y mesuré chez des espèce i et j, $Cov(Y_i, Y_j)= \sigma^2t_{i,j}$ où $t_{i,j}$ est le temps d'évolution commune. 
+  Pour un trait Y mesuré chez des espèces i et j, $Cov(Y_i, Y_j)= \sigma_{phylo}^2t_{i,j}$ où $t_{i,j}$ est le temps d'évolution commune. 
   \begin{center}
-    \includegraphics[width=0.7\textwidth]{matrix_K.png}
+    \includegraphics[width=0.7\textwidth]{matrix_K.png}\footcite{bastideContinuousTraitEvolution2022}
   \end{center}
-  \footcite{bastideContinuousTraitEvolution2022}
+  \note{
+    \begin{itemize}
+      \item attention pas l'arbre correspondant au trait simulé dans la slide d'avant 
+      \item Une fois qu'on a les observations pour chaque, à partir du MB, on a cette covariance là
+      \item expliciter avec l'exemple
+      \item La matrice V ici  porte alors l'information phylogénétique de l'arbre
+    \end{itemize}
+  }
 \end{frame}
 % \begin{frame}{partie maths}
 % Le modèle de mouvement brownien va alors induire que les feuilles des arbres (nos observations) auront une distribution gausienne que l'on écrira sous la forme suivante
@@ -209,6 +243,15 @@ trouver les gènes différentiellement exprimés
 % \end{frame}
 
 \section{État de l'art}
+
+\note{
+  \begin{itemize} 
+    \item On dispose des observations aux feuilles et de l'arbre, ou du moins de l'informtion phylo
+    \item Une méthode classique c'est l'ANOVA mais ça ne s'applique pas à nos données car elles ne sont pas indépendantes
+    \item Alors dans ce projet on va étudier et utiliser une méthode d'ANOVA phylogénétique que l'on va présenter
+  \end{itemize}
+}
+
 \begin{frame}{ANOVA phylogénétique}
   \begin{equation}
     Y = X\beta + u \text{, } u \sim \mathcal{N}_n(0, \textcolor{red}{\sigma^2_{phy}K})
@@ -219,18 +262,42 @@ trouver les gènes différentiellement exprimés
         Y_{21}\\ \vdots \\ Y_{2n_2} \end{bmatrix}\text{, } 
         \mathbf{X} = \begin{bmatrix} \mathbf{1} & \mathbf{1_{n_1}} \end{bmatrix}=\begin{bmatrix} 1 & 1 \\ \vdots & \vdots\\1 & 1 \\ 1 & 0\\ \vdots & \vdots\\1 & 0 \end{bmatrix} \text{, }  \mathbf{\beta} = \begin{bmatrix} \beta_1 \\ \beta_2  \end{bmatrix} \text{, } n=n_1+n_2
 \]
-% Au tableau pas oublier de dire \beta1 = \mu1, \beta2 = \mu1 - \mu2
+\note{
+  Rappel de l'ANOVA
+  \begin{itemize} 
+    \item Pour rappel ici formule de 'ANOVA classique matricielle -> écrire au tableau  
+    \item Au tableau pas oublier de dire $\beta1 = \mu1, \beta2 = \mu1 - \mu2$
+    \item ou $\mu_1$ et $\mu_2$ sont les moyennes  du trait pour les groupes 1 et 2 que l'on considèrera
+  \end{itemize}
+    ANOVA phylogénétique
+  \begin{itemize} 
+
+    \item L'anova phylo consiste à inclure l'information de l'arbre
+    \item Remarque, ici $K$ correspond à la matrice V présentée quand on parlait de l'arbre, la covariance des $Y_i, Y_j$
+  \end{itemize}
+}
+
 \end{frame}
 
 
 \begin{frame}{Statistique de test}
-Pour $l=\begin{bmatrix}0 \\1 \end{bmatrix}$ :
-\[ H_0 : \beta_2 =0 \Leftrightarrow l^T\beta = \begin{bmatrix}0 \\0\end{bmatrix} \text{, les 2 groupes ont la même moyenne}\]
+Pour $\ell=\begin{bmatrix}0 \\1 \end{bmatrix}$ :
+\[ H_0 : \beta_2 =0 \Leftrightarrow \ell^T\beta = \begin{bmatrix}0 \\0\end{bmatrix} \text{, les 2 groupes ont la même moyenne}\]
 \[ H_1 : \beta_2\neq 0 \text{, les 2 groupes ont des moyennes différentes}\]
-On a alors la statistique de test suivante venant de \cite{bastideContinuousTraitEvolution2022} :   
+On a alors la statistique de test suivante : %venant de \cite{bastideContinuousTraitEvolution2022}   
 \begin{equation}
     F_{ANOVAphylo}=\frac{||\hat{Y} - \bar{Y}||^2_{\textcolor{red}{K^{-1}}}(n-2)}{||Y - \hat{Y}||^2_{\textcolor{red}{K^{-1}}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, n-2)
 \end{equation}
+\note{
+  \begin{itemize}
+    \item H0 : les 2 groupes ont la même moyenne, c'est à dire pour notre exemple que le gène n'est pas diff exprimés le gène a le même niveau d'expression
+    \item On peut noter ici par rapport à la stat de test pour l'anova classique, que cela revient à projeter l'écart à la moyenne et les erreurs sur l'inverse de K la matrice des temps de coévolution.
+    \item Pour la démo voir les slides en appendices. (Mettre slide 39 et 46 \cite{bastideContinuousTraitEvolution2022})
+    \item Donc c'est la projection orthogonale par rapport au produit scalaire $\langle u, v\rangle_{V^{-1}} = u^{T}V^{-1}v$.
+    \item Pourquoi les dl de la loi de Fisher : $ 1 = K - 1$ ici $K = 2$ et $n-2 = n - K$.
+  \end{itemize}
+}
+
 \end{frame}
 
 \begin{frame}{ANOVA phylogénétique et erreur de mesure}
@@ -245,25 +312,50 @@ En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, o
     &Y = X\beta + E \text{, où } Var(E)=V(\theta)=\sigma^2_{phy}(K-\lambda I_n)=\sigma^2_{phy}V_\lambda \\
     &E \sim \mathcal{N}_n(0, \sigma^2_{phy}V_\lambda) \notag
 \end{align}
-Problème: $\lambda$ n'est souvent pas connu et il faut l'estimer. Dans ce cas, l'approximation de la distribution de F par une distribution de Fisher ne tient plus
+Problème: $\lambda$ n'est souvent pas connu et il faut l'estimer. Dans ce cas, le test n'est pas exact et $F$ ne suit plus la même de Fisher.
+
+\note{
+  \begin{itemize}
+    \item Erreur intra-spécifique : variabilité entre les observations
+    \item Donc on ne sait pas comment l'estimation de $\lambda$ fait évoluer les degrés de libertés et l'idée est donc ici d'utiliser l'approximation de Satterthwaite pour estimer les degrés de liberté.
+    \item Remarque : il est toujours possible de réaliser le test avec cette statistique mais l'on s'attend à ce que le test puisse se tromper.
+  \end{itemize}
+}
 
 \end{frame}
 
 \section{Calculs}
+\note{
+  \begin{itemize}
+    \item Jusqu'ici nous avons étudier le modèle d'ANOVA phylo, ça a été un apprentissage. A partir d'ici ce sont nos calculs avec pour but leur implémentation.
+  \end{itemize}
+}
+
   \begin{frame}{Calcul avec approximation de Satterthwaite}
-    Méthode pour approximer les véritables degrés de liberté quand $\lambda$ inconnu
-    Pour cela on peur voir le modèle comme un modèle mixte
+    Méthode pour approximer les véritables degrés de liberté quand $\lambda$ inconnu\\
+    Pour cela on peut voir le modèle comme un modèle mixte\footcite{kuznetsovaLmerTestPackageTests2017} :
     \begin{align}
       &F_{approx}=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}df_{approx}}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, df_{approx})\\
       \text{Avec } &df_{approx} = \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]} \\
-      \text{où } &f(\theta) = l^TC(\theta)l \text{ et A matrice de variance-covariance de } \hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err}) \notag
+      \text{où } &f(\theta) = \ell^TC(\theta)\ell \text{ et A matrice de variance-covariance de } \hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err}) \notag
   \end{align}
-    Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) 
+
+  \note{
+    \begin{itemize}
+      \item On obtient alors des degrés de liberté approximés, qui nous permettent d'obtenir une stat de test elle aussi approximée.
+      \item A partir de la doc du package lmerTest, en considérant le contexte de modèle mixte on a une formule approximée des degrés de liberté et donc nous avons calculé des formules explicites du gradient de f et de A. Et voilà.
+      \item Et nous les avons implémentées pour pouvoir réaliser les tests à partir de cette nouvelle statistique.
+    \end{itemize}
+  }
 
   \end{frame}
 
 
 \section{Simulations}
+\note{
+  Après avoir implémenté, nous avons donc réalisé des simulations afin de regarder comment se comporte les méthodes :
+  ANOVA classique, ANOVA phylogénétique et ANOVA phylogénétique avec approximation de Satterthwaite.
+}
 <<'modules-simulations', include = FALSE, eval=TRUE>>=
 necessary_simu <- c("ape", "remotes", "phylolm", "phylolimma", "phytools", 
     "latex2exp", "here")
@@ -318,10 +410,7 @@ random_groups <- rowSums(sapply(rng_species,
 random_groups[random_groups == 0] <- 2
 @
 
-\begin{frame}[fragile, allowframebreaks]{Modalités de simulations}
-  Afin d'avoir une idée des performances des méthodes, nous avons choisis de les
-  comparer dans un contexte proche des cas d'application réels.
-
+\begin{frame}[fragile]{Modalités de simulations}
   \begin{figure}[H]
     \begin{subfigure}[H]{0.49\textwidth}
         \centering
@@ -344,6 +433,21 @@ random_groups[random_groups == 0] <- 2
     \label{fig:arbres-groupes}
   \end{figure}
 
+  \note{
+    \begin{itemize}
+      \item Afin d'avoir une idée des performances des méthodes, nous avons choisis de les
+      comparer dans un contexte proche des cas d'application réels.
+      \item Nous reprenons l'arbre de \cite{chenQuantitativeFrameworkCharacterizing2019}
+      \item Et nous allons tester deux situations
+      \item \begin{enumerate}
+        \item RatMus contre les autres espèces Figure~\ref{fig:simu-groupes-mus}, donc l'information phylogénétique joue un rôle.
+        \item ET les espèces réparties en deux groupes sans lien avec la classification phylogénique
+      \end{enumerate}
+      \item Ce à quoi on s'attend \textbf{LE DESSIN}: un trait évoluant selon un processus stochastique, aboutissant à 2 valeurs différentes, l'ANOVA dit qu'il y a un saut, mais l'ANOVA phylogénétique connaissant la matrice $K$ dit que c'est normal c'est la dérive, on a divergé il y a longtemps.
+    \end{itemize}
+  }
+  \end{frame}
+  \begin{frame}[fragile]{Modalités de simulations}
     <<'param-simulation', echo = FALSE>>=
     # Generate data for rat&mus vs the rest
     N <- 500
@@ -357,21 +461,29 @@ random_groups[random_groups == 0] <- 2
 
 Nous re-paramétrisons :
 
-$$v_{tot} = \sigma^2_{phylo} + \sigma^2_{measure} = \Sexpr{total_variance}$$
+$$v_{tot} = \sigma^2_{phylo} + \sigma^2_{err} = \Sexpr{total_variance}$$
 
 Et alors les paramètres du modèle s'expriment :
 
   \begin{align*}
       \sigma^2_{phylo} &= h\times v_{tot},\\
-      \sigma^2_{measure} &= (1-h) \times v_{tot} \\
+      \sigma^2_{err} &= (1-h) \times v_{tot} \\
   \end{align*}
 
 
 Ainsi, $h = 0$ signifie qu'il y a seulement du bruit, et $h = 1$ 
 seulement de l'information phylogénétique.
 
-Et nous avons réalisé des simulations pour $h \in (\Sexpr{heri})$.
-    
+Et nous avons réalisé des simulations pour $h \in \{\Sexpr{heri}\}$.
+
+\note{
+  \begin{itemize}
+    \item A l'implémentation on ré-écrit le modèle pour n'avoir qu'un seul 
+    paramètre à faire varier, $h$, l'héritabilité.
+    Qui se base sur le fait que la variance totale, $v_tot$ \textbf{la formule}.
+  \end{itemize}
+}
+
  % Choisir les figures que l'on veut mettre en valeur, les méthodes
 
  % Montrer les erreurs de type I
@@ -394,7 +506,6 @@ Et nous avons réalisé des simulations pour $h \in (\Sexpr{heri})$.
 %  Satterthwaite vs LRT
 \end{frame}
 \begin{frame}[fragile]{Résultats: Erreur de type I}
-  Add erreur de type 1 pour comparer que ça avec Satterthwaite REML, ANOVA et ANOVA phylo REML 
   \begin{figure}[H]
     \begin{subfigure}[H]{0.49\textwidth}
         \centering
@@ -405,9 +516,28 @@ Et nous avons réalisé des simulations pour $h \in (\Sexpr{heri})$.
           sim <- readRDS(filename)
 
           df_sim_plot <- compute_power_typeI(df = sim)
-          head(df_sim_plot)
+
+          df_sim_plot_filtered <- df_sim_plot %>% 
+            filter(tested_method %in% c("ANOVA", "ANOVA Phylo REML", "ANOVA Phylo Satterthwaite REML"))
+
+          ggplot(df_sim_plot_filtered) + 
+            aes(x = group_type, y = errortypeI, fill = group_type) + 
+            geom_bar(stat = "identity") +
+                scale_y_continuous(limits = c(0, 1)) +
+            ylab("Erreur type I") +
+            xlab("Type de groupe") +
+            # labs(fill = "Type de groupe") +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+            facet_wrap(vars(tested_method), ncol = 1) +
+            geom_text(aes(label = round(errortypeI, digits = 2)),
+                vjust = -0.5, position = position_dodge(width = 0.9)
+            ) +
+            geom_hline(yintercept = 0.05) +
+            guides(fill="none") +
+            ggtitle("Erreur Type I") + 
+            theme_minimal()
         @
-        \caption{}
+        \caption{Erreur de type I pour les simulations avec $h=0.3$}
         \label{fig:simu-errI-h03} 
     \end{subfigure}
     \hfill
@@ -418,28 +548,161 @@ Et nous avons réalisé des simulations pour $h \in (\Sexpr{heri})$.
           filename <- here("data", "simus", 
             paste0("real_her_", her, "_seed_", seed, ".Rds"))
           sim <- readRDS(filename)
+
+          df_sim_plot <- compute_power_typeI(df = sim)
+
+          df_sim_plot_filtered <- df_sim_plot %>% 
+            filter(tested_method %in% c("ANOVA", "ANOVA Phylo REML", "ANOVA Phylo Satterthwaite REML"))
+
+          ggplot(df_sim_plot_filtered) + 
+            aes(x = group_type, y = errortypeI, fill = group_type) + 
+            geom_bar(stat = "identity") +
+                scale_y_continuous(limits = c(0, 1)) +
+            ylab("Erreur type I") +
+            xlab("Type de groupe") +
+            # labs(fill = "Type de groupe") +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+            facet_wrap(vars(tested_method), ncol = 1) +
+            geom_text(aes(label = round(errortypeI, digits = 2)),
+                vjust = -0.5, position = position_dodge(width = 0.9)
+            ) +
+            geom_hline(yintercept = 0.05) +
+            guides(fill="none") +
+            ggtitle("Erreur Type I") + 
+            theme_minimal()          
         @
-        \caption{}
+        \caption{Erreur de type I pour les simulations avec $h=0.9$}
         \label{fig:simu-errI-h09} 
     \end{subfigure}
     \caption{Erreurs de type I pour $h \in \{0.3 ; 0.9\}$}
     \label{fig:simu-errI}
   \end{figure}
 
+\note{
+  \tiny
+  \begin{itemize}
+    \item Pour comparer les méthodes nous nous intéressons à deux métriques, 
+    l'erreur de type I et la puissance.
+    \item L'erreur de type I est particulièrement importante à contrôler car 
+    comme nous en avons parlé plus haut, des faux-positifs impliqueraient donc 
+    des expériences inutiles et particulièrement coûteuses.
+    \item A noter ici que nous ne regardons que les méthodes qui minimisent le 
+    critère REML (Restricted Maximum Likelihood) car ce sont elles qui 
+    fournissent une estimation de la variance non biaisée. Ce critère améliore 
+    sensiblement l'estimation de la variance. 
+    \item Remarque: l'ANOVA telle qu'implémentée dans R utilise directement le 
+    REML.
+  \end{itemize}
+  Analyse :
+  \begin{itemize}
+    \item erreur type  I pour groupe phylogénétique: h 0.3 l'ANOVA classiques trompe bcp, l'ANOVA phylo se trompe,seule ANOVA phylo Satter est sous la barre des 0.5 = controle bien les faux positifs 
+    \item h=0.9 : ANOVA classqiue se trompe toujours et plus, ANOVA phylo est au seuil 5 \% pas étonnant il y a plus d'info phylogénétique, avec Satterthwaite on a aucune erreur 
+    \item au global l'ANOVA phylo avec Satterthaite controle dans les 2 cas l'erreur de type I, et comme on s'y attend l'ANOVA phylo fait mieux que l'ANOVA classique
+    \hfill
+    \item groupe pas phylo: h=0.3 l'ANOVA se trompe legerement, elle depasse le seuil, les autres sont en dessous à 0.03
+    \item pour h =0.9 l'ANOVA se trompe plus, elle depasse le seuil, les autres sont en dessous
+    \item touk, avec faible héritabilité on est dasn un résultat proche de l'attendu : l'ANOVA se trompe à peine, avec forte héritabilité l'erreur est plus marquée ce qui est étonnant au vu des groupes selectionnes
+    \item On suspecte que la manièere dont on a constitue les groupes n'a pas suffisamment cassé la phylogénie
+  \end{itemize}
+}
+
 \end{frame}
 \begin{frame}{Résultats: puissance}
-  Comparer les puissances des méthodes principales
+  \begin{figure}[H]
+    \begin{subfigure}[H]{0.49\textwidth}
+        \centering
+        <<'puissance-data-plot-h01', echo = FALSE>>=
+          her <- 0.3
+          filename <- here("data", "simus", 
+            paste0("real_her_", her, "_seed_", seed, ".Rds"))
+          sim <- readRDS(filename)
+
+          df_sim_plot <- compute_power_typeI(df = sim)
+
+          df_sim_plot_filtered <- df_sim_plot %>% 
+            filter(tested_method %in% c("ANOVA", "ANOVA Phylo REML", "ANOVA Phylo Satterthwaite REML"))
+
+          ggplot(df_sim_plot_filtered) + 
+            aes(x = group_type, y = power, fill = group_type) + 
+            geom_bar(stat = "identity") +
+                scale_y_continuous(limits = c(0, 1)) +
+            ylab("Puissance") +
+            xlab("Type de groupe") +
+            # labs(fill = "Type de groupe") +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+            facet_wrap(vars(tested_method), ncol = 1) +
+            geom_text(aes(label = round(power, digits = 2)),
+                vjust = -0.5, position = position_dodge(width = 0.9)
+            ) +
+            guides(fill="none") +
+            ggtitle("Puissance") + 
+            theme_minimal()
+        @
+        \caption{Puissances pour les simulations avec $h=0.3$}
+        \label{fig:simu-power-h03} 
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[H]{0.49\textwidth}
+        \centering
+        <<'power-data-plot-h09', echo = FALSE>>=
+          her <- 0.9
+          filename <- here("data", "simus", 
+            paste0("real_her_", her, "_seed_", seed, ".Rds"))
+          sim <- readRDS(filename)
+
+          df_sim_plot <- compute_power_typeI(df = sim)
+
+          df_sim_plot_filtered <- df_sim_plot %>% 
+            filter(tested_method %in% c("ANOVA", "ANOVA Phylo REML", "ANOVA Phylo Satterthwaite REML"))
+
+          ggplot(df_sim_plot_filtered) + 
+            aes(x = group_type, y = power, fill = group_type) + 
+            geom_bar(stat = "identity") +
+                scale_y_continuous(limits = c(0, 1)) +
+            ylab("Puissance") +
+            xlab("Type de groupe") +
+            # labs(fill = "Type de groupe") +
+            theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+            facet_wrap(vars(tested_method), ncol = 1) +
+            geom_text(aes(label = round(power, digits = 2)),
+                vjust = -0.5, position = position_dodge(width = 0.9)
+            ) +
+            guides(fill="none") +
+            ggtitle("Puissance") + 
+            theme_minimal()          
+        @
+        \caption{Puissances pour les simulations avec $h=0.9$}
+        \label{fig:simu-power-h09} 
+    \end{subfigure}
+    \caption{Puissances pour $h \in \{0.3 ; 0.9\}$}
+    \label{fig:simu-power}
+  \end{figure}
+
+\note{
+  \begin{itemize}
+    \item puissance statistique: quantifie les vraies positifs il faut qu'elle soit grande 
+    \item Situation groupe avec info phylogénétique: Revers de la médaille mauvaises puissances voire très mauvaises: CATASTROPHIQUE
+    \item h = 0.3 + groupes selectionnes: on a des puissance correctes ce qui nous rassure sur l'implémentation des Méthodes
+    \item h= 0.9 + groupes selectionnes : ANOVA et ANOVA phylo pas très bonne puissances, c'est inquiétant : toujours meme hypothèse il reste ude l'info phylo
+    \item pour SAtterthwaite ca parait bien c'est la meme chose
+  \end{itemize}
+}
 
 \end{frame}
 
 
 \section{Application aux données réelles}
-\begin{frame}{Rappel des données}
-  Nous allons appliquer les différentes méthodes aux données compilées par 
-  \cite{chenQuantitativeFrameworkCharacterizing2019}. Il s'agit de données de 
-  RNA-seq chez 17 espèces et de l'arbre phylogénétique présenté 
-  figure~\ref{fig:arbre-chen2019}.
-\end{frame}
+\note{
+  \begin{itemize}
+    \item On a des données pour environ 5400 genes pour 17 especes toujours selon le meme arbre 
+    \item On passe a un test multiple sur tous les genes : on fait un test par gene et on corrige par la technique de Benjamini et Hochberg 
+    \item  Nous allons appliquer les différentes méthodes aux données compilées par 
+    \cite{chenQuantitativeFrameworkCharacterizing2019}. Il s'agit de données de 
+    RNA-seq chez 17 espèces et de l'arbre phylogénétique présenté 
+    figure~\ref{fig:arbre-chen2019}.
+  \end{itemize}
+}
+
 \begin{frame}[fragile]{UpSet diagram}
   << 'knitr_options', echo = FALSE>>=
 knitr::opts_knit$set(fig.pos = "HT", fig.width = 6, fig.height = 6,
@@ -655,7 +918,7 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
     pvalueseve_dataframe <- rbind(pvalues_adj_dataframe, evemodel_dataframe)
 
     pvalueseve_dataframe_wide <- pvalueseve_dataframe  %>% 
-        filter(test_method != "ANOVA Phylo Satterthwaite Ajustée") %>%
+        filter(!(test_method %in% c("ANOVA Phylo Satterthwaite Ajustée", "ANOVA Phylo Ajustée"))) %>%
         pivot_wider(id_cols = gene,
         names_from = test_method, 
         values_from = selected, values_fill = 0) %>%
@@ -701,13 +964,20 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
     \caption{\emph{UpSet diagram} de toutes les méthodes en incluant la méthode EVE}
     \label{fig:venn-all-methods-eve}
 \end{figure}
+\note{
+  \begin{itemize}
+    \item ANOVA phylo Satterthwait REML surselectionne des genes
+    \item mais il y a des recoupements 
+    \item Lrt sous selectionne
+    \item la méthode EVE c'est l'etat de l'art basé sur lrt 
+  \end{itemize}
+}
 \end{frame}
 \section{Conclusions et ouvertures}
-\begin{frame}{Conclusions scientifiques}
-  Récap du projet sur son contenu scientifique
-\end{frame}
-\begin{frame}{Problèmes rencontrés}
+\begin{frame}{Conclusions}
   \begin{itemize}
+    \item   La méthode d'ANOVA phylogénétique avec Satterthwaite parait intéressante, en particulier elle permet de bien contrôler l'erreur de type I. 
+
     \item Utilisation de l'approx de la Hessienne  -> expression analytique
   \end{itemize}
 \end{frame}
