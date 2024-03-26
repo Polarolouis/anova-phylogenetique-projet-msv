@@ -62,7 +62,7 @@ alsoletter={.}
 \newcommand{\dd}{\mathrm{d}}
 
 \title{Projet: ANOVA Phylogénétique}
-\subtitle{Présentation du Mardi 26 Mars. 2024}
+\subtitle{Présentation du Mardi 26 Mars 2024}
 \date{}
 \author{Alizée Geffroy, Louis Lacoste, encadrés par Mélina Gallopin et Paul Bastide}
 \institute{M2 MathSV Université Paris-Saclay}
@@ -97,59 +97,55 @@ source(here("R","utils.R"))
   \tableofcontents[hideallsubsections]
 \end{frame}
 
-\begin{frame}[allowframebreaks]{Idée structure}
-  TODO Supprimer cette slide temporaire
-  \begin{itemize}
-    \item \textbf{Intro/Contexte} : biologique avec l'exemple de Chen (mettre l'arbre) + figure de l'article ? -> trouver les gènes différentiellement exprimés
-    \item Il existe déjà des méthodes statistiques pour cette problématique (EVEmodel ? State of the Art)
-    \item Transition avec le pourquoi du projet, trouver d'autres méthodes statistiques, adaptées de méthodes classiques qui pourraient bien marcher
-    \item \textbf{Méthode pas par nous} : 1 slide par tiret
-    \begin{itemize}
-        \item Reprendre la forme matricielle de l'ANOVA phylo (mettre en rouge les diffs)
-        \item Présenter le MB qui évolue sur l'arbre + lien matrice K
-        \item Mettre la statistique de test (mettre en rouge la projection (donc diffs))
-    \end{itemize}
-    \item Transition vers notre travail
-    \begin{itemize}
-        \item Mettre la formule avec erreur de mesure avec justification de l'ajout de l'erreur de mesure, formule transfo $V_{\lambda}$, pointer la limite qui est l'erreur dûe à l'estimation du $\lambda$
-    \end{itemize}
-    \item \textbf{Méthode par nous} :
-    \begin{itemize}
-        \item Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) + stat approximée + df formule une méthode possible parmi tant d'autres: Kenward Roger classique
-    \end{itemize}
-    \item \textbf{Simulations} :
-    \begin{itemize}
-        \item les 2 arbres avec les groupes
-        \item Modalités de simulations, bien préciser que l'idée de simuler c'est pour voir erreur de type I et puissance
-        \item Les résultats de simulations: pour les résultats Mettre ANOVA , ANOVA phylo Satterthwaite LRT
-    \end{itemize}
-    \item \textbf{Applications aux données réelles} :
-    \begin{itemize}
-        \item Rappel du type de données, RNA-seq sur pleins de gènes (éventuellement un extrait du tableau ?)
-        \item Mentionner toutes les méthodes rapidement et présenter l'UpSet diagramme avec son analyse et la remarque sur Satterthwaite ML qui sur-sélectionne
-    \end{itemize}
-    \item \textbf{Conclusions/Ouvertures}:
-    \begin{itemize}
-        \item \textbf{Conclusions} :
-        \begin{itemize}
-            \item Récap du projet sur son contenu scientifique
-        \end{itemize}
-        \item \textbf{Ouvertures} :
-        \begin{itemize}
-            \item Utiliser un autre processus stochastique Ornstein-Uhlenbeck
-            \item Comprendre pourquoi Satterthwaite a sur-sélectionné dans l'application: mauvaise implémentation ? évaluer l'impact de l'approx
-            \item Prendre un autre arbre ou ré-échantillonner les groupes dans les simus
-            \item Agrandir le cadre de simulations
-            \item Appliquer les méthodes à d'autres données
-            \item modèle qui fait gène par gène: imaginer en prenant tous les gènes : Limma
-        \end{itemize}
-    \end{itemize}
-\end{itemize}
-
-
-
-
-\end{frame}
+% \begin{frame}[allowframebreaks]{Idée structure}
+%   TODO Supprimer cette slide temporaire
+%   \begin{itemize}
+%     \item \textbf{Intro/Contexte} : biologique avec l'exemple de Chen (mettre l'arbre) + figure de l'article ? -> trouver les gènes différentiellement exprimés
+%     \item Il existe déjà des méthodes statistiques pour cette problématique (EVEmodel ? State of the Art)
+%     \item Transition avec le pourquoi du projet, trouver d'autres méthodes statistiques, adaptées de méthodes classiques qui pourraient bien marcher
+%     \item \textbf{Méthode pas par nous} : 1 slide par tiret
+%     \begin{itemize}
+%         \item Reprendre la forme matricielle de l'ANOVA phylo (mettre en rouge les diffs)
+%         \item Présenter le MB qui évolue sur l'arbre + lien matrice K
+%         \item Mettre la statistique de test (mettre en rouge la projection (donc diffs))
+%     \end{itemize}
+%     \item Transition vers notre travail
+%     \begin{itemize}
+%         \item Mettre la formule avec erreur de mesure avec justification de l'ajout de l'erreur de mesure, formule transfo $V_{\lambda}$, pointer la limite qui est l'erreur dûe à l'estimation du $\lambda$
+%     \end{itemize}
+%     \item \textbf{Méthode par nous} :
+%     \begin{itemize}
+%         \item Satterthwaite : préciser que c'est nos calculs à partir de résultats sur modèle mixte (faire slide en appendice) + stat approximée + df formule une méthode possible parmi tant d'autres: Kenward Roger classique
+%     \end{itemize}
+%     \item \textbf{Simulations} :
+%     \begin{itemize}
+%         \item les 2 arbres avec les groupes
+%         \item Modalités de simulations, bien préciser que l'idée de simuler c'est pour voir erreur de type I et puissance
+%         \item Les résultats de simulations: pour les résultats Mettre ANOVA , ANOVA phylo Satterthwaite LRT
+%     \end{itemize}
+%     \item \textbf{Applications aux données réelles} :
+%     \begin{itemize}
+%         \item Rappel du type de données, RNA-seq sur pleins de gènes (éventuellement un extrait du tableau ?)
+%         \item Mentionner toutes les méthodes rapidement et présenter l'UpSet diagramme avec son analyse et la remarque sur Satterthwaite ML qui sur-sélectionne
+%     \end{itemize}
+%     \item \textbf{Conclusions/Ouvertures}:
+%     \begin{itemize}
+%         \item \textbf{Conclusions} :
+%         \begin{itemize}
+%             \item Récap du projet sur son contenu scientifique
+%         \end{itemize}
+%         \item \textbf{Ouvertures} :
+%         \begin{itemize}
+%             \item Utiliser un autre processus stochastique Ornstein-Uhlenbeck
+%             \item Comprendre pourquoi Satterthwaite a sur-sélectionné dans l'application: mauvaise implémentation ? évaluer l'impact de l'approx
+%             \item Prendre un autre arbre ou ré-échantillonner les groupes dans les simus
+%             \item Agrandir le cadre de simulations
+%             \item Appliquer les méthodes à d'autres données
+%             \item modèle qui fait gène par gène: imaginer en prenant tous les gènes : Limma
+%         \end{itemize}
+%     \end{itemize}
+% \end{itemize}
+% \end{frame}
 
 \section[Introduction]{Introduction}
 
@@ -207,7 +203,10 @@ article de Chen:
 \end{figure}
 
 \note{
-    Pour un arbre phylo donné ça nous renseigne sur les instants de spéciation, donc moment de divergence entre 2 espèces représenté ici par les ronds
+    Pour un arbre phylo donné ça nous renseigne sur les instants de spéciation, 
+    donc moment de divergence entre 2 espèces représenté ici par les ronds. \\
+    IMPORTANT : l'arbre phylogénétique est supposé connu, calibré\footnote{Il s'agit de pouvoir calibrer l'horloge moléculaire.} en temps et 
+    on n'y touche pas, nous.
     \begin{itemize}
       \item   Ici représenté l'évolution d'un trait cad d'une valeur quantitaive qu'on considère : ex comptage du nombre d'ARN exprimé pour un gène donné. 
       \item   La valeur du trait peut diverger pour chaque espèce  à partir du moment de spéciation. 
@@ -314,7 +313,8 @@ En posant $\lambda = \frac{\sigma^2_{phy}}{\sigma^2_{err}}$ et $E=u+\epsilon$, o
     &Y = X\beta + E \text{, où } Var(E)=V(\theta)=\sigma^2_{phy}(K-\lambda I_n)=\sigma^2_{phy}V_\lambda \\
     &E \sim \mathcal{N}_n(0, \sigma^2_{phy}V_\lambda) \notag
 \end{align}
-Problème: $\lambda$ n'est souvent pas connu et il faut l'estimer. Dans ce cas, le test n'est pas exact et $F$ ne suit plus la même de Fisher.
+Problème: $\lambda$ n'est en général pas connu et il faut l'estimer. Dans ce cas, 
+le test n'est pas exact et $F$ ne suit plus la même loi de Fisher.
 
 \note{
   \begin{itemize}
@@ -329,7 +329,9 @@ Problème: $\lambda$ n'est souvent pas connu et il faut l'estimer. Dans ce cas, 
 \section{Calculs}
 \note{
   \begin{itemize}
-    \item Jusqu'ici nous avons étudier le modèle d'ANOVA phylo, ça a été un apprentissage. A partir d'ici ce sont nos calculs avec pour but leur implémentation.
+    \item Jusqu'ici nous avons étudier le modèle d'ANOVA phylo, 
+    ça a été un apprentissage. A partir d'ici ce sont nos calculs avec 
+    pour but leur implémentation.
   \end{itemize}
 }
 
@@ -339,7 +341,9 @@ Problème: $\lambda$ n'est souvent pas connu et il faut l'estimer. Dans ce cas, 
     \begin{align}
       &F_{approx}=\frac{||\hat{Y} - \bar{Y}||^2_{V_\lambda^{-1}}df_{approx}}{||Y - \hat{Y}||^2_{V_\lambda^{-1}}} \underset{\mathcal{H}_0}{\sim}\mathcal{F}\text{isher} (1, df_{approx})\\
       \text{Avec } &df_{approx} = \frac{2(f(\hat{\theta}))^2}{[\nabla f(\hat{\theta})]^T A[\nabla f(\hat{\theta})]} \\
-      \text{où } &f(\theta) = \ell^TC(\theta)\ell \text{ et A matrice de variance-covariance de } \hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err}) \notag
+      \text{où } f(\theta) &= \ell^TC(\theta)\ell \text{ et A matrice de variance-covariance de } \hat{\theta}=(\hat{\sigma}^2_{phy}, \hat{\sigma}^2_{err}) \notag\\
+      C(\theta) &= (Cov(\beta_i , \beta_j))_{i,j}\notag \\ 
+                &= (X^TV(\theta)^{-1}X)^{-1} = (X^T(\sigma^2_{phy}K + \sigma^2_{err}I_n)^{-1}X)^{-1} \notag
   \end{align}
 
   \note{
@@ -604,7 +608,9 @@ Et nous avons réalisé des simulations pour $h \in \{\Sexpr{heri}\}$.
     \item groupe pas phylo: h=0.3 l'ANOVA se trompe legerement, elle depasse le seuil, les autres sont en dessous à 0.03
     \item pour h =0.9 l'ANOVA se trompe plus, elle depasse le seuil, les autres sont en dessous
     \item touk, avec faible héritabilité on est dasn un résultat proche de l'attendu : l'ANOVA se trompe à peine, avec forte héritabilité l'erreur est plus marquée ce qui est étonnant au vu des groupes selectionnes
-    \item On suspecte que la manièere dont on a constitue les groupes n'a pas suffisamment cassé la phylogénie
+    \item Tout d'abord nos données ne respectent les hypothèses de l'ANOVA. 
+    On suspecte que la manière dont on a constitué les groupes n'a pas 
+    suffisamment cassé la phylogénie.
   \end{itemize}
 }
 
@@ -979,18 +985,31 @@ evemodel_dataframe$test_method <- as.factor(evemodel_dataframe$test_method)
 \section{Conclusions et ouvertures}
 \begin{frame}{Conclusions}
   \begin{itemize}
-    \item   La méthode d'ANOVA phylogénétique avec Satterthwaite parait intéressante, en particulier elle permet de bien contrôler l'erreur de type I. 
+    \item La méthode d'ANOVA phylogénétique avec Satterthwaite parait 
+    intéressante, notamment pour le contrôle de l'erreur de type I. Mais il 
+    faudra creuser pour essayer de comprendre la dégradation de la puissance.
 
-    \item Utilisation de l'approx de la Hessienne  -> expression analytique
+    \item Au début nous utilisions une approximation de l'hessienne, 
+    remplacée par la forme analytique une fois celle-ci obtenue.
   \end{itemize}
+  \note{
+    \begin{itemize}
+      \item Approximation Hessienne : calculée par approximation numérique, méthode de 
+      Richardson.
+    \end{itemize}
+  }
 \end{frame}
 \begin{frame}{Ouvertures}
 
   \begin{itemize}
-    \item Utilisation du processus d'Ornstein-Uhlenbeck
-    \item Pourquoi Satterthwaite a surselectionné ? Creuser 
-    \item Prendre un autre arbre, autres données, ou ré-échantillonner les groupes dans les simus
-    \item Modèle qui fait gène par gène: imaginer en prenant tous les gènes -> méthode LIMMA
+    \item Changer de processus stochastique ? Le processus d'Ornstein-Uhlenbeck.
+    \item Comprendre pourquoi avec l'approximation de Satterthwaite sur les 
+    données réelles il y a eu une sur-sélection.
+    \item Changer les conditions de simulations : prendre un autre arbre, 
+    autres données, ou ré-échantillonner les groupes.
+    \item Ces méthodes test gène par gène puis corrige pour faire un test 
+    multiple. On pourrait développer des méthodes qui font sur tous les gènes 
+    en même temps (adaptation phylogénétique de la méthode LIMMA).
   \end{itemize}
 \end{frame}
 
@@ -1045,6 +1064,10 @@ $$\dd r_t = -\theta(r_t - \mu)+\sigma\dd W_t$$
     l'optimum et il modélise donc deux niches différentes.
   \end{itemize}
 }
+\end{frame}
+
+\begin{frame}{Lien modèle mixte}
+  TODO Ajouter la formule canonique du modèle mixte
 \end{frame}
 
 \begin{frame}[allowframebreaks]{questions posables}
