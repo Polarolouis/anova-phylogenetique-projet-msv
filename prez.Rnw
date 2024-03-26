@@ -1067,12 +1067,16 @@ $$\dd r_t = -\theta(r_t - \mu)+\sigma\dd W_t$$
 \end{frame}
 
 \begin{frame}{Lien modèle mixte}
-  TODO Ajouter la formule canonique du modèle mixte
+  \begin{align}
+    Y = X\beta + Zu + \epsilon \text{, } \quad u \sim \mathcal{N}_q(0, G) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2I_n) \\
+    &\text{où Z de taille n $\times$ q est la matrice de design pour les effets aléatoires } \\
+    &\text{et }u \perp \epsilon
+\end{align} 
 \end{frame}
 
 \begin{frame}[allowframebreaks]{questions posables}
   % - comment obtenir la stat de test pour anova phylo (Cholesky)
-  % - en quoi c'est un modèle mixte pour Satterthwaite ? 
+  % - en quoi c'est un modèle mixte pour Satterthwaite ?
   % - calcul de la Hessienne optim vs formule analytique, mettre formule analytique
   % - Le LRT un modèle emboité blabla ?
   % - sur quoi est basé EVEmodel ?
@@ -1105,7 +1109,7 @@ $$\dd r_t = -\theta(r_t - \mu)+\sigma\dd W_t$$
   % Voici la reformulation de votre texte en utilisant l'environnement "itemize" pour qu'il soit copiable :
 
   \begin{itemize}
-      \item Comment obtenir la stat de test pour ANOVA phylo (Cholesky)
+      \item Comment obtenir la stat de test pour ANOVA phylo (Cholesky) 
       \item En quoi c'est un modèle mixte pour Satterthwaite ?
       \item Calcul de la Hessienne optim vs formule analytique, mettre formule analytique
       \item Le LRT un modèle emboîté blabla ?
