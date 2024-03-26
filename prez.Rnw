@@ -60,6 +60,8 @@ alsoletter={.}
 \usepackage{xspace}
 \newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
 \newcommand{\dd}{\mathrm{d}}
+\newcommand{\Var}{\mathbb{V}ar}
+\newcommand{\normal}{\mathcal{N}}
 
 \title{Projet: ANOVA Phylogénétique}
 \subtitle{Présentation du Mardi 26 Mars 2024}
@@ -1068,6 +1070,29 @@ $$\dd r_t = -\theta(r_t - \mu)+\sigma\dd W_t$$
 
 \begin{frame}{Lien modèle mixte}
   TODO Ajouter la formule canonique du modèle mixte
+\end{frame}
+
+\begin{frame}{Obtention des estimateurs}
+  En connaissant l'arbre et le processus stochastique, le modèle s'écrit:
+  $$Y = X\beta + \sigma E, E\sim\normal(0_n, K)$$
+  \begin{columns}
+    \begin{column}{0.49\textwidth}
+      \begin{align*}
+        K &= LL^T\\
+        \Var [L^{-1}E] &= L^{-1} V [L^{-1}]^T = I
+      \end{align*}
+      Et on peut alors écrire la régression décorrélée :
+      $$L^{-1}Y = (L^{-1}X)\beta + \sigma E', E'\sim\normal(0_n,I)$$
+    \end{column}
+    \begin{column}{0.49\textwidth}
+      De là par les formules classiques on a les estimateurs :
+      \begin{align*}
+        \hat{\beta} &= (X^T V^{-1} X)^{-1} X^T V^{-1} Y\\
+        \hat{\sigma^2} &= \frac{1}{n-p} (Y - X\hat{\beta})^T V^{-1} (Y - X\hat{\beta})\\
+        &= \frac{1}{n-p} \|Y - X\hat{\beta}\|_{V^{-1}}^2
+      \end{align*}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}[allowframebreaks]{questions posables}
