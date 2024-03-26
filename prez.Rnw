@@ -1070,9 +1070,9 @@ $$\dd r_t = -\theta(r_t - \mu)+\sigma\dd W_t$$
 
 \begin{frame}{Lien modèle mixte}
   \begin{align}
-    Y = X\beta + Zu + \epsilon \text{, } \quad u \sim \mathcal{N}_q(0, G) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2I_n) \\
-    &\text{où Z de taille n $\times$ q est la matrice de design pour les effets aléatoires } \\
-    &\text{et }u \perp \epsilon
+    Y &= X\beta + Zu + \epsilon \text{, } \quad u \sim \mathcal{N}_q(0, G) \text{,} \quad \epsilon \sim \mathcal{N}_n(0, \sigma^2I_n) \notag\\
+    &\text{où Z de taille n $\times$ q est la matrice de design pour les effets aléatoires } \notag\\
+    &\text{et }u \perp \epsilon \notag
 \end{align} 
 \end{frame}
 
